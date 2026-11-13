@@ -151,7 +151,7 @@ G.fresh(); check(G.call('asksInbox', [T]).asks.length === 0, 'Resolve → gone f
 console.log('Student profile');
 G.fresh();
 const pf = G.call('studentProfile', [T, 'FX-T01']);
-check(pf.skills.length === 19 && pf.skills.find(s => s.skill === 'H.B').level === 'M', 'profile: 19 skills with level (Linear functions M)');
+check(pf.skills.length === 19 && pf.skills.find(s => s.skill === 'H.B').level === 'E', 'profile: 19 skills with level (Linear functions E)');
 check(pf.sets.length === 2 && pf.sets.some(s => s.title === 'Homework – test' && s.first_try === 4), 'sets with First Try / Best Score');
 check(pf.profiles.RIGHT >= 1 && pf.mistakes['Concept Gap'] === 1 && pf.review_open >= 2, 'timing profiles, mistake types, Review size');
 check(!/"key"|"accepted"/.test(JSON.stringify(pf)) && !/"key"|"accepted"/.test(JSON.stringify(cv)), 'class view + profile: no keys (only the question panel has one)');

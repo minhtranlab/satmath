@@ -1,0 +1,1478 @@
+{
+ "batch": "FX3",
+ "title": "Fixture 3 (made-up, mixed)",
+ "source_type": "fixture",
+ "schema": 1,
+ "questions": [
+  {
+   "qid": "FX3-001",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 1
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 1 (H.A). What is \\(4 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.A",
+    "subskill": "H.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9501"
+  },
+  {
+   "qid": "FX3-002",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 2
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 2 (H.A). What is \\(5 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.A",
+    "subskill": "H.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9502"
+  },
+  {
+   "qid": "FX3-003",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 3
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 3 (H.A). What is \\(6 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.A",
+    "subskill": "H.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9501"
+  },
+  {
+   "qid": "FX3-004",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 4
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 4 (H.A). What is \\(7 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.A",
+    "subskill": "H.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9502"
+  },
+  {
+   "qid": "FX3-005",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 5
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 5 (H.A). What is \\(8 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.A",
+    "subskill": "H.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9501"
+  },
+  {
+   "qid": "FX3-006",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 6
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 6 (H.A). What is \\(3 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.A",
+    "subskill": "H.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9502"
+  },
+  {
+   "qid": "FX3-007",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 7
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 7 (P.A). What is \\(4 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9503"
+  },
+  {
+   "qid": "FX3-008",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 8
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 8 (P.A). What is \\(5 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(10\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9504"
+  },
+  {
+   "qid": "FX3-009",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 9
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 9 (P.A). What is \\(6 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(18\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9503"
+  },
+  {
+   "qid": "FX3-010",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 10
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 10 (P.A). What is \\(7 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(28\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9504"
+  },
+  {
+   "qid": "FX3-011",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 11
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 11 (P.A). What is \\(8 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9503"
+  },
+  {
+   "qid": "FX3-012",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 12
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 12 (P.A). What is \\(3 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(4\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(6\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9504"
+  },
+  {
+   "qid": "FX3-013",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 13
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 13 (Q.A). What is \\(4 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9505"
+  },
+  {
+   "qid": "FX3-014",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 14
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 14 (Q.A). What is \\(5 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9506"
+  },
+  {
+   "qid": "FX3-015",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 15
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 15 (Q.A). What is \\(6 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9505"
+  },
+  {
+   "qid": "FX3-016",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 16
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 16 (Q.A). What is \\(7 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9506"
+  },
+  {
+   "qid": "FX3-017",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 17
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 17 (Q.A). What is \\(8 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9505"
+  },
+  {
+   "qid": "FX3-018",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 18
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 18 (Q.A). What is \\(3 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9506"
+  },
+  {
+   "qid": "FX3-019",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 19
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 19 (S.A). What is \\(4 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9507"
+  },
+  {
+   "qid": "FX3-020",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 20
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 20 (S.A). What is \\(5 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(10\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9508"
+  },
+  {
+   "qid": "FX3-021",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 21
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 21 (S.A). What is \\(6 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(18\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9507"
+  },
+  {
+   "qid": "FX3-022",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 22
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 22 (S.A). What is \\(7 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(28\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9508"
+  },
+  {
+   "qid": "FX3-023",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 23
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 23 (S.A). What is \\(8 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9507"
+  },
+  {
+   "qid": "FX3-024",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 24
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 24 (S.A). What is \\(3 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(4\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(6\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9508"
+  },
+  {
+   "qid": "FX3-025",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 25
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 25 (S.D). What is \\(4 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9509"
+  },
+  {
+   "qid": "FX3-026",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 26
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 26 (S.D). What is \\(5 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9510"
+  },
+  {
+   "qid": "FX3-027",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 27
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 27 (S.D). What is \\(6 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9509"
+  },
+  {
+   "qid": "FX3-028",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 28
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 28 (S.D). What is \\(7 + 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9510"
+  },
+  {
+   "qid": "FX3-029",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 29
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 29 (S.D). What is \\(8 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9509"
+  },
+  {
+   "qid": "FX3-030",
+   "batch": "FX3",
+   "source": {
+    "set": "FX3",
+    "page": 30
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 30 (S.D). What is \\(3 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9510"
+  }
+ ]
+}

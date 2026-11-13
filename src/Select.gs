@@ -82,7 +82,7 @@ function levelState_(codeN, skill, tries, S) {
 function initialLevel_(tries, skill, S) {
   var r = recentR_(tries, skill, S);
   if (r.n >= 5) return r.R >= S.good_set_pct ? 'H' : r.R < S.weak_set_pct ? 'E' : 'M';
-  return 'M';
+  return 'E';                                        // Minh 13 Nov: a new student starts Easy (3 E + 2 M), going up as usual
 }
 function up_(l) { return l === 'E' ? 'M' : 'H'; }
 function down_(l) { return l === 'H' ? 'M' : 'E'; }
@@ -97,7 +97,7 @@ function afterSubmit_(s, rows) {
   var notes = [];
   Object.keys(touched).forEach(function (k) {
     var st = levelState_(codeN, k, tries, S), rr = recentR_(tries, k, S);
-    if (!st.row && kind !== 'practice') return; // assignment only: the level starts when the skill is first practised (initialLevel_)
+    if (!st.row && kind !== 'practice' && kind !== 'mixed') return; // assignment only: the level starts when the skill is first practised (initialLevel_)
     var lvl = st.row ? st.level : (String(s.level_at_start || '') || st.level), streak = st.good_streak, hist = st.row ? String(st.row.history || '') : '';
     if (kind === 'practice' && clean_(s.skill) === k) {
       var mine = rows.filter(function (r) { return clean_(r.skill) === k; });
@@ -107,6 +107,22 @@ function afterSubmit_(s, rows) {
       if (streak >= 2 && lvl !== 'H') { lvl = up_(lvl); streak = 0; }
       else if (ft < S.weak_set_pct && lvl !== 'E') { lvl = down_(lvl); streak = 0; }
       if (lvl !== before) { hist = (hist ? hist + ' · ' : '') + before + '→' + lvl + ' ' + fmtDate_(new Date(), 'd MMM'); notes.push(k + ' ' + before + '→' + lvl); }
+    }
+    if (kind === 'mixed') {
+      // Mixed Practice: a skill seen for the first time works like a mini placement — start Medium, one step up after each
+      // right first try, one step down after each wrong one. A skill with a level: its items count as a small set (same rule).
+      var its = rows.filter(function (r) { return clean_(r.skill) === k; }), b0 = lvl;
+      if (!st.row) {
+        lvl = 'M';
+        its.forEach(function (r) { lvl = Number(r.try1_correct) === 1 ? up_(lvl) : down_(lvl); });
+        streak = 0;
+      } else {
+        var ft2 = its.filter(function (r) { return Number(r.try1_correct) === 1; }).length / Math.max(1, its.length);
+        if (ft2 >= S.good_set_pct) streak++; else streak = 0;
+        if (streak >= 2 && lvl !== 'H') { lvl = up_(lvl); streak = 0; }
+        else if (ft2 < S.weak_set_pct && lvl !== 'E') { lvl = down_(lvl); streak = 0; }
+      }
+      if (lvl !== b0 || !st.row) { hist = (hist ? hist + ' · ' : '') + (st.row ? b0 : 'mixed M') + '→' + lvl + ' ' + fmtDate_(new Date(), 'd MMM'); notes.push(k + ' →' + lvl); }
     }
     var f = { student_code: codeN, skill: txt_(k), level: lvl, recent_pct: rr.R === null ? '' : round_(rr.R, 3), good_streak: streak,
               n_items: rr.n, last_set_id: String(s.set_id), updated_at: nowIso_(), history: hist };
@@ -273,6 +289,91 @@ function pickForPractice_(codeN, skill, n, setSeed) {
   });
   return { qids: picked.map(function (x) { return String(x.r.qid); }), level: st.level,
            slots: picked.map(function (x) { return x.slot; }).join(','), why: picked.map(function (x) { return x.why; }), standin: map.standin };
+}
+
+/* ---------------- Mixed Practice (Minh 13 Nov): one set, several skills ----------------
+ * Skill order: 1) skills with unfixed wrong answers or a mistake the teacher tagged, 2) the lowest-level skills, 3) untried
+ * skills; at most 2 items per skill per 5 questions (spread over several skills). Each item at the student's level for that
+ * skill (1st item = the level, 2nd = the 4th slot of its template). A student with no first tries at all: a mini placement —
+ * every item Medium, spread over the 4 domains; afterSubmit_ then moves each skill up after a right / down after a wrong. */
+function pickMixed_(codeN, n, setSeed) {
+  var S = getSettings_(), tries = firstTries_(codeN), hist = historyOf_(codeN, tries), now = Date.now();
+  var seed = seedOf_(setSeed || (codeN + now)), pool = livePool_();
+  var bySkill = {}; pool.forEach(function (r) { (bySkill[clean_(r.skill)] = bySkill[clean_(r.skill)] || []).push(r); });
+  var skills = []; SKILLS_.forEach(function (r) { if (skills.indexOf(r.skill) < 0 && bySkill[r.skill]) skills.push(r.skill); });
+  var domainOf = {}; SKILLS_.forEach(function (r) { domainOf[r.skill] = r.domain; });
+  var blank = !tries.length, perSkill = Math.max(1, Math.floor(2 * n / 5)), order = [];
+  if (blank) {
+    // mini placement: round-robin over the 4 domains, a random skill of each, Medium
+    var doms = {}; skills.forEach(function (k) { (doms[domainOf[k]] = doms[domainOf[k]] || []).push(k); });
+    Object.keys(doms).forEach(function (d) { shuffle_(doms[d], seed); });
+    var dk = shuffle_(Object.keys(doms), seed + 1), i = 0;
+    while (order.length < skills.length) { var d = dk[i % dk.length], l = doms[d]; if (l.length) order.push(l.shift()); i++; if (i > 400) break; }
+  } else {
+    var resp = readTable_('Responses').rows.filter(function (r) { return normCode_(r.student_code) === codeN; });
+    var hurt = {};
+    resp.forEach(function (r) {
+      var k = clean_(r.skill); if (!k) return;
+      var t = clean_(r.mistake_type), unfixed = Number(r.try1_correct) !== 1 && Number(r.best_correct) !== 1;
+      if (unfixed || (t && t !== 'Not A Mistake')) hurt[k] = Math.max(hurt[k] || 0, toMs_(r.submitted_at));
+    });
+    var tried = {}; tries.forEach(function (t) { tried[t.skill] = 1; });
+    var rank = function (k) {
+      var lv = levelState_(codeN, k, tries, S).level;
+      return [hurt[k] ? 0 : tried[k] ? 1 : 2, hurt[k] ? -hurt[k] : 0, DIFF_ORDER_[lv] || 2];
+    };
+    var rr = {}; shuffle_(skills.slice(), seed).forEach(function (k, i) { rr[k] = i; });
+    order = skills.slice().sort(function (a, b) {
+      var x = rank(a), y = rank(b);
+      return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || rr[a] - rr[b];
+    });
+  }
+  // how many items per skill: walk the order, at most perSkill each, until n
+  var count = {}, picked = [], used = {}, twins = {}, slots = [];
+  var nSkills = Math.min(order.length, Math.max(Math.ceil(n / perSkill), Math.min(order.length, n)));
+  var chosenSkills = order.slice(0, nSkills);
+  for (var round = 0; picked.length < n && round < perSkill; round++) {
+    for (var c = 0; c < chosenSkills.length && picked.length < n; c++) {
+      var k = chosenSkills[c], lvl = blank ? 'M' : levelState_(codeN, k, tries, S).level;
+      var want = round === 0 ? lvl : (TEMPLATE_5_[lvl] || TEMPLATE_5_.M)[3];
+      var cands = (bySkill[k] || []).filter(function (r) {
+        var id = String(r.qid), tw = String(r.twin_group || ''), h = hist[id];
+        return !used[id] && !(tw && twins[tw]) && (!h || now - h.last_ms >= S.block_days * 86400000);
+      });
+      var rnd = {}; shuffle_(cands.slice(), seed + round + c).forEach(function (r, i) { rnd[String(r.qid)] = i; });
+      var score = function (r) {
+        var d = String(r.difficulty).toUpperCase(), h = hist[String(r.qid)];
+        return [d === want ? 0 : Math.abs((DIFF_ORDER_[d] || 2) - DIFF_ORDER_[want]) === 1 ? 1 : 2, h ? 1 : 0, rnd[String(r.qid)]];
+      };
+      cands.sort(function (a, b) { var x = score(a), y = score(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; });
+      var r0 = cands[0]; if (!r0) continue;
+      used[String(r0.qid)] = 1; if (r0.twin_group) twins[String(r0.twin_group)] = 1;
+      count[k] = (count[k] || 0) + 1; picked.push(r0); slots.push(want);
+    }
+  }
+  // easier → harder, like every set
+  var idx = picked.map(function (r, i) { return i; }).sort(function (a, b) {
+    return (DIFF_ORDER_[String(picked[a].difficulty).toUpperCase()] || 3) - (DIFF_ORDER_[String(picked[b].difficulty).toUpperCase()] || 3) || a - b;
+  });
+  return { qids: idx.map(function (i) { return String(picked[i].qid); }), slots: idx.map(function (i) { return slots[i]; }).join(','),
+           skills: Object.keys(count), blank: blank };
+}
+var MIXED_TITLE = 'Mixed Practice';
+function startMixed(code, n) {
+  var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
+  var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
+  n = Number(n);
+  if (sizes.indexOf(n) < 0) throw new Error('FORM: Choose ' + sizes.join(', ') + ' questions.');
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'mixed'; });
+    if (open.length) return { ok: true, set_id: String(open[open.length - 1].set_id), resumed: true };
+    var setId = newSetId_(codeN), pick = pickMixed_(codeN, n, setId);
+    if (!pick.qids.length) throw new Error('FORM: There are no questions yet.');
+    appendObjects_('Sets', [{ set_id: setId, student_code: codeN, kind: 'mixed', skill: '', n: pick.qids.length, qids: pick.qids.join(','),
+                              level_at_start: pick.blank ? 'placement' : '', slots: pick.slots, created_at: nowIso_(), status: 'in_progress', events_saved: 0, last_saved_at: nowIso_() }]);
+    return { ok: true, set_id: setId, n: pick.qids.length, skills: pick.skills.length };
+  } finally { lock.releaseLock(); }
 }
 
 /* ---------------- Review area (§5) ---------------- */

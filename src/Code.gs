@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.3.2 (2026-11-13, assignments: real difficulties only)';
+var APP_VERSION = 'v0.4 (2026-11-13, Mixed Practice, codes teacher-only, new students start Easy)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -292,6 +292,7 @@ function setTitle_(s) {
   var kind = String(s.kind || 'practice');
   if (kind === 'practice') return 'Practice · ' + (skillName_(String(s.skill || '')) || 'Mixed');
   if (kind === 'review') return 'Review';
+  if (kind === 'mixed') return MIXED_TITLE;
   return s.assignment_id ? assignmentTitle_(s.assignment_id) : 'Assignment';
 }
 
@@ -311,7 +312,7 @@ function setProfile_(s, n) {
 /** Client-safe question object — whitelist only (never key, accepted, tags, source, notes). Figures: src only when given. */
 function clientQuestion_(q, withFigs) {
   return {
-    qid: q.qid, code: q.code || '', part: q.part, display_no: q.display_no, type: q.type || 'mcq',
+    qid: q.qid, part: q.part, display_no: q.display_no, type: q.type || 'mcq',
     stem_html: q.stem_html || '', passage_html: q.passage_html || '',
     figures: (q.figures || []).map(function (f, i) {
       return { fid: q.qid + '#' + i, src: withFigs ? figSrc_(f) : '', alt: f.alt || '', position: f.position || 'before_stem',
@@ -696,7 +697,8 @@ function gradeSet_(s, state, events) {
       time_try1_sec: round_(timeSec, 1), time_total_sec: round_(timeSec, 1), pace_ratio: round_(tp.ratio, 2),
       calc_used: !!x.calc, ref_used: !!x.ref, profile: tp.profile, flags: flags.join(','), submitted_at: now,
       asked: ps.ask && q.qid in ps.ask ? 1 : '', ask_note: ps.ask && ps.ask[q.qid] ? txt_(ps.ask[q.qid]) : '',
-      ask_at: ps.ask && q.qid in ps.ask ? now : '', ask_status: ps.ask && q.qid in ps.ask ? 'open' : ''
+      ask_at: ps.ask && q.qid in ps.ask ? now : '', ask_status: ps.ask && q.qid in ps.ask ? 'open' : '',
+      ask_code: ps.ask && q.qid in ps.ask ? txt_(q.code || '') : ''
     });
   });
   return { rows: rows, right: right, n: qs.length };
@@ -748,10 +750,11 @@ function getResult(code, setId) {
 
 /** Questions of one finished set for the read-only review: the question + the student's answer, right / wrong, time.
  *  NEVER the key (clientQuestion_ whitelist; status comes from Responses). */
-function reviewData_(s, rows) {
+function reviewData_(s, rows, asTeacher) {
   var by = {}; rows.forEach(function (r) { by[String(r.qid)] = r; });
   var qs = setQuestions_(s).filter(function (q) { return by[q.qid]; }).map(function (q) {
     var r = by[q.qid], o = clientQuestion_(q, true);
+    if (asTeacher) o.code = q.code || '';                      // the short code (E326) is for the teacher only (Minh 13 Nov)
     o.answer = String(r.final_answer === undefined ? '' : r.final_answer).replace(/^'/, '');
     o.status = String(r.profile) === 'BLANK' || o.answer === '' ? 'blank' : (Number(r.best_correct) === 1 ? 'right' : 'wrong');
     o.time_s = Math.round(Number(r.time_total_sec) || 0);
@@ -857,8 +860,9 @@ function askTeacher(code, setId, qid, on, note) {
     var r = responsesOf_(setId).filter(function (x) { return String(x.qid) === String(qid); })[0];
     if (!r) throw new Error('SESSION: Question not found.');
     var max = Number(getSettings_().ask_note_max) || 200;
-    var f = on ? { asked: 1, ask_note: txt_(String(note || '').slice(0, max)), ask_at: nowIso_(), ask_status: 'open', resolved_at: '' }
-               : { asked: '', ask_note: '', ask_at: '', ask_status: '' };
+    var qc = (questionRows_().filter(function (x) { return String(x.qid) === String(qid); })[0] || {}).code;
+    var f = on ? { asked: 1, ask_note: txt_(String(note || '').slice(0, max)), ask_at: nowIso_(), ask_status: 'open', resolved_at: '', ask_code: txt_(clean_(qc)) }
+               : { asked: '', ask_note: '', ask_at: '', ask_status: '', ask_code: '' };
     updateRow_('Responses', r._row, f);
     return { ok: true, qid: String(qid), asked: !!on, note: on ? String(note || '').slice(0, max) : '' };
   } finally { lock.releaseLock(); }
@@ -895,7 +899,7 @@ function teacherSet_(code, setId) {
 }
 function teacherResult(code, setId) { var s = teacherSet_(code, setId); return resultView_(s, responsesOf_(setId), true); }
 function teacherReview(code, setId) {
-  var s = teacherSet_(code, setId), r = reviewData_(s, responsesOf_(setId)), st = findStudent_(s.student_code);
+  var s = teacherSet_(code, setId), r = reviewData_(s, responsesOf_(setId), true), st = findStudent_(s.student_code);
   r.student = st ? String(st.name || '') : String(s.student_code);
   return r;
 }

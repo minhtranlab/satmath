@@ -46,7 +46,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
       const box = await page.$('#qwrap .q.on');
       const spr = await box.$('.spr-in');
       if (i === 0) {
-        check(await box.$eval('.q-code', e => /^[EMH]\d+$/.test(e.textContent)), 'short question code shown small on the question: ' + await box.$eval('.q-code', e => e.textContent));
+        check(!(await page.$('#qwrap .q-code')) && /Question 1 of 5/.test(await page.$eval('#nav-label', e => e.textContent)), 'no question code for students (it would show E/M/H): only "Question 1 of 5"');
         check(await page.$$eval('#qwrap .stem .nw', a => a.length) > 0, 'math + the punctuation after it kept together (no "?" alone on a line)');
       }
       if (i === 1) {
@@ -123,6 +123,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await page.click('#res-home');
     await page.waitForSelector('#history');
     check(await page.$eval('#assigned', e => /Nothing from your teacher/.test(e.innerText)), 'home: "Assigned by your teacher" (empty for now)');
+    check(/Mixed Practice/.test(await page.$eval('#mixed-card', e => e.innerText)) && (await page.$$('#mixed-card [data-mn]')).length === 3, 'home: "Mixed Practice" card with 5 / 10 / 20');
     check(/\d+ questions? to review/.test(await page.$eval('#review-card', e => e.innerText)), 'home: Review card "n questions to review"');
     await shot(page, 'e2e_home2');
     const hist = await page.$eval('#history', e => e.innerText);

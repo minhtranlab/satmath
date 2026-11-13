@@ -15,7 +15,7 @@ var TABS_ = [
   ['Responses', ['set_id', 'student_code', 'qid', 'order', 'skill', 'subskill', 'difficulty', 'level', 'try1_answer', 'try1_correct',
                  'final_answer', 'best_correct', 'n_tries', 'locked', 'fixed_at', 'n_changes', 'change_pattern', 'eliminated', 'ever_marked',
                  'visits', 'time_try1_sec', 'time_total_sec', 'pace_ratio', 'calc_used', 'ref_used', 'profile', 'flags', 'mistake_type',
-                 'mistake_note', 'tagged_at', 'tagged_in', 'asked', 'ask_note', 'ask_at', 'ask_status', 'resolved_at', 'submitted_at']],
+                 'mistake_note', 'tagged_at', 'tagged_in', 'asked', 'ask_note', 'ask_at', 'ask_status', 'resolved_at', 'submitted_at', 'ask_code']],
   ['Tries', ['set_id', 'student_code', 'qid', 'try_no', 'answer', 'correct', 'time_sec', 'at']],
   ['Review', ['student_code', 'qid', 'reason', 'from_set', 'added_at', 'status', 'n_served', 'cleared_at', 'cleared_by']],
   ['Levels', ['student_code', 'skill', 'level', 'recent_pct', 'good_streak', 'n_items', 'last_set_id', 'updated_at', 'history']],

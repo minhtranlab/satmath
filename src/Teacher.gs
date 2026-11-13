@@ -254,6 +254,7 @@ function questionPanel(code, qid) {
   if (!q) throw new Error('FORM: Question not found in the library.');
   q.part = 'P'; q.display_no = 1;
   var o = clientQuestion_(q, true), r = questionRows_().filter(function (x) { return String(x.qid) === String(qid); })[0] || {};
+  o.code = clean_(r.code) || q.code || '';
   o.key = keyList_(q); o.rationale_html = q.rationale_html || '';
   o.cb_id = clean_(r.cb_question_id) || ((q.source || {}).cb_question_id || '');
   o.skill_name = skillName_(clean_(r.skill)); o.subskill_name = subskillName_(clean_(r.subskill)); o.difficulty = String(r.difficulty || ''); o.level = r.level || '';

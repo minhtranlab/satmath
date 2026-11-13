@@ -99,7 +99,7 @@ async function laptop(E, W, H, tag) {
     check(!(await page.$eval('#calc-panel', e => e.classList.contains('on'))), 'phone: × closes it');
     await shot(page, 'calc_phone_closed');
     const spr = await page.$('#qwrap .q .spr-prev');
-    check(!spr || /Your answer will be read as:/.test(await page.$eval('#qwrap .q .spr-prev', e => e.textContent)), 'grid-in: "Your answer will be read as:" instead of "Answer Preview"');
+    check(!spr || /^Answer Preview:/.test(await page.$eval('#qwrap .q .spr-prev', e => e.textContent)), 'grid-in: "Answer Preview" (Bluebook wording)');
   } catch (e) { console.error(e); check(false, 'exception: ' + e.message); }
   await E.close();
   process.exit(summary() ? 1 : 0);

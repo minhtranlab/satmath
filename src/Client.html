@@ -191,6 +191,7 @@
         });
         box.appendChild(pk);
       }
+      box.appendChild(mixedCard(r));
       box.appendChild(el('h2', { class: 'hz-h2' }, 'Practise by skill'));
       box.appendChild(skillPicker(r));
       // ④ Review: questions missed or slow, until one clean try
@@ -256,6 +257,27 @@
     }).catch(function (e) { if (btn) btn.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
   }
 
+  /** Mixed Practice (Minh 13 Nov): only 5 / 10 / 20; the app mixes skills at the student's level for each. */
+  var MIXED_LABEL = 'Mixed Practice';
+  function mixedCard(r) {
+    var sizes = r.sizes && r.sizes.length ? r.sizes : [5, 10, 20], st = A.mixN = A.mixN || sizes[0];
+    var box = el('section', { class: 'sm-mixcard', id: 'mixed-card' });
+    var open = (r.open || []).some(function (o) { return o.kind === 'mixed'; });
+    var draw = function () {
+      box.innerHTML = '<div><b>' + MIXED_LABEL + '</b><span>Questions from several skills, picked for you.</span></div>' +
+        '<div class="sm-mixgo">' + (open ? '' : '<div class="sm-seg" role="group" aria-label="Number of questions">' + sizes.map(function (n) { return '<button type="button" data-mn="' + n + '"' + (n === A.mixN ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>') +
+        '<button type="button" class="hz-btn" id="btn-mixed">' + (open ? 'Continue' : 'Start ' + A.mixN) + '</button></div>';
+      $$('[data-mn]', box).forEach(function (b) { b.onclick = function () { A.mixN = +b.getAttribute('data-mn'); draw(); }; });
+      var go = $('#btn-mixed', box);
+      go.onclick = function () {
+        go.disabled = true;
+        call('startMixed', A.code, A.mixN).then(function (x) { openTest(x.set_id, {}); })
+          .catch(function (e) { go.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+      };
+    };
+    draw();
+    return box;
+  }
   function startReview(btn) {
     if (btn) btn.disabled = true;
     call('startReview', A.code).then(function (r) { openTest(r.set_id, {}); })
@@ -682,7 +704,7 @@
     var body = '<div class="q-text">' + before + '<div class="stem">' + noWrapMath(q.stem_html) + '</div>' + after + '</div>';
     var ans;
     if (q.type === 'spr') {
-      ans = '<div class="spr-box"><input class="spr-in" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="6" aria-label="Your answer"><div class="spr-prev" title="This is how the app reads what you typed (e.g. 3/4 is the fraction three quarters).">Your answer will be read as: <b class="spr-out"></b></div></div>';
+      ans = '<div class="spr-box"><input class="spr-in" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="6" aria-label="Your answer"><div class="spr-prev">Answer Preview: <b class="spr-out"></b></div></div>';
     } else {
       ans = '<div class="choices">' + q.choices.map(function (c) {
         return '<div class="ch-row" data-l="' + esc(c.label) + '"><button type="button" class="ch"><span class="ltr">' + esc(c.label) + '</span><span class="ctext">' + noWrapMath(c.html) + '</span></button>' +

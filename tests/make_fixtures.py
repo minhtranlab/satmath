@@ -68,6 +68,19 @@ def fx2():
     return out
 json.dump({'batch': 'FX2', 'title': 'Fixture 2 (made-up, adaptive)', 'source_type': 'fixture', 'schema': 1, 'questions': fx2()},
           open(os.path.join(LIB, 'questions', 'FX2.json'), 'w'), indent=1, ensure_ascii=False)
+# FX3: a few made-up items in 5 more skills (4 domains) for Mixed Practice
+def fx3():
+    out, n, codes = [], 0, {'E': 9500, 'M': 9500, 'H': 9500}
+    for sk, sub in [('H.A', 'H.A.1'), ('P.A', 'P.A.1'), ('Q.A', 'Q.A.2'), ('S.A', 'S.A.1'), ('S.D', 'S.D.1')]:
+        for diff in ['E', 'E', 'M', 'M', 'H', 'H']:
+            n += 1; a, b = 3 + n % 6, 2 + n % 4
+            q = mcq(n, sk, sub, diff, 1, '<p>Made-up item %d (%s). What is \\(%d + %d\\)?</p>' % (n, sk, a, b),
+                    ['\\(%d\\)' % (a + b - 1), '\\(%d\\)' % (a + b), '\\(%d\\)' % (a + b + 2), '\\(%d\\)' % (a * b)], 'B')
+            q['qid'] = 'FX3-%03d' % n; q['batch'] = 'FX3'; q['source'] = {'set': 'FX3', 'page': n}
+            codes[diff] += 1; q['code'] = '%s%d' % (diff, codes[diff]); out.append(q)
+    return out
+json.dump({'batch': 'FX3', 'title': 'Fixture 3 (made-up, mixed)', 'source_type': 'fixture', 'schema': 1, 'questions': fx3()},
+          open(os.path.join(LIB, 'questions', 'FX3.json'), 'w'), indent=1, ensure_ascii=False)
 fig_line(os.path.join(LIB, 'figures', 'FX1', 'FX1-003_f1.png'))
 json.dump({'batch': 'FX1', 'title': 'Fixture (made-up)', 'source_type': 'fixture', 'schema': 1, 'questions': Q},
           open(os.path.join(LIB, 'questions', 'FX1.json'), 'w'), indent=1, ensure_ascii=False)
