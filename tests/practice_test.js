@@ -44,6 +44,9 @@ const t1 = G.call('getSet', ['FX-T01', s1.set_id, {}]);
 check(t1.questions.every(q => /^[EMH]\d+$/.test(q.code) || q.code === ''), 'short code sent with each question (E9001 …), never the key');
 check(!/"key"|"accepted"|"tags"|rationale|version_of/.test(JSON.stringify(t1)), 'set payload: no key / accepted / tags / rationale / version_of');
 
+let okSlots = 0;
+for (let k = 0; k < 20; k++) { const pk = C.pickForPractice_('FX-NOBODY', 'H.B', 10, 'seed-' + k); if (pk.qids.map(id => Q[id].difficulty).join('') === pk.slots.replace(/,/g, '')) okSlots++; }
+check(okSlots === 20, 'every slot gets an item of its own difficulty (20 seeds × 10 questions; probe included)');
 console.log('Levels: 2 good sets → up, 1 weak set → down');
 let r1 = doSet('FX-T01', s1.set_id, () => 'right').res;
 check(r1.first_try.right === 5, 'set 1: 5/5');

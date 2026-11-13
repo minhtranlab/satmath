@@ -244,7 +244,10 @@ function pickForPractice_(codeN, skill, n, setSeed) {
     for (var o = 0; o < order.length && pi < 0; o++) for (var j = 0; j < slots.length; j++) if (free(j) && slots[j] === order[o]) { pi = j; break; }
     if (pi < 0) break;
     var probeSub = untried.shift(), want2 = wantFor(slots[pi]);
-    var pr = best(pool.filter(function (x) { return clean_(x.subskill) === probeSub; }), ['unseen'], probeSub, want2, true);
+    var inProbe = pool.filter(function (x) { return clean_(x.subskill) === probeSub; });
+    var pr = best(inProbe.filter(function (x) { return inDiff(x, want2); }), ['unseen'], probeSub, want2, true);
+    var nbp = NEIGHBOUR_[slots[pi]] || [];
+    for (var z = 0; z < nbp.length && !pr; z++) { var w3 = wantFor(nbp[z]); pr = best(inProbe.filter(function (x) { return inDiff(x, w3); }), ['unseen'], probeSub, w3, true); }
     take(pr, pi, 'probe ' + probeSub);
   }
   // 3) fill the rest, spread over sub-skills (least practised first, round-robin)
