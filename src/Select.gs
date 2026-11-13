@@ -303,6 +303,9 @@ function pickMixed_(codeN, n, setSeed) {
   var skills = []; SKILLS_.forEach(function (r) { if (skills.indexOf(r.skill) < 0 && bySkill[r.skill]) skills.push(r.skill); });
   var domainOf = {}; SKILLS_.forEach(function (r) { domainOf[r.skill] = r.domain; });
   var blank = !tries.length, perSkill = Math.max(1, Math.floor(2 * n / 5)), order = [];
+  var lvCache = {}, levelOf = function (k) { return lvCache[k] || (lvCache[k] = levelState_(codeN, k, tries, S).level); };
+  var lvRows = {}; readTable_('Levels').rows.forEach(function (r) { if (normCode_(r.student_code) === codeN && /^[EMH]$/.test(String(r.level))) lvRows[clean_(r.skill)] = String(r.level); });
+  skills.forEach(function (k) { lvCache[k] = lvRows[k] || initialLevel_(tries, k, S); });   // one Sheet read, not one per skill
   if (blank) {
     // mini placement: round-robin over the 4 domains, a random skill of each, Medium
     var doms = {}; skills.forEach(function (k) { (doms[domainOf[k]] = doms[domainOf[k]] || []).push(k); });
@@ -318,10 +321,9 @@ function pickMixed_(codeN, n, setSeed) {
       if (unfixed || (t && t !== 'Not A Mistake')) hurt[k] = Math.max(hurt[k] || 0, toMs_(r.submitted_at));
     });
     var tried = {}; tries.forEach(function (t) { tried[t.skill] = 1; });
-    var rank = function (k) {
-      var lv = levelState_(codeN, k, tries, S).level;
-      return [hurt[k] ? 0 : tried[k] ? 1 : 2, hurt[k] ? -hurt[k] : 0, DIFF_ORDER_[lv] || 2];
-    };
+    var rk = {};
+    skills.forEach(function (k) { rk[k] = [hurt[k] ? 0 : tried[k] ? 1 : 2, hurt[k] ? -hurt[k] : 0, DIFF_ORDER_[levelOf(k)] || 2]; });
+    var rank = function (k) { return rk[k]; };
     var rr = {}; shuffle_(skills.slice(), seed).forEach(function (k, i) { rr[k] = i; });
     order = skills.slice().sort(function (a, b) {
       var x = rank(a), y = rank(b);
@@ -334,7 +336,7 @@ function pickMixed_(codeN, n, setSeed) {
   var chosenSkills = order.slice(0, nSkills);
   for (var round = 0; picked.length < n && round < perSkill; round++) {
     for (var c = 0; c < chosenSkills.length && picked.length < n; c++) {
-      var k = chosenSkills[c], lvl = blank ? 'M' : levelState_(codeN, k, tries, S).level;
+      var k = chosenSkills[c], lvl = blank ? 'M' : levelOf(k);
       var want = round === 0 ? lvl : (TEMPLATE_5_[lvl] || TEMPLATE_5_.M)[3];
       var cands = (bySkill[k] || []).filter(function (r) {
         var id = String(r.qid), tw = String(r.twin_group || ''), h = hist[id];
