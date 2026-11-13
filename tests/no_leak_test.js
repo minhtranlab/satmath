@@ -49,6 +49,9 @@ for (const f of files) {
   if (s.length > 400 * 1024 && !inFixtures) bad(f, 'file > 400 KB');
 }
 
+// 6. Apps Script refuses two files with the same name (Teacher.gs + Teacher.html → clasp push fails)
+const srcNames = {};
+fs.readdirSync(path.join(__dirname, '..', 'src')).forEach(n => { const b = n.replace(/\.(gs|html|js)$/, ''); if (/\.(gs|html|js)$/.test(n)) { if (srcNames[b]) problems.push('src/' + n + ': same name as src/' + srcNames[b] + ' (Apps Script refuses it)'); srcNames[b] = n; } });
 console.log(`no_leak_test: ${files.length} files scanned`);
 if (problems.length) { console.log('FAIL\n  ' + problems.join('\n  ')); process.exit(1); }
 console.log('PASS: no question data, keys, figures or secrets');

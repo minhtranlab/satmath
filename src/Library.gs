@@ -103,6 +103,9 @@ function libQuestions_(qids) {
 function sheetKey_(r, q) {
   var v = r ? r.key : '';
   if (v === '' || v === null || v === undefined) return null;
+  var kf = String(r.key_file === undefined || r.key_file === null ? '' : r.key_file).replace(/^'/, '').trim();
+  var af = String(r.accepted_file === undefined || r.accepted_file === null ? '' : r.accepted_file).replace(/^'/, '').trim();
+  if (kf && String(v).replace(/^'/, '').trim() === kf && String(r.accepted || '').replace(/^'/, '').trim() === af) return null; // untouched copy of the file → file wins
   if (Object.prototype.toString.call(v) === '[object Date]') { console.warn('Questions key of ' + r.qid + ' is a date (type an apostrophe first) — file key used'); return null; }
   var key = String(v).replace(/^'/, '').trim();
   if ((q.type || 'mcq') === 'mcq') { key = key.toUpperCase(); return key === String(q.key).toUpperCase() ? null : { key: key }; }
@@ -179,36 +182,59 @@ function questionRowFromFile_(batch, q) {
 
 /** Appends Questions rows for new qids and a Batches row per new batch; refreshes batch counts. Existing Questions rows are
  *  never overwritten (Minh's keys / status kept): differences with the file are only reported in the log. */
+/** Library → Sheet. New qids get a Questions row; existing rows are REFRESHED from the file for Intake-owned columns
+ *  (FILE_OWNED_: tags, version, twin group, code …), so a rebuilt batch (fixed key, item turned into version B) reaches
+ *  the app. Minh's edits stay: a key / accepted list he typed (≠ key_file / accepted_file = what the file said last time)
+ *  wins; status hold / excluded he set stays; status live ↔ candidate follows the file. A qid that left its batch file →
+ *  status excluded (note "not in file"). Batches: new rows live = No, counts refreshed. */
+var FILE_OWNED_ = ['batch', 'version', 'version_of', 'type', 'domain', 'skill', 'subskill', 'subskill2', 'difficulty', 'level', 'twin_group',
+                   'key_source', 'cb_question_id', 'flags', 'tag_status', 'code'];
 function syncLibrary_() {
   _libIdx = null; try { CacheService.getScriptCache().remove('sml_lib_idx'); } catch (e) {}
   var idx = libIndex_(true), batches = Object.keys(idx).sort();
   if (!batches.length) return 'library: no batch files on Drive yet';
-  var qt = readTable_('Questions'), have = {};
+  var qt = readTable_('Questions'), have = {}, fileRow = {}, read = {};
   qt.rows.forEach(function (r) { have[String(r.qid)] = r; });
-  var add = [], diffs = [], counts = {}, codeFill = [];
+  var add = [], counts = {}, failed = 0;
   batches.forEach(function (b) {
     var data;
-    try { data = libBatch_(b); } catch (e) { diffs.push(b + ': ' + e.message); return; }
+    try { data = libBatch_(b); } catch (e) { console.error('LIBRARY ' + b + ': ' + e.message); failed++; return; }
     if (!data) return;
+    read[b] = 1;
     var c = counts[b] = { title: data.title || b, source_type: data.source_type || '', n: 0, E: 0, M: 0, H: 0 };
     (data.questions || []).forEach(function (q) {
       if (!q || !q.qid) return;
       c.n++;
       var d = String((q.tags || {}).difficulty || '').toUpperCase(); if (c[d] !== undefined) c[d]++;
-      var row = questionRowFromFile_(b, q), old = have[q.qid];
-      if (!old) { add.push(row); have[q.qid] = row; return; }
-      if (q.code && !String(old.code || '').trim() && old._row) codeFill.push([old._row, q.code]);  // short code (E326) added later
-      ['skill', 'subskill', 'difficulty', 'type'].forEach(function (k) {
-        var a = String(old[k]).replace(/^'/, ''), f = String(row[k]).replace(/^'/, '');
-        if (f && a !== f) diffs.push(q.qid + '.' + k + ': Sheet ' + a + ' / file ' + f);
-      });
+      var row = questionRowFromFile_(b, q);
+      fileRow[q.qid] = row;
+      if (!have[q.qid]) { row.key_file = row.key; row.accepted_file = row.accepted; add.push(row); have[q.qid] = row; }
     });
   });
+  // refresh existing rows (one write for the whole tab, only when something changed)
+  var changed = 0, keyUp = 0, toB = 0, gone = 0, kept = [], C = function (v) { return String(v === undefined || v === null ? '' : v).replace(/^'/, '').trim(); };
+  qt.rows.forEach(function (r) {
+    var o = {}; qt.headers.forEach(function (h) { if (h) o[h] = r[h]; });
+    var f = fileRow[String(r.qid)], ch = false;
+    if (f) {
+      FILE_OWNED_.forEach(function (k) { if (k in o && C(o[k]) !== C(f[k])) { o[k] = f[k]; ch = true; } });
+      [['key', 'key_file'], ['accepted', 'accepted_file']].forEach(function (p) {
+        if (!(p[1] in o)) return;
+        var cur = C(o[p[0]]), was = C(o[p[1]]), now = C(f[p[0]]);
+        if (!was && !C(r.key_file)) was = cur;                     // rows from before v0.3: what is there came from the file
+        if (cur === was && now !== cur) { o[p[0]] = f[p[0]]; ch = true; if (p[0] === 'key') keyUp++; }
+        if (now !== C(o[p[1]])) { o[p[1]] = f[p[0]]; ch = true; }
+      });
+      var st = C(o.status).toLowerCase(), fs = f.status;
+      if ((st === 'live' || st === 'candidate' || !st) && st !== fs) { o.status = fs; ch = true; if (fs === 'candidate') toB++; }
+    } else if (read[C(r.batch)] && C(o.status).toLowerCase() !== 'excluded') {
+      o.status = 'excluded'; o.note = (C(o.note) ? C(o.note) + ' · ' : '') + 'not in file ' + nowIso_().slice(0, 10); ch = true; gone++;
+    }
+    if (ch) changed++;
+    kept.push(o);
+  });
+  if (changed) rewriteTable_('Questions', function () { return false; }, kept.map(function (o) { var x = {}; Object.keys(o).forEach(function (k) { x[k] = keepCell_(o[k]); }); return x; }));
   appendObjects_('Questions', add);
-  if (codeFill.length) {
-    var ci = headers_('Questions').indexOf('code') + 1;
-    if (ci > 0) codeFill.forEach(function (x) { qt.sh.getRange(x[0], ci).setValue("'" + x[1]); });
-  }
   _qrows = null;
   // Batches: new rows (live = No), counts refreshed on existing rows (live kept)
   var bt = readTable_('Batches'), bRows = {};
@@ -224,9 +250,9 @@ function syncLibrary_() {
   });
   appendObjects_('Batches', newB);
   _batchLive = null;
-  if (diffs.length) console.warn('LIBRARY vs Questions tab (Sheet kept):\n' + diffs.slice(0, 200).join('\n'));
-  return 'library: ' + batches.length + ' batch file(s), questions added: ' + add.length + (codeFill.length ? ', codes filled: ' + codeFill.length : '') + (newB.length ? ', new batches: ' + newB.map(function (x) { return x.batch; }).join(' ') + ' (live = No)' : '') +
-         (diffs.length ? ', ' + diffs.length + ' difference(s) Sheet vs file (log)' : '');
+  return 'library: ' + batches.length + ' batch file(s), questions added: ' + add.length + ', rows refreshed from files: ' + changed +
+         (keyUp ? ' (keys ' + keyUp + ')' : '') + (toB ? ', now version-B candidates: ' + toB : '') + (gone ? ', left their file → excluded: ' + gone : '') +
+         (newB.length ? ', new batches: ' + newB.map(function (x) { return x.batch; }).join(' ') + ' (live = No)' : '') + (failed ? ', ' + failed + ' batch file(s) unreadable (log)' : '');
 }
 
 /** Skills tab = Skills.gs (taxonomy). `active` typed by Minh is kept per sub-skill. */

@@ -25,7 +25,7 @@ var TABS_ = [
                      'avg_pace_ratio', 'n_fast_wrong', 'n_slow_wrong', 'n_slow_right', 'n_blank', 'top_mistake_type', 'n_untagged',
                      'n_asked_open', 'last_practised', 'verdict']],
   ['Questions', ['qid', 'batch', 'version', 'version_of', 'type', 'domain', 'skill', 'subskill', 'subskill2', 'difficulty', 'level',
-                 'twin_group', 'key', 'accepted', 'key_source', 'cb_question_id', 'status', 'flags', 'tag_status', 'added_at', 'note', 'code']],
+                 'twin_group', 'key', 'accepted', 'key_source', 'cb_question_id', 'status', 'flags', 'tag_status', 'added_at', 'note', 'code', 'key_file', 'accepted_file']],
   ['Batches', ['batch', 'title', 'source_type', 'n_items', 'n_live', 'n_E', 'n_M', 'n_H', 'uploaded_at', 'live', 'file_id', 'note']],
   ['Skills', ['domain', 'domain_name', 'skill', 'skill_name', 'subskill', 'subskill_name', 'order', 'active']],
   ['Events', ['set_id', 't_ms', 'qid', 'type', 'value', 'logged_at']],

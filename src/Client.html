@@ -1,7 +1,7 @@
 <script>
 /* ======================= SAT Math Lib — client engine (from Test Zone v1.13) =======================
  * All interaction is local. Server calls: login, homeData, startPractice, startReview, startAssignment, getSet, getFigures, autosave,
- * submit, getResult, getReview, getFix, checkTry, askTeacher. The teacher page is Teacher.html (window.SMLT).
+ * submit, getResult, getReview, getFix, checkTry, askTeacher. The teacher page is TeacherPage.html (window.SMLT).
  * A set is ONE part with no time limit: no timer is ever shown; time per question is still logged.
  * State is saved to localStorage on every change and to the server every autosave_sec.
  * The server-side clock decides remaining time: remaining = limit − (serverNow − part_start).
@@ -1296,10 +1296,10 @@
   function fmtTime(s) { s = Math.round(s || 0); var m = Math.floor(s / 60), r = s % 60; return m ? m + ' min ' + r + ' s' : r + ' s'; }
   function initReview() { $('#btn-view-back').onclick = exitViewer; }
 
-  /* ================= teacher page: Teacher.html (window.SMLT) ================= */
+  /* ================= teacher page: TeacherPage.html (window.SMLT) ================= */
   function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
   function initTeacher() {
-    // the teacher page (Teacher.html) uses these helpers of the student client
+    // the teacher page (TeacherPage.html) uses these helpers of the student client
     window.SMLX = { A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset,
                     figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell };
     if (window.SMLT) window.SMLT.init();
