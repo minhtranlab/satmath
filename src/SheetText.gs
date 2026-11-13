@@ -15,7 +15,7 @@ var SETTING_MEANINGS_ = {
   recent_decay: 'Weight of each older answer in the recent accuracy (newest = 1).',
   missed_share: 'Share of a set used to re-check sub-skills the student missed.',
   probes_per_set: 'Questions per set from a sub-skill the student has never tried.',
-  standin_min: 'Below this many live Easy + Medium items in a skill, Hard levels 1/2/3 stand in for Easy/Medium/Hard.',
+  standin_min: 'Practice only: below this many live Easy + Medium items in a skill, Hard levels 1/2/3 stand in for Easy/Medium/Hard (3 since 13 Nov: with College Board items every skill has real E/M). Assignments never use stand-ins.',
   strong_r: 'Recent accuracy at level Hard from which Hard level-3 items are picked first.',
   block_days: 'A question answered in the last N days is not served again (unless nothing else is left).',
   retry_wait_days: 'A missed question may come back after this many days.',

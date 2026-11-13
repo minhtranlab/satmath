@@ -376,8 +376,9 @@
     var r = T.pick, box = $('#b-pick'), total = r.topics.reduce(function (a, t) { return a + t.picked.length; }, 0);
     box.innerHTML = '<h2 class="t-h2">Questions (' + total + ') for ' + esc(r.target.title) + '</h2>' + r.topics.map(function (t, ti) {
       return '<div class="b-ptopic"><h3>' + esc(t.name) + ' <span class="muted">' + t.n + ' · ' + t.diffs.split(',').map(diffName).join(' + ') + '</span>' + (t.short ? ' <span class="t-red">' + esc(t.short) + '</span>' : '') + '</h3>' +
+        (t.notes && t.notes.length ? '<p class="b-note">' + t.notes.map(esc).join('<br>') + '</p>' : '') +
         t.picked.map(function (x, i) {
-          return '<div class="b-item">' + codeHtml(x.code) + '<span>' + esc(x.subskill_name) + ' · ' + diffName(x.difficulty) + '</span><span class="' + (x.status === 'new for all' ? 'muted' : 't-red') + '">' + esc(x.status) + '</span>' +
+          return '<div class="b-item">' + codeHtml(x.code) + '<span>' + esc(x.subskill_name) + ' · ' + (x.extra ? '<b class="b-extra">' + diffName(x.difficulty) + ' (added)</b>' : diffName(x.difficulty)) + '</span><span class="' + (x.status === 'new for all' ? 'muted' : 't-red') + '">' + esc(x.status) + '</span>' +
             '<button type="button" class="hz-link" data-swap="' + ti + ':' + i + '"' + (t.queue.length ? '' : ' disabled') + '>Swap</button></div>';
         }).join('') + '</div>';
     }).join('') + '<p class="b-pub"><button type="button" class="btn-blue" id="b-publish">Publish to ' + esc(r.target.title) + '</button></p>';

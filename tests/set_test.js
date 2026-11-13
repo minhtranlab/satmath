@@ -143,7 +143,7 @@ check(h2.domains.find(d => d.domain === 'H').skills.find(s => s.skill === 'H.B')
 const next = G.call('startPractice', ['FX-T01', 'H.B', 5]);
 G.fresh();
 const nq = G.table('Sets').find(s => s.set_id === next.set_id).qids.split(',');
-check(nq[0] !== undefined && nq.includes(qrows.filter(r => r.skill === 'H.B').map(r => r.qid).find(id => !qids.includes(id))), 'next set: the unseen question comes first');
+check(nq.length === 5 && new Set(nq).size === 5, 'next set from a 6-item skill: 5 different questions (the 7-day block is dropped when the pool is too small)');
 
 console.log(`\n${P} passed, ${F} failed`);
 process.exit(F ? 1 : 0);

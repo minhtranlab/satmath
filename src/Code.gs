@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.3.1 (2026-11-13, calculator panel fix)';
+var APP_VERSION = 'v0.3.2 (2026-11-13, assignments: real difficulties only)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -141,7 +141,7 @@ function keepCell_(v) {
 var SETTINGS_DEFAULTS_ = {
   app_name: 'SAT Math Lib', teacher_code: '', desmos_api_key: '', autosave_sec: 60, set_sizes: '5,10,20',
   mcq_max_tries: 3, good_set_pct: 0.8, weak_set_pct: 0.5, recent_window: 10, recent_decay: 0.85, missed_share: 0.4,
-  probes_per_set: 1, standin_min: 10, strong_r: 0.85, block_days: 7, retry_wait_days: 2, progress_dot_min: 3,
+  probes_per_set: 1, standin_min: 3, strong_r: 0.85, block_days: 7, retry_wait_days: 2, progress_dot_min: 3,
   dot_green: 0.8, dot_amber: 0.5, guess_min_time_sec: 15, fast_ratio: 0.5, slow_ratio: 1.5,
   mistake_placeholder: '— choose a mistake type —',
   mistake_types: "Concept Gap; Didn't Understand The Question; Misread A Detail; Careless Calculation; Wrong Input/Format; Others; Not A Mistake",

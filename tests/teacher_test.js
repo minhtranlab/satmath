@@ -69,6 +69,18 @@ check(t1.picked.length === 2 && t1.picked.every(x => x.subskill === 'H.B.3' && x
 check(t0.queue.length > 0 && t0.picked.every(x => /^[EMH]\d+$/.test(x.code)), 'Swap queue ready; every item shows its short code');
 const big = G.call('pickAssignment', [T, { target: 'C-001', topics: [{ code: 'H.B.1', n: 9, diffs: 'H' }] }]).topics[0];
 check(/only \d+ available/.test(big.short), 'too few items → "' + big.short + '"');
+// bug #28: ticks are real difficulties — never Hard stand-ins, even for a thin skill / a high standin_min
+const sRow = C.readTable_('Settings').rows.find(r => r.key === 'standin_min');
+C.updateRow_('Settings', sRow._row, { value: 50 }); G.fresh();           // every skill would be "thin" for the old code
+const em = G.call('pickAssignment', [T, { target: 'C-001', topics: [{ code: 'H.B', n: 4, diffs: 'E,M' }] }]).topics[0];
+check(em.picked.length === 4 && em.picked.every(x => x.difficulty === 'E' || x.difficulty === 'M') && em.notes.length === 0, 'Easy + Medium ticked → only Easy/Medium items (no Hard stand-ins): ' + em.picked.map(x => x.difficulty).join(''));
+const thin = G.call('pickAssignment', [T, { target: 'C-001', topics: [{ code: 'Q.B', n: 3, diffs: 'E,M' }] }]).topics[0];
+check(thin.picked.length === 2 && thin.picked.every(x => x.difficulty !== 'H'), 'thin skill (Q.B: 1 Easy + 1 Medium) → the 2 that exist, no Hard: ' + thin.picked.map(x => x.code).join(' '));
+check(thin.notes.length >= 1 && /only 1 Easy available/.test(thin.notes.join(' ')) && /missing/.test(thin.notes.join(' ')) && thin.short === 'only 2 available', 'the builder says so: "' + thin.notes.join(' | ') + '"');
+const fill = G.call('pickAssignment', [T, { target: 'C-001', topics: [{ code: 'H.B.1', n: 4, diffs: 'E' }] }]).topics[0];
+const nE = fill.picked.filter(x => x.difficulty === 'E').length;
+check(fill.picked.length === 4 && fill.picked.filter(x => x.extra).every(x => x.difficulty === 'M') && fill.picked.some(x => x.extra) && /Medium added/.test(fill.notes[0]), 'too few Easy in H.B.1 → ' + nE + ' Easy + the rest Medium (neighbour), marked "added": "' + fill.notes[0] + '"');
+C.updateRow_('Settings', sRow._row, { value: 3 }); G.fresh();
 const qids = t0.picked.concat(t1.picked).map(x => x.qid);
 G.fresh();
 const pub = G.call('publishAssignment', [T, { target: 'C-001', title: 'Homework – test', qids, topics: [{ code: 'H.B', n: 4, diffs: 'M,H' }], due: '2099-01-01' }]);

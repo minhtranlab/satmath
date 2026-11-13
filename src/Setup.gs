@@ -63,11 +63,17 @@ function ensureTabs_() {
   return 'tabs: ' + (made.length ? 'created ' + made.join(', ') : 'all there') + (cols ? ' · columns added: ' + cols : '');
 }
 
+var SETTINGS_MIGRATE_ = { standin_min: { from: 10, to: 3 } };
 /** Settings rows the code needs (value only when the row is new; Minh's values are never changed). */
 function ensureSettingsRows_() {
   var t = readTable_('Settings'), have = {};
   t.rows.forEach(function (r) { have[String(r.key).trim()] = r; });
-  var add = [];
+  var add = [], moved = [];
+  // one-time changes of a default that was never edited (the old default is still there): standin_min 10 → 3 (bug #28)
+  Object.keys(SETTINGS_MIGRATE_).forEach(function (k) {
+    var m = SETTINGS_MIGRATE_[k], r = have[k];
+    if (r && String(r.value).trim() === String(m.from)) { updateRow_('Settings', r._row, { value: m.to }); moved.push(k + ' ' + m.from + '→' + m.to); }
+  });
   Object.keys(SETTINGS_DEFAULTS_).forEach(function (k) {
     if (have[k]) { if (SETTING_MEANINGS_[k] && String(have[k].meaning) !== SETTING_MEANINGS_[k]) updateRow_('Settings', have[k]._row, { meaning: SETTING_MEANINGS_[k] }); return; }
     var v = SETTINGS_DEFAULTS_[k];
@@ -75,7 +81,7 @@ function ensureSettingsRows_() {
   });
   appendObjects_('Settings', add);
   _settings = null;
-  return 'settings: ' + (add.length ? add.length + ' rows added' : 'all there');
+  return 'settings: ' + (add.length ? add.length + ' rows added' : 'all there') + (moved.length ? ', changed: ' + moved.join(', ') : '');
 }
 
 /** Read-only check: every tab + its columns; Questions vs Batches. */

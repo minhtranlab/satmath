@@ -415,11 +415,8 @@ function pickAssignment(code, spec) {
     if (!diffs.length) throw new Error('FORM: Tick Easy, Medium or Hard for ' + tc + '.');
     var isSub = /\.\d+$/.test(tc), skill = isSub ? (SKILLS_.filter(function (x) { return x.subskill === tc; })[0] || {}).skill : tc;
     var inTopic = pool.filter(function (r) { return isSub ? clean_(r.subskill) === tc : clean_(r.skill) === tc; });
-    var map = bucketMap_(pool.filter(function (r) { return clean_(r.skill) === skill; }), S);
-    var match = function (r, d) {
-      var w = map[d]; if (String(r.difficulty).toUpperCase() !== w.diff) return false;
-      return !map.standin || !w.levels.length || (Number(r.level) || 1) === w.levels[0];
-    };
+    // Teacher's ticks = real difficulties: NO Hard stand-ins here (bug #28: Q.G with E+M ticked got Hard items).
+    var match = function (r, d) { return String(r.difficulty).toUpperCase() === d; };
     var rnd = {}; shuffle_(inTopic.slice(), seed).forEach(function (r, i) { rnd[String(r.qid)] = i; });
     var queueFor = function (d) {
       return inTopic.filter(function (r) { return match(r, d); }).sort(function (a, b) {
@@ -427,21 +424,33 @@ function pickAssignment(code, spec) {
         return (la ? 1 : 0) - (lb ? 1 : 0) || (la ? la.ms : 0) - (lb ? lb.ms : 0) || rnd[String(a.qid)] - rnd[String(b.qid)];
       });
     };
-    var want = spread_(n, diffs), picked = [], queue = [];
-    diffs.forEach(function (d) {
-      var q = queueFor(d), subsUsed = {}, take = [];
-      // spread over sub-skills: first pass one per sub-skill, then the rest in queue order
+    var picked = [], extra = {}, subsUsed = {};                       // sub-skills already in this topic (spread across difficulties too)
+    /** take up to k items of difficulty d (one per sub-skill first, then the rest in queue order) */
+    var takeFrom = function (d, k) {
+      var q = queueFor(d), take = [];
       [true, false].forEach(function (firstPass) {
         q.forEach(function (r) {
-          if (take.length >= want[d]) return;
+          if (take.length >= k) return;
           var id = String(r.qid), tw = String(r.twin_group || ''), sb = clean_(r.subskill);
           if (used[id] || (tw && twins[tw]) || (firstPass && subsUsed[sb])) return;
           used[id] = 1; if (tw) twins[tw] = 1; subsUsed[sb] = 1; take.push(r);
         });
       });
       take.forEach(function (r) { picked.push(r); });
-      q.forEach(function (r) { if (!used[String(r.qid)]) queue.push(r); });
+      return take.length;
+    };
+    var want = spread_(n, diffs), got = {}, notes = [];
+    diffs.forEach(function (d) { got[d] = takeFrom(d, want[d]); });
+    // a ticked difficulty with too few items: fill from the neighbouring difficulty — and say so in the builder
+    var NB = { E: ['M', 'H'], M: ['E', 'H'], H: ['M', 'E'] }, NAME = { E: 'Easy', M: 'Medium', H: 'Hard' };
+    diffs.forEach(function (d) {
+      var miss = want[d] - got[d]; if (miss <= 0) return;
+      var adds = [];
+      NB[d].forEach(function (nd) { if (miss <= 0) return; var k = takeFrom(nd, miss); if (k) { adds.push(k + ' ' + NAME[nd]); extra[nd] = (extra[nd] || 0) + k; miss -= k; } });
+      notes.push('only ' + got[d] + ' ' + NAME[d] + ' available' + (adds.length ? ' — ' + adds.join(' + ') + ' added' : '') + (miss > 0 ? ' — ' + miss + ' missing' : ''));
     });
+    var queue = [];
+    diffs.concat(['E', 'M', 'H'].filter(function (d) { return diffs.indexOf(d) < 0; })).forEach(function (d) { queueFor(d).forEach(function (r) { if (!used[String(r.qid)]) queue.push(r); }); });
     var avail = inTopic.filter(function (r) { return diffs.some(function (d) { return match(r, d); }); }).length;
     var item = function (r) {
       var l = last[String(r.qid)];
@@ -449,7 +458,9 @@ function pickAssignment(code, spec) {
                subskill_name: subskillName_(clean_(r.subskill)), status: l ? 'done by ' + l.who.join(', ') : 'new for all' };
     };
     return { code: tc, name: isSub ? subskillName_(tc) : skillName_(tc), n: n, diffs: diffs.join(','), available: avail,
-             short: avail < n ? 'only ' + avail + ' available' : '', picked: picked.map(item), queue: queue.slice(0, 30).map(item) };
+             short: picked.length < n ? 'only ' + picked.length + ' available' : '', notes: notes,
+             picked: picked.map(function (r) { var o = item(r); o.extra = diffs.indexOf(String(r.difficulty).toUpperCase()) < 0; return o; }),
+             queue: queue.slice(0, 30).map(item) };
   });
   return { ok: true, target: { kind: T.kind, id: T.id, title: T.title, members: mem.length }, topics: topics };
 }

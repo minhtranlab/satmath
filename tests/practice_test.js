@@ -79,7 +79,10 @@ const reIdx = p.why.map((w, i) => /^recheck/.test(w) ? i : -1).filter(i => i >= 
 check(reIdx.every(i => p.slots.split(',')[i] !== 'H'), 're-checks sit in E/M slots, not the hardest');
 const pA = JSON.stringify(C.pickForPractice_('FX-T01', 'H.B', 10, 'seed-1').qids), pB = JSON.stringify(C.pickForPractice_('FX-T01', 'H.B', 10, 'seed-1').qids);
 check(pA === pB, 'same seed → same pick (repeatable)');
-check(C.bucketMap_(Object.values(Q).filter(r => r.difficulty === 'H'), C.getSettings_()).standin === true, 'fewer than 10 E+M items → Hard stand-ins (E = H level 1 …)');
+check(C.getSettings_().standin_min === 3, 'standin_min default 3 (every College Board skill has real Easy/Medium items)');
+check(C.bucketMap_(Object.values(Q).filter(r => r.difficulty === 'H'), C.getSettings_()).standin === true, 'no Easy/Medium items at all → Hard stand-ins (E = H level 1 …)');
+const qg = [{ difficulty: 'E' }, { difficulty: 'E' }, { difficulty: 'M' }, { difficulty: 'M' }, { difficulty: 'M' }, { difficulty: 'H' }];
+check(C.bucketMap_(qg, C.getSettings_()).standin === false, 'a small skill with real items (E2 M3, like Q.G) → real difficulties, no stand-ins');
 
 console.log('Review area: wrong / blank / slow-right enter; one clean try clears');
 G.fresh();
