@@ -26,8 +26,8 @@ Secret `CLASPRC_JSON` = clasp login of minhtranipad@gmail.com (scopes: script pr
 
 Note: the script was made with the Apps Script API `projects.create` + `parentId` = Sheet ID (clasp 3.4.1 `create --type sheets` ignores `--parentId` and makes a new Sheet).
 
-## Deploy by hand (while the secret `CLASPRC_JSON` is not set — Minh postponed it on 2026-11-13)
-The Action then only runs the tests. A chat deploys from a clone of this repo:
+## Deploy by hand (fallback only — the secret `CLASPRC_JSON` is set since 2026-11-13, so a push to main deploys by itself)
+If the secret is missing or expired the Action only runs the tests; then a chat deploys from a clone of this repo:
 `node tools/clasp_login.mjs start` → Minh opens the link, Allow, pastes back the `http://localhost:8888/?…` address →
 `node tools/clasp_login.mjs finish '<address>'` → `npx @google/clasp@3.4.1 push --force` →
 `npx @google/clasp@3.4.1 create-deployment --deploymentId "$(cat .deployment)" --description "<commit> <message>"` →
