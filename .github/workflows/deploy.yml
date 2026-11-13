@@ -30,16 +30,15 @@ jobs:
       - name: Install test tools
         working-directory: tests
         run: |
-          pip install --quiet pillow==11.3.0
           npm install --no-audit --no-fund
           npm install --no-save --no-audit --no-fund playwright@1.63.0
           npx playwright install --with-deps chromium
-      - name: Run all test suites (made-up fixture forms only)
+      - name: Run all test suites (made-up fixture library only)
         run: bash tests/run_ci.sh
 
   deploy:
     needs: test
-    if: github.repository == 'minhtranlab/testzone' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.repository == 'minhtranlab/satmath' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -81,9 +80,9 @@ jobs:
             R="$(curl -sSL --max-time 330 "$URL" | head -c 400 || true)"
             echo "→ $R" | head -3
             case "$R" in
-              "Test Zone update: done"*|"Test Zone update: already up to date"*) exit 0 ;;
-              "Test Zone update: busy"*) sleep 30 ;;
-              "Test Zone update: FAILED"*) echo "::error::Sheet update failed: open the Apps Script editor → Executions to see which step"; exit 1 ;;
+              "SAT Math Lib update: done"*|"SAT Math Lib update: already up to date"*) exit 0 ;;
+              "SAT Math Lib update: busy"*) sleep 30 ;;
+              "SAT Math Lib update: FAILED"*) echo "::error::Sheet update failed: open the Apps Script editor → Executions to see which step"; exit 1 ;;
               *) echo "::error::No answer from the web app. If it says authorization is required: Minh opens the Apps Script editor, runs updateAfterNewVersion once and presses Allow (needed only when the app asks for a new permission)"; sleep 20 ;;
             esac
           done

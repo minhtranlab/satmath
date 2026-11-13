@@ -99,6 +99,7 @@ class Sheet {
     this._proxy = strict(this, 'Sheet');
   }
   getName() { return this.name; }
+  setName(n) { this.name = n; return this; }
   getMaxRows() { return this.maxRows; }
   insertRowsAfter(a, n) { this.maxRows += n; this.grows++; }
   getLastRow() { let n = 0; this.rows.forEach((r, i) => { if (r.some(v => v !== '' && v !== null && v !== undefined)) n = i + 1; }); return n; }
@@ -145,12 +146,12 @@ function fmtDate(d, tz, pattern) {
   return pattern.replace('yyyy', p.year).replace('MMM', '\u0001').replace('MM', p.month).replace('\u0001', MON).replace('dd', p.day).replace('HH', p.hour).replace('mm', p.minute).replace('ss', p.second);
 }
 
-function createGas(appDir, dataDir, tabs, opts = {}) {
+function createGas(appDir, tabs, opts = {}) {
   const sheets = {}, order = [];
   Object.keys(tabs).forEach(n => { sheets[n] = new Sheet(n, tabs[n].map(r => r.map(convert))); order.push(n); });
   const ss = strict({
     getId: () => 'MOCK_ID', getSpreadsheetLocale: () => 'vi_VN', // convert() reads "3/8" day-first like vi_VN
-    getSheetByName: n => sheets[n] ? sheets[n]._proxy : null,
+    getSheetByName: n => { const k = Object.keys(sheets).find(x => sheets[x].name === n); return k ? sheets[k]._proxy : null; },
     insertSheet(n, idx) { sheets[n] = new Sheet(n, []); if (idx === undefined) order.push(n); else order.splice(idx, 0, n); return sheets[n]._proxy; },
     getSheets: () => order.map(n => sheets[n]._proxy)
   }, 'Spreadsheet');
@@ -167,17 +168,21 @@ function createGas(appDir, dataDir, tabs, opts = {}) {
     LockService: { getScriptLock: () => ({ waitLock() {}, tryLock() { return true; }, releaseLock() {} }) },
     CacheService: { getScriptCache: () => cache },
     DriveApp: {
+      // the library folder = opts.libDir on disk (subfolders questions/, figures/<BATCH>/); file id = 'DRV:' + path
       getFolderById(id) {
-        if (driveState.denied) throw new Error('You do not have permission to call DriveApp.getFolderById. Required permissions: https://www.googleapis.com/auth/drive.readonly');
-        if (!opts.driveDir || id !== opts.folderId) throw new Error('Drive: no access to folder ' + id);
-        const names = fs.readdirSync(opts.driveDir).filter(f => !f.startsWith('.'));
-        let i = 0;
-        return { getFiles: () => ({ hasNext: () => i < names.length, next: () => driveFile(names[i++]) }) };
+        if (driveState.denied) throw new Error('You do not have permission to call DriveApp.getFolderById.');
+        if (!opts.libDir || id !== opts.libId) throw new Error('Drive: no access to folder ' + id);
+        return folder(opts.libDir);
       },
-      getFileById(id) { if (driveState.denied) throw new Error('Exception: The script does not have permission to perform that action. Required permissions: (https://www.googleapis.com/auth/drive.readonly) not sufficient to call DriveApp.getFileById'); const n = fs.readdirSync(opts.driveDir || '.').find(f => 'DRV_' + f === id); if (!n) throw new Error('Drive: no file ' + id); return driveFile(n); }
+      getFileById(id) {
+        if (driveState.denied) throw new Error('The script does not have permission to perform that action.');
+        const rel = String(id).replace(/^DRV:/, ''), f = path.join(opts.libDir || '.', rel);
+        if (!String(id).startsWith('DRV:') || !fs.existsSync(f) || fs.statSync(f).isDirectory()) throw new Error('Drive: no file ' + id);
+        return driveFile(f);
+      }
     },
     ContentService: { MimeType: { TEXT: 'TEXT' }, createTextOutput: t => ({ setMimeType() { return this; }, getContent: () => t }) },
-    Utilities: { formatDate: fmtDate },
+    Utilities: { formatDate: fmtDate, base64Encode: b => Buffer.from(b).toString('base64') },
     Session: { getScriptTimeZone: () => 'Asia/Ho_Chi_Minh', getActiveUser: () => ({ getEmail: () => '' }), getEffectiveUser: () => ({ getEmail: () => 'owner@x' }) },
     ScriptApp: { getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/TEST/exec' }) },
     HtmlService: { XFrameOptionsMode: { DEFAULT: 0, ALLOWALL: 1 } }
@@ -191,23 +196,28 @@ function createGas(appDir, dataDir, tabs, opts = {}) {
     putAll(o) { Object.keys(o).forEach(k => cache.put(k, o[k])); },
     remove(k) { store.delete(k); }
   };
-  const driveFile = n => {
-    const f = path.join(opts.driveDir, n);
-    return { getName: () => n, getId: () => 'DRV_' + n, isTrashed: () => false, getLastUpdated: () => new RealDate(fs.statSync(f).mtimeMs),
-      getBlob: () => ({ getDataAsString: () => { dstats.reads++; return fs.readFileSync(f, 'utf8'); } }) };
-  };
+  const iter = a => { let i = 0; return { hasNext: () => i < a.length, next: () => a[i++] }; };
+  const folder = dir => ({
+    getFoldersByName: n => iter(fs.existsSync(path.join(dir, n)) && fs.statSync(path.join(dir, n)).isDirectory() ? [folder(path.join(dir, n))] : []),
+    getFiles: () => iter(fs.readdirSync(dir).filter(f => !f.startsWith('.') && !fs.statSync(path.join(dir, f)).isDirectory()).map(f => driveFile(path.join(dir, f))))
+  });
+  const driveFile = f => ({
+    getName: () => path.basename(f), getId: () => 'DRV:' + path.relative(opts.libDir, f).split(path.sep).join('/'), isTrashed: () => false,
+    getLastUpdated: () => new RealDate(fs.statSync(f).mtimeMs),
+    getBlob: () => ({ getDataAsString: () => { dstats.reads++; return fs.readFileSync(f, 'utf8'); }, getBytes: () => { dstats.reads++; return fs.readFileSync(f); },
+                      getContentType: () => /\.png$/i.test(f) ? 'image/png' : 'application/octet-stream' })
+  });
   vm.createContext(ctx);
-  const files = fs.readdirSync(appDir).filter(f => /\.gs$/.test(f) && f !== 'Forms_Registry.gs' && !/^Data_/.test(f)).sort().map(f => path.join(appDir, f))
-    .concat(fs.readdirSync(dataDir).filter(f => /^Data_.*\.gs$/.test(f)).map(f => path.join(dataDir, f)))
-    .concat([opts.registry || path.join(dataDir, 'Forms_Registry.gs')]);
+  const files = fs.readdirSync(appDir).filter(f => /\.gs$/.test(f)).sort().map(f => path.join(appDir, f));
   files.forEach(f => vm.runInContext(fs.readFileSync(f, 'utf8'), ctx, { filename: f }));
   return {
     ctx, sheets, order, cache: store, cstats, dstats, drive: driveState,
     calls() { return CALLS; }, resetCalls() { CALLS = 0; },
     admin(fn) { return ctx[fn + '_'](); },
     call(fn, args) { if (typeof ctx[fn] !== 'function' || fn.endsWith('_')) throw new Error('No such server function: ' + fn); return ctx[fn](...args); },
+    fresh() { ['_settings', '_qrows', '_batchLive', '_skillIdx', '_libIdx', '_timeNorms', '_ss'].forEach(k => { if (k in ctx) ctx[k] = null; }); ctx._batch = {}; ctx._setQ = {}; }, // = a new Apps Script execution
     shift(ms) { SHIFT += ms; }, resetShift() { SHIFT = 0; },
-    table(name) { const rows = sheets[name].rows; const h = rows[0]; return rows.slice(1).filter(r => r.some(v => v !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i] === undefined ? '' : shown(r[i])]))); }
+    table(name) { const k = Object.keys(sheets).find(x => sheets[x].name === name); const rows = sheets[k].rows; const h = rows[0]; return rows.slice(1).filter(r => r.some(v => v !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i] === undefined ? '' : shown(r[i])]))); }
   };
 }
 

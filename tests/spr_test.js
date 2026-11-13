@@ -1,6 +1,6 @@
 // SPR grading rules (Code.gs sprCorrect_): 3/4 = .75 = 0.75 = 0.750, 0.7500 too long, 2/3 → .6666/.6667/0.666/0.667, negatives, leading zero, rounded keys text-only (QK).
 const fs=require('fs'),vm=require('vm');const src=fs.readFileSync(require('./paths').APP + '/Code.gs','utf8');
-const m=src.slice(src.indexOf('function isCorrect_'),src.indexOf('/** Tags: Questions tab'));const c={};vm.createContext(c);vm.runInContext(m,c);
+const m=src.slice(src.indexOf('function isCorrect_'),src.indexOf('/** Tags (Questions tab)'));const c={};vm.createContext(c);vm.runInContext(m,c);
 let BAD=0;const T=(ans,keys,exp)=>{const r=c.sprCorrect_(ans,keys);if(r!==exp)BAD++;console.log((r===exp?'ok ':'BAD')+' '+JSON.stringify(ans)+' vs '+JSON.stringify(keys)+' → '+r);};
 const k34=['3/4','.75','0.75'];
 T('3/4',k34,true);T('.75',k34,true);T('0.75',k34,true);T('0.750',k34,true);T('0.7500',k34,false);T('6/8',k34,true);T('.7500',k34,true);T('0.751',k34,false);

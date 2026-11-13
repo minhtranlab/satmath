@@ -15,18 +15,22 @@ for (const f of files) {
   if (/(^|\/)Data_[^/]*\.gs$/.test(f)) bad(f, 'built form data file (questions + keys)');
   if (/(^|\/)Questions_[^/]*\.csv$/.test(f)) bad(f, 'Questions export (keys)');
   if (/(^|\/)questions\.json$/.test(f) && !inFixtures) bad(f, 'question bank outside tests/fixtures');
+  if (/(^|\/)questions\/[^/]+\.json$/.test(f) && !inFixtures) bad(f, 'library batch file outside tests/fixtures');
+  if (/^(taxonomy|sources|design)\//.test(f)) bad(f, 'project-folder path');
   const siteIcon = /^site\/icon-\d+\.png$/.test(f) && fs.statSync(path.join(ROOT, f)).size < 10000; // #25: the nice link's home-screen icon only
   if (/\.(png|jpe?g|gif|webp|pdf)$/i.test(f) && !inFixtures && !siteIcon) bad(f, 'image/PDF outside tests/fixtures');
   if (/(^|\/)\.clasprc\.json$|creds?\.json$|\.pem$|\.p12$/.test(f)) bad(f, 'credentials file');
-  if (/\.json$/.test(f) && /^(APCAB|SAT)-/.test(path.basename(f)) && !f.startsWith('tools/profiles/')) bad(f, 'form JSON (Drive file) in the repo');
+  if (/\.json$/.test(f) && /^(APCAB|SAT|HM\d|CB)/.test(path.basename(f))) bad(f, 'library / form JSON (Drive file) in the repo');
   if (/\.(png|jpe?g|gif|webp|pdf)$/i.test(f)) continue;
 
   const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
   // 2. fixtures must be the made-up mock forms only
-  if (inFixtures && /questions\.json$/.test(f)) {
-    if (!/^MOCK/.test(String(JSON.parse(s).form_id))) bad(f, 'fixture form_id must start with MOCK (made-up forms only)');
+  if (inFixtures && /\.json$/.test(f) && /"questions"/.test(s)) {
+    const j = JSON.parse(s);
+    if (!/^FX/.test(String(j.batch)) || (j.questions || []).some(q => !/^FX/.test(String(q.qid)))) bad(f, 'fixture batch / qids must start with FX (made-up items only)');
   }
-  if (f.startsWith('tools/profiles/') && /"(key|questions|stem_html)"\s*:/.test(s)) bad(f, 'profile holds questions/keys');
+  // watermarks / source names of the real material
+  if (/dsatuz|stewiesat|flashsat|@DSAT/i.test(s) && !['tests/no_leak_test.js', 'tools/build_library.py'].includes(f)) bad(f, 'source / watermark name');
   // 3. source shipped to Apps Script: no embedded form data
   if (f.startsWith('src/')) {
     if (/\\?"key\\?"\s*:\s*\\?["\[]/.test(s)) bad(f, 'answer key field ("key": …) in shipped source');

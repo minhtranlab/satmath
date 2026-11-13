@@ -1,6 +1,7 @@
 <script>
-/* ======================= Test Zone — client engine =======================
- * All interaction is local. Server calls: login, listForms, getTest, autosave, submit, getResult.
+/* ======================= SAT Math Lib — client engine (from Test Zone v1.13) =======================
+ * All interaction is local. Server calls: login, homeData, startPractice, getSet, getFigures, autosave, submit, getResult, getReview.
+ * A set is ONE part with no time limit: no timer is ever shown; time per question is still logged.
  * State is saved to localStorage on every change and to the server every autosave_sec.
  * The server-side clock decides remaining time: remaining = limit − (serverNow − part_start).
  */
@@ -52,7 +53,7 @@
     events: [], evBase: 0, acked: 0, offset: 0, tick: null, saveIv: null, saving: false, ending: false,
     calc: null, calcSci: null, desmosLoading: null, annotMode: false, lastSel: null, hlActive: null
   };
-  window.TZ = A; // for the test harness / debugging
+  window.TZ = A; window.SML = A; // for the test harness / debugging
 
   function serverNow() { return Date.now() + A.offset; }
   function lsKey() { return 'tz_s_' + A.test.session.session_id; }
@@ -60,7 +61,8 @@
   function pdef(p) { return A.parts[p || curPart()]; }
   function pst(p) { return A.st.parts[p || curPart()]; }
   function qlist(p) { return A.qs[p || curPart()] || []; }
-  function word() { return (A.profile && A.profile.part_word) || 'part'; } // "part" (AP) / "module" (SAT)
+  function word() { return (A.profile && A.profile.part_word) || 'set'; }
+  function untimed() { var d = A.parts && A.parts[curPart()]; return !!(A.profile && A.profile.untimed) || !!(d && !Number(d.time_limit_sec)); }
 
   /* ---------------- screens ---------------- */
   function show(id) { $$('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); }); }
@@ -77,7 +79,7 @@
     $('#tool-calc').classList.toggle('hidden', !(inTest && d && d.calculator));
     $('#tool-ref').classList.toggle('hidden', !(inTest && d && d.reference));
     $('#btn-dir').classList.toggle('hidden', !inTest);
-    $('#timer').style.visibility = id === 'v-break' ? 'hidden' : ''; // no test clock on the break screen
+    $('#timer').style.visibility = (id === 'v-break' || untimed()) ? 'hidden' : ''; // no clock on the break screen / in an untimed set
     if (!inTest) { closePops(); hideCalc(true); $('#ref-panel').classList.remove('on'); }
     if (!inQ) hideHlToolbar();
   }
@@ -127,16 +129,16 @@
       if (!r.ok) { $('#login-err').textContent = r.msg; LS.del('tz_code'); return; }
       if (r.teacher) { // teacher mode: the code is never stored on the device
         LS.del('tz_code'); LS.del('tz_active'); A.teacher = true; A.code = code; A.student = { name: 'Teacher', code: code };
-        $$('.app-name').forEach(function (x) { x.textContent = r.app_name || 'Test Zone'; });
+        $$('.app-name').forEach(function (x) { x.textContent = r.app_name || 'SAT Math Lib'; });
         showTeacher(); return;
       }
       A.teacher = false;
       A.student = r.student; A.code = r.student.code;
       LS.set('tz_code', A.code);
-      $$('.app-name').forEach(function (x) { x.textContent = r.app_name || 'Test Zone'; });
-      document.title = r.app_name || 'Test Zone';
+      $$('.app-name').forEach(function (x) { x.textContent = r.app_name || 'SAT Math Lib'; });
+      document.title = r.app_name || 'SAT Math Lib';
       var act = LS.get('tz_active');
-      if (act && act.code === A.code && act.session_id) { openTest(act.form_id, { resume: act.session_id }); return; }
+      if (act && act.code === A.code && act.session_id) { openTest(act.session_id, {}); return; }
       showHome();
     }).catch(function (e) {
       $('#login-btn').disabled = false;
@@ -149,156 +151,93 @@
     });
   }
   function showHome() {
-    A.profile = null; stopLoops(); clearTimeout(A.subT); // nothing of a test runs behind My Tests
+    A.profile = null; stopLoops(); clearTimeout(A.subT); // nothing of a set runs behind the home
     show('scr-home');
     $('#home-name').textContent = A.student.name;
     $('#home-hello').textContent = '';
     $('#home-list').innerHTML = '<div class="spinner"></div>';
-    call('listForms', A.code).then(function (r) {
+    call('homeData', A.code).then(function (r) {
+      A.home = r;
       var box = $('#home-list'); box.innerHTML = '';
-      var fn = r.first_name || A.student.name || '';
-      $('#home-hello').textContent = 'Hi ' + fn + '. ' + (r.welcome ? 'Welcome to Test Zone.' : r.hero ? 'Here is your next test.' : 'Here are your tests.');
-      if (!r.forms.length && !(r.past || []).length) { box.innerHTML = '<div class="empty">No tests for your program yet. Ask your teacher.</div>'; return; }
-      // #35 hero ("Assigned by your teacher" / "Next test") + "Pick up where you stopped"
-      var pick = r.pickup || [];
-      if (r.hero || pick.length) {
-        var sec = el('section', { class: 'hz-next' + (pick.length && r.hero ? '' : ' solo') });
-        if (r.hero) sec.appendChild(heroBlock(r.hero, r.forms));
-        if (pick.length) sec.appendChild(pickupBlock(pick));
-        box.appendChild(sec);
+      $('#home-hello').textContent = 'Hi ' + (r.first_name || A.student.name || '') + '. What do you want to practise?';
+      if (r.open && r.open.length) {
+        var pk = el('section', { class: 'sm-pick', id: 'pickup' }, '<p class="hz-label">Pick up where you stopped</p>');
+        r.open.forEach(function (o) {
+          var row = el('div', { class: 'hz-resume' });
+          row.innerHTML = '<div><b>' + esc(o.title) + '</b><span>Started ' + esc(o.started) + '</span></div>';
+          var b = el('button', { class: 'hz-btn ghost', type: 'button' }, 'Continue'); b.onclick = function () { openTest(o.set_id, {}); };
+          row.appendChild(b);
+          row.appendChild(el('div', { class: 'hz-prog' }, '<i style="width:' + (o.n ? Math.round(100 * o.answered / o.n) : 0) + '%"></i>'));
+          row.appendChild(el('span', { class: 'w' }, o.answered + '/' + o.n + ' answered'));
+          pk.appendChild(row);
+        });
+        box.appendChild(pk);
       }
-      box.appendChild(el('h2', { class: 'hz-h2' }, 'All tests'));
-      var tiles = el('div', { class: 'hz-tiles' });
-      r.forms.forEach(function (f) {
-        var isHero = r.hero && f.form_id === r.hero.form_id && (f.scope || 'full') === r.hero.scope && !!f.assigned === (r.hero.kind === 'assignment');
-        if (f.assigned && isHero) { formInfo(f); return; } // the assignment is the big block above
-        tiles.appendChild(formCard(f));
-      });
-      box.appendChild(tiles);
-      if (r.past && r.past.length) { box.appendChild(el('h2', { class: 'hz-h2' }, 'Past assignments')); box.appendChild(pastList(r.past)); }
-    }).catch(function (e) { $('#home-list').innerHTML = '<div class="empty">Could not load your tests: ' + esc(errMsg(e)) + ' <br><br><button class="btn-outline" onclick="location.reload()">Reload</button></div>'; });
+      box.appendChild(el('h2', { class: 'hz-h2' }, 'Practise by skill'));
+      box.appendChild(skillPicker(r));
+      if (r.history && r.history.length) {
+        box.appendChild(el('h2', { class: 'hz-h2' }, 'History'));
+        var t = el('table', { class: 'sm-hist', id: 'history' });
+        t.innerHTML = '<tr><th>Date</th><th>Set</th><th>First Try</th><th>Best Score</th><th></th></tr>';
+        r.history.forEach(function (h) {
+          var tr = el('tr'); tr.innerHTML = '<td class="dt">' + esc(h.date) + '</td><td>' + esc(h.title) + '</td><td class="num">' + h.first_try + '/' + h.n + '</td><td class="num">' + h.best + '/' + h.n + '</td><td></td>';
+          var b = el('button', { class: 'hz-link', type: 'button' }, 'Open'); b.onclick = function () { openResult(h.set_id); }; tr.lastChild.appendChild(b);
+          t.appendChild(tr);
+        });
+        box.appendChild(t);
+      }
+    }).catch(function (e) { $('#home-list').innerHTML = '<div class="empty">Could not load your page: ' + esc(errMsg(e)) + ' <br><br><button class="btn-outline" onclick="location.reload()">Reload</button></div>'; });
   }
-  /** start options of a card (an assignment starts with its parts) */
-  function scopeOpts(scope, o) { o = o || {}; if (scope && scope !== 'full') o.scope = scope; return o; }
-  function heroBlock(h, forms) {
-    var f = forms.filter(function (x) { return x.form_id === h.form_id && (x.scope || 'full') === h.scope; })[0];
-    if (f) formInfo(f);
-    var a = el('article', { class: 'hz-focus', id: 'hero' });
-    a.innerHTML = '<div><p class="hz-eyebrow' + (h.kind === 'assignment' ? '' : ' nx') + '">' + (h.kind === 'assignment' ? 'Assigned by your teacher' : 'Next test') + '</p>' +
-      '<h1>' + esc(h.title) + '</h1><p class="hz-of">' + esc(h.of) + '</p><ul class="hz-facts">' +
-      h.facts.map(function (x) { return '<li>' + (x.b ? '<b>' + esc(x.b) + '</b> ' : '') + esc(x.t) + '</li>'; }).join('') + '</ul></div>' +
-      '<div class="hz-clock"><div>' + esc(h.clock) + '<small>' + esc(h.clock_unit) + '</small></div></div>';
-    var b = el('button', { class: 'hz-btn big', type: 'button', id: 'hero-start' }, esc(h.start));
-    b.onclick = function () { openTest(h.form_id, scopeOpts(h.scope, {})); };
-    a.appendChild(b);
-    return a;
-  }
-  function pickupBlock(list) {
-    var d = el('div', { class: 'hz-side', id: 'pickup' });
-    d.innerHTML = '<p class="hz-label">Pick up where you stopped</p>';
-    list.forEach(function (p) {
-      var row = el('div', { class: 'hz-resume' });
-      row.innerHTML = '<div><b>' + esc(cardTitle(p.exam, p.title)) + '</b><span>' + esc(p.sub || '') + '</span></div>';
-      var b = el('button', { class: 'hz-btn ghost', type: 'button' }, esc(p.button || 'Continue'));
-      b.onclick = function () { openTest(p.form_id, { resume: p.session_id }); };
-      row.appendChild(b);
-      row.appendChild(el('div', { class: 'hz-prog' }, '<i style="width:' + Math.max(0, Math.min(100, p.pct || 0)) + '%"></i>'));
-      row.appendChild(el('span', { class: 'w' }, esc(p.line || '')));
-      d.appendChild(row);
-    });
-    return d;
-  }
-  /** #32 n1 + #35: attempts of assignments that are no longer active — View result only. */
-  function pastList(items) {
-    var d = el('div', { class: 'hz-past past-asg' });
-    items.forEach(function (f) {
-      f.attempts.slice().reverse().forEach(function (a) {
-        var row = el('div', { class: 'hz-prow past-row' }), finished = a.status === 'completed' || a.status === 'timeout';
-        row.innerHTML = '<span class="nm">' + esc(cardTitle(f.exam, f.title)) + (f.attempts.length > 1 ? ' · #' + a.attempt_no : '') + '</span><span class="dt">' + esc(a.submitted_at || a.started_at) + '</span>' +
-          '<span class="ps">' + (finished && a.total_correct !== null ? a.total_correct + '/' + a.total_questions : 'Not finished') + '</span>';
-        if (finished) { var b = el('button', { class: 'hz-link', type: 'button' }, 'View result'); b.onclick = function () { openResult(a.session_id); }; row.appendChild(b); }
-        else row.appendChild(el('span'));
-        d.appendChild(row);
-      });
-    });
-    return d;
-  }
-  /** "SAT · August 2026" stays as it is; "Practice Exam 2012" → "AP Calculus AB — Practice Exam 2012". */
-  function cardTitle(exam, title) { exam = exam || ''; title = title || ''; return !title ? exam : (title.indexOf(exam) === 0 ? title : exam + ' — ' + title); }
-  /** 134 → "2 h 14 min", 105 → "1 h 45 min", 45 → "45 min" */
-  function hmin(m) { m = Math.round(m); var h = Math.floor(m / 60), r = m % 60; return h ? h + ' h' + (r ? ' ' + r + ' min' : '') : r + ' min'; }
-  /** Lines "Section 1, Module 1: …: 27 questions · 32 min · no calculator" (+ break) — shown on the start screen only (#24 A). */
-  function partLines(parts, breakMin) {
-    var l = parts.map(function (p) { return esc(p.title || ('Part ' + p.part)) + ': ' + p.n + (p.n === 1 ? ' question · ' : ' questions · ') + p.minutes + ' min · ' + (p.calculator ? 'calculator' : 'no calculator'); });
-    if (breakMin) l.push(breakMin + '-minute break between sections');
-    return l.join('<br>');
-  }
-  /** card data for the start screen (lines per part, total time) — also for a card shown as the big block */
-  function formInfo(f) {
-    var total = f.parts.reduce(function (a, p) { return a + (Number(p.minutes) || 0); }, 0);
-    A.cardInfo = A.cardInfo || {}; A.cardInfo[f.form_id + '|' + (f.scope || 'full')] = { title: cardTitle(f.exam, f.title), lines: partLines(f.parts, f.break_min), total: hmin(total) };
-    return total;
-  }
-  /** #35 tile in "All tests": title + grey time, "x done · last a/b" (no estimate), buttons; all attempts folded below. */
-  function formCard(f) {
-    var c = el('div', { class: 'form-card' });
-    var total = formInfo(f), scope = f.scope || 'full';
-    c.innerHTML = '<div class="fc-head"><h2>' + esc(cardTitle(f.exam, f.title)) + '</h2><span class="fc-time">' + hmin(total) + '</span></div>' +
-      (f.assigned ? '<div class="fc-assigned">Assigned by your teacher</div>' : '');
-    if (f.assigned) { c.classList.add('assigned'); c.dataset.scope = scope; }
-    var open = f.attempts.filter(function (a) { return a.status === 'in_progress' || a.status === 'paused'; }).pop();
-    var done = f.attempts.filter(function (a) { return a.status === 'completed' || a.status === 'timeout'; });
-    var last = done[done.length - 1], pz = open && open.paused;
-    var status = !f.available ? 'Coming soon' : open ? (pz ? (f.break_min && pz.done && pz.next ? 'Paused at the break' : 'Paused · ' + pz.next + ' next') : 'In progress')
-      : done.length ? done.length + ' done · last ' + (last.total_correct !== null ? last.total_correct + '/' + last.total_questions : '—') : 'Not started';
-    c.appendChild(el('span', { class: 'fc-s' }, esc(status)));
-    var actions = el('div', { class: 'actions' });
-    if (f.available && open) {
-      var b1 = el('button', { class: 'btn-blue', type: 'button' }, pz ? 'Continue ' + esc(pz.next) : 'Continue');
-      b1.onclick = function () { openTest(f.form_id, { resume: open.session_id }); };
-      var b2 = el('button', { class: 'btn-outline', type: 'button' }, 'Start over');
-      b2.onclick = function () {
-        modal('Start a new attempt?', 'Your unfinished attempt ' + open.attempt_no + ' will be closed and will not be scored.', [
-          { label: 'Cancel', value: false, cls: 'btn-outline' }, { label: 'Start new attempt', value: true }]).then(function (ok) { if (ok) openTest(f.form_id, scopeOpts(scope, { fresh: true })); });
-      };
-      actions.appendChild(b1); actions.appendChild(b2);
-    } else if (f.available) {
-      var b = el('button', { class: 'btn-blue', type: 'button' }, done.length ? 'Take again' : 'Start');
-      b.onclick = function () { openTest(f.form_id, scopeOpts(scope, {})); };
-      actions.appendChild(b);
-      if (last) { var v = el('button', { class: 'btn-plain fc-view', type: 'button' }, 'View result'); v.onclick = function () { openResult(last.session_id); }; actions.appendChild(v); }
+  /** Three columns: area → skill → the chosen skill (its sub-skills, read-only progress) + 5 / 10 / 20 + Start. */
+  function skillPicker(r) {
+    var box = el('div', { class: 'sm-mill', id: 'picker' });
+    var sizes = r.sizes && r.sizes.length ? r.sizes : [5, 10, 20];
+    var st = A.pick = A.pick || { d: 0, k: null, n: sizes.indexOf(10) >= 0 ? 10 : sizes[0] };
+    function dot(c) { return '<i class="sm-dot ' + (c || 'n') + '"></i>'; }
+    function draw() {
+      var d = r.domains[st.d] || r.domains[0];
+      if (!d) { box.innerHTML = '<div class="empty">No skills yet.</div>'; return; }
+      var withQ = d.skills.filter(function (k) { return k.live > 0; });
+      var k = d.skills.filter(function (x) { return x.skill === st.k; })[0] || withQ[0] || d.skills[0];
+      st.k = k.skill;
+      box.innerHTML = '<div class="sm-col sm-c1"><p class="sm-colh">Area</p>' + r.domains.map(function (x, i) {
+          return '<button type="button" class="sm-it' + (x === d ? ' cur' : '') + '" data-d="' + i + '"><span class="n">' + esc(x.name) + '</span><span class="cnt">' + x.fresh + ' new</span></button>'; }).join('') + '</div>' +
+        '<div class="sm-col sm-c2"><p class="sm-colh">Skill</p>' + d.skills.map(function (x) {
+          return '<button type="button" class="sm-it sk' + (x === k ? ' cur' : '') + (x.live ? '' : ' off') + '" data-k="' + esc(x.skill) + '">' + dot(x.dot) + '<span>' + esc(x.name) + '</span><span class="cnt">' + (x.live ? x.fresh + ' new' : 'none yet') + '</span></button>'; }).join('') + '</div>' +
+        '<div class="sm-col sm-c3"><div class="sm-pan"><h3>' + esc(k.name) + '</h3><div class="sm-subl">' + k.subs.map(function (x) {
+          return '<div>' + dot(x.dot) + '<span>' + esc(x.name) + '</span><span class="cnt">' + x.fresh + ' new</span></div>'; }).join('') + '</div>' +
+        '<div class="sm-start"><div class="sm-seg" role="group" aria-label="Number of questions">' + sizes.map(function (n) { return '<button type="button" data-n="' + n + '"' + (n === st.n ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>' +
+        '<button type="button" class="hz-btn" id="btn-start"' + (k.live ? '' : ' disabled') + '>' + (k.live ? 'Start ' + st.n + ' questions' : 'No questions yet') + '</button></div>' +
+        '<p class="sm-note">No timer. The app picks the questions for you.</p></div></div>';
+      $$('[data-d]', box).forEach(function (b) { b.onclick = function () { st.d = +b.getAttribute('data-d'); st.k = null; draw(); }; });
+      $$('[data-k]', box).forEach(function (b) { b.onclick = function () { st.k = b.getAttribute('data-k'); draw(); }; });
+      $$('[data-n]', box).forEach(function (b) { b.onclick = function () { st.n = +b.getAttribute('data-n'); draw(); }; });
+      var sb = $('#btn-start', box);
+      if (sb) sb.onclick = function () { startPractice(k.skill, st.n, sb); };
     }
-    c.appendChild(actions);
-    var past = f.attempts.filter(function (a) { return a.status !== 'in_progress' && a.status !== 'paused'; });
-    if (past.length > 1) {
-      var det = el('details', { class: 'fc-more' });
-      det.innerHTML = '<summary>All attempts (' + past.length + ')</summary>';
-      var t = el('table', { class: 'attempts' });
-      t.innerHTML = '<tr><th>Attempt</th><th>Date</th><th>Score</th><th></th></tr>';
-      past.slice().reverse().forEach(function (a) {
-        var tr = el('tr'), finished = a.status === 'completed' || a.status === 'timeout';
-        tr.innerHTML = '<td>#' + a.attempt_no + '</td><td>' + esc(a.submitted_at || a.started_at) + '</td><td>' +
-          (finished && a.total_correct !== null ? a.total_correct + '/' + a.total_questions : esc(a.status === 'abandoned' ? 'not finished' : a.status)) + '</td><td></td>';
-        if (finished) { var vb = el('button', { class: 'btn-plain', type: 'button' }, 'View result'); vb.onclick = function () { openResult(a.session_id); }; tr.lastChild.appendChild(vb); }
-        t.appendChild(tr);
-      });
-      det.appendChild(t); c.appendChild(det);
-    }
-    return c;
+    draw();
+    return box;
+  }
+  function startPractice(skill, n, btn) {
+    if (btn) btn.disabled = true;
+    call('startPractice', A.code, skill, n).then(function (r) {
+      if (r.short) toast('Only ' + r.n + ' questions are left for this skill right now.', 3500);
+      openTest(r.set_id, {});
+    }).catch(function (e) { if (btn) btn.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
   }
 
   /* ================= load / resume a test ================= */
-  function openTest(formId, opts) {
+  function openTest(setId, opts) {
     // #32 t2: no old header / timer / "Saved …" while the test loads
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro');
     $('#tb-title').textContent = ''; var vb = $('#view-bar'); if (vb) vb.innerHTML = ''; setSaveDot('');
     show('scr-test'); view('v-wait');
     $('#timer').style.visibility = 'hidden';
-    $('#v-wait').innerHTML = '<div class="page"><div class="spinner"></div><p class="lead">Loading your test…</p></div>';
+    $('#v-wait').innerHTML = '<div class="page"><div class="spinner"></div><p class="lead">Loading your questions…</p></div>';
     $('#fb-name').textContent = A.student.name;
     opts = opts || {}; opts.device = deviceStr();
     var t0 = Date.now();
-    call('getTest', A.code, formId, opts).then(function (res) {
+    call('getSet', A.code, setId, opts).then(function (res) {
       var rtt = Date.now() - t0;
       A.offset = res.server_now + rtt / 2 - Date.now();
       setupTest(res);
@@ -306,7 +245,7 @@
       var m = (e && e.message) || String(e);
       if (/(SESSION|FORM|LOGIN):/.test(m)) { // the server said no: forget it
         LS.del('tz_active');
-        modal('Could not open the test', esc(errMsg(e)), [{ label: 'OK', value: 1 }]).then(showHome);
+        modal('Could not open the set', esc(errMsg(e)), [{ label: 'OK', value: 1 }]).then(showHome);
       } else loadTrouble(e); // network / server hiccup: keep tz_active so a retry resumes
     });
   }
@@ -370,6 +309,7 @@
     if (resumed && A.st.part_starts[curPart()] && !A.st.ended[curPart()]) log('resume', null, A.st.phase);
     route(true);
     startLoops();
+    A.figs = {}; setTimeout(loadFigures, 300);
   }
 
   /** Show whatever the state says we are on. */
@@ -414,8 +354,8 @@
     if (A.view) return;
     var p = curPart();
     var start = A.st.part_starts[p];
-    var limit = pdef(p).time_limit_sec * 1000;
-    var t = start ? Math.max(0, Math.min(limit, serverNow() - start)) : 0;
+    var limit = Number(pdef(p).time_limit_sec) * 1000;
+    var t = start ? Math.max(0, limit ? Math.min(limit, serverNow() - start) : serverNow() - start) : 0;
     A.events.push({ part: p, t_ms: Math.round(t), qid: qid || null, type: type, value: value === undefined ? null : value });
   }
   function payload() {
@@ -456,7 +396,7 @@
     show('scr-test'); view('v-wait');
     $('#v-wait').innerHTML = '<div class="page center"><h1 style="font-size:24px">This test is open in another window. Close this one.</h1>' +
       '<p class="lead">Your test goes on in the window where you opened it last. Nothing more is saved from this window.</p>' +
-      '<button class="btn-outline" id="btn-oc-home" type="button">Back to My Tests</button></div>';
+      '<button class="btn-outline" id="btn-oc-home" type="button">Back to home</button></div>';
     $('#btn-oc-home').onclick = function () { showHome(); };
   }
   function onClosed(r) {
@@ -475,6 +415,7 @@
   function remainingMs(p) {
     p = p || curPart();
     var d = pdef(p), start = A.st.part_starts[p];
+    if (!Number(d.time_limit_sec)) return Infinity; // untimed set
     if (!start) return d.time_limit_sec * 1000;
     return d.time_limit_sec * 1000 - (serverNow() - start);
   }
@@ -483,6 +424,7 @@
     return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0');
   }
   function renderTimer() {
+    if (untimed()) { $('#timer').style.visibility = 'hidden'; $('#btn-hide').style.visibility = 'hidden'; return; } // no timer, ever (spec v1.1)
     var rem = remainingMs(), warnMs = (Number(A.test.settings.five_min_warning_sec) || 300) * 1000;
     var inWarn = A.st.part_starts[curPart()] && rem <= warnMs;
     var tm = $('#timer');
@@ -498,6 +440,7 @@
     if (!A.st || A.ending) return;
     var ph = A.st.phase;
     if (ph !== 'test' && ph !== 'review') { if (ph === 'break') tickBreak(); return; }
+    if (untimed()) return;
     var p = curPart(), rem = remainingMs();
     renderTimer();
     var warnMs = (Number(A.test.settings.five_min_warning_sec) || 300) * 1000;
@@ -521,10 +464,13 @@
     var n = qlist().length;
     var ci = (A.cardInfo || {})[A.st.form_id + '|' + ((A.test && A.test.session && A.test.session.scope) || 'full')], firstPart = A.st.seq_parts.indexOf(d.part) === 0 && !Object.keys(A.st.part_starts || {}).length;
     var overview = ci && firstPart ? '<div class="test-overview"><div class="to-h"><b>' + esc(ci.title) + '</b><span class="fc-time">' + esc(ci.total) + '</span></div>' + ci.lines + '</div>' : '';
+    var unt = !Number(d.time_limit_sec);
     $('#v-directions').innerHTML = '<div class="page dir-page">' + overview + '<h1>' + esc(d.title || 'Part ' + d.part) + '</h1>' +
-      '<div class="part-facts"><div><b>' + n + '</b>questions</div><div><b>' + fmt(d.time_limit_sec * 1000) + '</b>time</div><div><b>' + (d.calculator ? 'Yes' : 'No') + '</b>calculator</div></div>' +
+      '<div class="part-facts"><div><b>' + n + '</b>questions</div><div><b>' + (unt ? 'No' : fmt(d.time_limit_sec * 1000)) + '</b>' + (unt ? 'timer' : 'time') + '</div><div><b>' + (d.calculator ? 'Yes' : 'No') + '</b>calculator</div></div>' +
       '<div class="dir-text">' + (d.directions_html || '') + '</div>' +
-      '<p class="lead">The timer starts when you click <b>Begin</b>. Once you leave this ' + word() + ' you cannot come back to it.</p>' +
+      (unt ? '<p class="lead">Take your time. Your answers are saved as you go: you can close the page and continue later from your home page. ' +
+             'When you are done, go to <b>Check Your Work</b> and submit.</p>'
+           : '<p class="lead">The timer starts when you click <b>Begin</b>. Once you leave this ' + word() + ' you cannot come back to it.</p>') +
       '<div class="center"><button class="btn-blue" id="btn-begin" type="button" style="min-width:180px">Begin</button></div></div>';
     $('#btn-begin').onclick = beginPart;
     typeset($('#v-directions'));
@@ -653,7 +599,23 @@
   }
   function figHtml(f) {
     var w = f.width ? ' style="width:' + Number(f.width) + 'px"' : '';
-    return '<div class="q-fig"><img src="' + f.src + '" alt="' + esc(f.alt) + '"' + w + '></div>';
+    var src = f.src || (A.figs && A.figs[f.fid]) || '';
+    return '<div class="q-fig"><img' + (src ? ' src="' + src + '"' : '') + ' data-fid="' + esc(f.fid || '') + '" alt="' + esc(f.alt) + '"' + w + '>' +
+      (f.caption ? '<div class="q-cap">' + esc(f.caption) + '</div>' : '') + '</div>';
+  }
+  /** Figures not sent with the set (spec v1.1 §6.1): fetched in the background, then put into their <img>. */
+  function loadFigures() {
+    if (A.view) return;
+    var need = [];
+    (A.test.questions || []).forEach(function (q) { (q.figures || []).forEach(function (f) { if (!f.src && !(A.figs && A.figs[f.fid])) need.push(f.fid); }); });
+    if (!need.length) return;
+    A.figs = A.figs || {};
+    call('getFigures', A.code, A.st.session_id, need).then(function (r) {
+      Object.keys(r.figures || {}).forEach(function (fid) {
+        A.figs[fid] = r.figures[fid];
+        $$('img[data-fid]').forEach(function (img) { if (img.getAttribute('data-fid') === fid && !img.getAttribute('src')) img.setAttribute('src', r.figures[fid]); });
+      });
+    }).catch(function () { setTimeout(loadFigures, 8000); });
   }
   /** Left pane of a student-produced-response question (SAT Math), own wording. */
   var SPR_DIRECTIONS_HTML = '<h3 class="spr-dir-h">Student-produced response directions</h3><ul class="spr-dir">' +
@@ -859,7 +821,7 @@
     var d = pdef(), l = qlist(), ps = pst();
     var unanswered = l.filter(function (q) { return !ps.ans[q.qid]; }).length, marked = l.filter(function (q) { return ps.mark[q.qid]; }).length;
     $('#v-review').innerHTML = '<div class="page"><h1>Check Your Work</h1>' +
-      '<p class="lead">You can go back to any question in this ' + word() + ' until time runs out or you click <b>Next</b>. ' +
+      '<p class="lead">You can go back to any question in this ' + word() + (untimed() ? ' until you submit' : ' until time runs out or you click <b>Next</b>') + '. ' +
       (unanswered ? '<br><b>' + unanswered + '</b> unanswered' : '<br>All questions answered') + (marked ? ' · <b>' + marked + '</b> marked for review' : '') + '.</p>' +
       '<div class="card"><div class="pop-head" style="border:0;padding-bottom:4px">' + esc(d.title || 'Part ' + d.part) + ' Questions</div>' +
       '<div class="legend">' + legendHtml(false) + '</div><div class="grid" id="rev-grid">' + gridHtml(false) + '</div></div></div>';
@@ -870,9 +832,9 @@
     if (A.view) { viewNext(1); return; }
     if (A.st.phase === 'review') {
       var last = A.st.part_idx >= A.st.seq_parts.length - 1 && !(A.profile.routing || []).some(function (r) { return r.from === curPart(); });
-      modal(last ? 'Submit your test?' : 'Move on to the next ' + word() + '?',
-        (last ? 'This is the last part. Your answers will be submitted.' : 'You will not be able to come back to <b>' + esc(pdef().title) + '</b>.') +
-        ' Time left in this part: <b>' + fmt(remainingMs()) + '</b>.',
+      modal(last ? (untimed() ? 'Submit this set?' : 'Submit your test?') : 'Move on to the next ' + word() + '?',
+        (last ? (untimed() ? 'Your answers will be checked. After that you can fix the questions you got wrong.' : 'This is the last part. Your answers will be submitted.') : 'You will not be able to come back to <b>' + esc(pdef().title) + '</b>.') +
+        (untimed() ? (function () { var u = qlist().filter(function (q) { return !pst().ans[q.qid]; }).length; return u ? ' <b>' + u + '</b> ' + (u === 1 ? 'question is' : 'questions are') + ' blank: they count as wrong for First Try.' : ''; })() : ' Time left in this part: <b>' + fmt(remainingMs()) + '</b>.'),
         [{ label: 'Cancel', value: false, cls: 'btn-outline' }, { label: last ? 'Submit' : 'Next ' + word(), value: true }]).then(function (ok) { if (ok) endPart('submit'); });
       return;
     }
@@ -967,11 +929,11 @@
   function pct(a, b) { return b ? Math.round(100 * a / b) : 0; }
   function xy(r, n) { return '<span class="xy">' + r + '/' + n + '</span>'; }
   function brandBar(btnId, btnLabel) {
-    return '<div class="topbar-simple"><div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px;font-size:14px">TZ</span><span>' +
+    return '<div class="topbar-simple"><div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px;font-size:14px">SM</span><span>' +
       esc($('.app-name').textContent) + '</span></div><button class="btn-outline" id="' + btnId + '" type="button">' + btnLabel + '</button></div>';
   }
   /** A question cell / chip (#24 D, E): status colour + S (slow) / R (rushed) badge; opens the question. */
-  // S / R badges (#27, Minh's mock "Test Zone Huy Hiệu Mẫu B"): real Inter Black letter outlines, portrait 14 × 18 tag
+  // S / R badges (Test Zone #27 design B): real Inter Black letter outlines, portrait 14 × 18 tag
   var BDG_SVG = {
     R: '<svg class="b" viewBox="0 0 14 18" aria-label="rushed" role="img"><rect width="14" height="18" rx="2" fill="#e30613"/><path d="M2.82 14H5.53V10.7H6.47L8.23 14H11.18L9.14 10.27C10.21 9.76 10.85 8.79 10.85 7.4C10.85 5.28 9.36 4 7.13 4H2.82ZM5.53 8.59V6.17H6.48C7.44 6.17 8.01 6.54 8.01 7.4C8.01 8.26 7.44 8.59 6.48 8.59Z" fill="#fff"/></svg>',
     S: '<svg class="b" viewBox="0 0 14 18" aria-label="slow" role="img"><rect x=".6" y=".6" width="12.8" height="16.8" rx="1.6" fill="#ffcc00" stroke="#111" stroke-width="1.2"/><path d="M7.13 14C9.6 14 11.08 12.93 11.08 11C11.08 9.52 10.19 8.48 8.03 8.02L7.24 7.85C6.31 7.65 5.93 7.38 5.93 6.92C5.93 6.49 6.29 6.17 7.1 6.17C7.96 6.17 8.37 6.55 8.41 7.18H10.95C10.94 5.27 9.47 4 7.1 4C4.79 4 3.16 5.25 3.16 7.1C3.16 8.63 4.22 9.48 5.94 9.85L6.92 10.06C8 10.29 8.39 10.56 8.39 11C8.39 11.49 7.94 11.83 7.09 11.83C6.07 11.83 5.48 11.35 5.43 10.45H2.92C2.93 12.9 4.59 14 7.13 14Z" fill="#111"/></svg>'
@@ -991,24 +953,35 @@
   function renderResult(res) {
     show('scr-result');
     var b = $('#result-body');
-    if (!res || !res.ok) { b.innerHTML = brandBar('res-home', 'Back to My Tests') + '<div class="page"><p class="lead">' + esc((res && res.msg) || 'No result.') + '</p></div>'; $('#res-home').onclick = showHome; return; }
+    if (!res || !res.ok) { b.innerHTML = brandBar('res-home', 'Back to home') + '<div class="page"><p class="lead">' + esc((res && res.msg) || 'No result.') + '</p></div>'; $('#res-home').onclick = showHome; return; }
     A.result = res;
     var teacher = !!res.teacher;
-    var h = brandBar('res-home', teacher ? 'Back to students' : 'Back to My Tests') + '<div class="page res-page">';
+    var h = brandBar('res-home', teacher ? 'Back to students' : 'Back to home') + '<div class="page res-page">';
     h += '<h1>' + (teacher ? esc(res.student) + ' — Results' : 'Your Results') + '</h1>';
-    h += '<p class="lead res-meta">' + esc(res.title || '') + (res.attempt ? ' · Attempt ' + res.attempt : '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>';
-    if (res.show === 'none') {
+    if (res.first_try) { // SAT Math Lib: First Try + Best Score, never a key
+      h += '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>' +
+        '<div class="sm-scores"><div class="sm-score" id="score-first"><div class="k">First Try</div><div class="v">' + res.first_try.right + '<small>/' + res.first_try.n + '</small></div><div class="s">right the first time</div></div>' +
+        '<div class="sm-score best" id="score-best"><div class="k">Best Score</div><div class="v">' + res.best.right + '<small>/' + res.best.n + '</small></div><div class="s">first try + fixed later</div></div></div>';
+      res.valid = true; res.sat = false; res.practise = [];
+      return renderResultBody(res, h, teacher);
+    }
+    return renderResultBody(res, h + '<p class="lead res-meta">' + esc(res.title || '') + (res.attempt ? ' · Attempt ' + res.attempt : '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>', teacher, true);
+  }
+  function renderResultBody(res, h, teacher, legacy) {
+    var b = $('#result-body');
+    if (legacy && res.show === 'none') {
       h += '<p class="lead">Your test has been submitted. Your teacher will go over the results with you.</p></div>';
       b.innerHTML = h; $('#res-home').onclick = teacher ? showTeacher : showHome; return;
     }
-    if (!res.valid) {
+    if (legacy && !res.valid) {
       h += '<div class="res-box bad"><b>This result can\'t be used to judge your level.</b><br>Why: ' + esc(res.reasons.join('; ')) + '.' +
         '<br>Take the test again in real test conditions: the full time, in one go, answering every question.</div>';
     }
     if (res.sittings_note) h += '<div class="res-box warn">' + esc(res.sittings_note) + '</div>';
     // score: SAT = estimated score first, then each section with its raw count + modules (#24 B); AP = x / n
     var modLine = function (ms) { return ms.length ? '<div class="sec-mods">' + ms.map(function (m) { return esc(m.title || m.part).replace(/^Section \d+, /, '').replace(/:.*$/, '') + ': <b>' + m.right + '/' + m.n + '</b>'; }).join(' · ') + '</div>' : ''; };
-    if (res.sat) {
+    if (!legacy) { /* scores already in h */ }
+    else if (res.sat) {
       var e = res.estimate;
       h += '<div class="res-score sat-score">';
       if (e && e.total) h += '<div class="est"><div class="est-lbl">Estimated score</div><div class="est-total">' + e.total.low + '–' + e.total.high + '</div></div>';
@@ -1029,7 +1002,7 @@
     }
     // skills + the missed questions of each skill as chips (#24 D)
     if (res.valid && res.groups && res.groups.length) {
-      h += '<h2 class="res-h">' + (res.sat ? 'Results by skill' : 'Results by unit') + '</h2>';
+      h += '<h2 class="res-h">' + (res.sat || !legacy ? 'Results by skill' : 'Results by unit') + '</h2>';
       res.groups.forEach(function (g) {
         var gr = g.rows.reduce(function (a, r) { return a + r.right; }, 0), gn = g.rows.reduce(function (a, r) { return a + r.n; }, 0);
         h += '<div class="card skill-card"><h3><span>' + esc(g.title) + '</span>' + xy(gr, gn) + '</h3>' + g.rows.map(function (r) {
@@ -1053,7 +1026,7 @@
     if (res.review && res.review.length) {
       h += '<h2 class="res-h">Review your questions</h2><p class="muted" style="margin-top:-6px">' +
         (teacher ? 'Open a question: it looks like the test (tools, calculator) with the student\'s answer. "Show answer" reveals the correct answer.' :
-                   'Open a question to see it again with your answer and whether it was right. The correct answers are not shown.') + '</p>';
+                   'Open a question to see it again with your answer and whether it was right. Correct answers are never shown.') + '</p>';
       res.review.forEach(function (p) {
         var r = p.questions.filter(function (q) { return q.status === 'right'; }).length;
         h += '<div class="card res-part"><h3><span>' + esc(p.title || 'Part ' + p.part) + '</span><span>' + r + ' / ' + p.questions.length + '</span></h3><div class="rgrid">' +
@@ -1064,6 +1037,7 @@
     b.innerHTML = h;
     $('#scr-result').scrollTop = 0;
     $('#res-home').onclick = teacher ? showTeacher : showHome;
+    if (!teacher) $('#res-home').textContent = 'Back to home';
     $$('#result-body [data-qid]').forEach(function (c) { c.onclick = function (ev) { ev.preventDefault(); openReview(res.session_id, teacher, c.getAttribute('data-qid')); }; });
   }
 

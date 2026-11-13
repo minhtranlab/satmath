@@ -21,3 +21,7 @@ tests/node_modules/
 tests/desmos.js
 node_modules/
 .DS_Store
+# project-folder paths (private) must never be copied in
+taxonomy/
+sources/
+/library/

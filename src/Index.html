@@ -20,25 +20,25 @@
 <body>
 <div id="app" style="height:100%">
 
-  <!-- ============ Login (v1.12, design Mẫu 2: centred) ============ -->
+  <!-- ============ Sign-in ============ -->
   <section id="scr-login" class="screen on hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>Test Zone</div></header>
+    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div></header>
     <div class="hz-si">
-      <h1>Ready for your next test?</h1>
-      <p class="hz-si-lead">Enter your student code to see your tests.</p>
+      <h1>Ready to practise?</h1>
+      <p class="hz-si-lead">Enter your student code to start.</p>
       <form id="login-form" class="hz-form" autocomplete="off">
         <input id="login-code" class="hz-field" maxlength="24" placeholder="Student code" aria-label="Student code" autocapitalize="characters" spellcheck="false">
         <button class="btn-blue hz-btn" id="login-btn" type="submit">Sign In</button>
       </form>
       <div class="err" id="login-err"></div>
       <p class="hz-help">Your teacher gives you the code. You stay signed in on this device.</p>
-      <div class="hz-chips"><span>SAT practice tests</span><span>AP Calculus AB</span><span>AP Calculus BC</span><span>Results by skill</span><span>Desmos calculator</span></div>
+      <div class="hz-chips"><span>SAT Math library</span><span>Practice by skill</span><span>Desmos calculator</span><span>Your results</span></div>
     </div>
   </section>
 
-  <!-- ============ My Tests (v1.12, design Mẫu 2 · Next test focus) ============ -->
+  <!-- ============ Home ============ -->
   <section id="scr-home" class="screen hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>Test Zone</div><div class="hz-who"><span id="home-name"></span><button class="hz-link" id="btn-logout" type="button">Sign out</button></div></header>
+    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div><div class="hz-who"><span id="home-name"></span><button class="hz-link" id="btn-logout" type="button">Sign out</button></div></header>
     <main class="hz-main">
       <p class="hz-hello" id="home-hello"></p>
       <div id="home-list"><div class="spinner"></div></div>
@@ -143,12 +143,12 @@
   <!-- ============ Teacher ============ -->
   <section id="scr-teacher" class="screen">
     <div class="topbar-simple">
-      <div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px;font-size:14px">TZ</span><span class="app-name">Test Zone</span><span class="t-badge">Teacher</span></div>
+      <div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px;font-size:14px">SM</span><span class="app-name">SAT Math Lib</span><span class="t-badge">Teacher</span></div>
       <div><button class="btn-plain" id="t-logout">Sign out</button></div>
     </div>
     <div class="home-body">
       <h1>Students</h1>
-      <p class="sub">Open an attempt to see the result page the student saw, then every question with the student's answer.</p>
+      <p class="sub">Open a set to see the result page the student saw, then every question with the student's answer.</p>
       <input id="t-filter" class="field t-filter" placeholder="Filter by name or code" autocomplete="off">
       <div id="t-list"><div class="spinner"></div></div>
     </div>

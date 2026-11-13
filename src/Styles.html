@@ -1,5 +1,5 @@
 <style>
-/* ======================= Test Zone — styles (Bluebook-like layout, own branding) ======================= */
+/* ======================= SAT Math Lib — styles (from Test Zone: Bluebook-like layout, own branding) ======================= */
 :root {
   --blue: #324dc7; --blue-dark: #2238a3; --blue-soft: #e8ecfb;
   --ink: #1e1e1e; --ink-2: #4a4a4a; --muted: #6b6b6b; --line: #c7c7c7; --line-2: #e3e3e3;
@@ -378,7 +378,7 @@ mark.app-mode { background: #e8f0fe; color: var(--blue); font-weight: 700; paddi
 .qchip.wrong { color: var(--red); border-color: var(--red); background: #fdf0f2; }
 .qchip.blank { color: var(--muted); border-color: #a9a9a9; background: var(--bg-2); border-style: dashed; }
 .qchip.right { color: var(--green); border-color: var(--green); background: #eef8f1; }
-/* #27 badges inside the question cells (Minh's mock "Test Zone Huy Hiệu Mẫu B"): the R / S letter is as tall as the question number */
+/* badges inside the question cells (Test Zone #27 design B): the R / S letter is as tall as the question number */
 .bdg { display: inline-block; line-height: 0; vertical-align: middle; }
 .bdg svg { width: 12.6px; height: 16.2px; display: block; }
 .rgrid .rcell { width: 40px; height: 46px; padding: 0; box-sizing: border-box; display: grid; grid-template-rows: 20px 18px; align-content: center; justify-items: center; row-gap: 1px; font-size: 13px; }
@@ -498,5 +498,45 @@ mark.app-mode { background: #e8f0fe; color: var(--blue); font-weight: 700; paddi
   .hz-si .hz-si-lead { font-size: 16px; }
   .hz-form { flex-direction: column; }
   .hz-chips { margin-top: 44px; }
+}
+
+/* ===== SAT Math Lib: home (three columns, B1 skeleton), scores, history ===== */
+.sm-pick{margin:0 0 6px}
+.sm-mill{border:1.5px solid #dde0ea;border-radius:16px;overflow:hidden;display:grid;grid-template-columns:230px 330px minmax(0,1fr);min-height:340px;background:#fff}
+.sm-col{border-right:1px solid #dde0ea;padding:10px 0;min-width:0}.sm-col:last-child{border-right:0}
+.sm-colh{font:700 12px var(--hz-sans,'Noto Sans',Arial,sans-serif);letter-spacing:.08em;text-transform:uppercase;color:#5f6577;padding:4px 18px 8px;margin:0}
+.sm-it{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 18px;font:15.5px 'Noto Sans',Arial,sans-serif;background:none;border:0;text-align:left;cursor:pointer;color:#191c26}
+.sm-it.sk{grid-template-columns:9px minmax(0,1fr) auto}
+.sm-it.cur{background:#eef1fc;box-shadow:inset 3px 0 0 #324dc7}
+.sm-it.off{color:#9aa0ad}
+.sm-it .n{font-weight:600}
+.sm-it .cnt,.sm-subl .cnt{font-size:14px;color:#5f6577;white-space:nowrap}
+.sm-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.sm-dot.g{background:#1f8a43}.sm-dot.y{background:#d89614}.sm-dot.r{background:#d23a2f}.sm-dot.n{box-shadow:inset 0 0 0 1.5px #b9bdc8}
+.sm-pan{padding:16px 22px;display:flex;flex-direction:column;gap:12px}
+.sm-pan h3{font:800 24px/1.1 'Bricolage Grotesque','Noto Sans',Arial,sans-serif;margin:0}
+.sm-subl{display:flex;flex-direction:column;border-top:1px solid #eef0f5}
+.sm-subl div{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid #eef0f5;font-size:15px}
+.sm-start{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between}
+.sm-seg{display:inline-flex;border:1.5px solid #dde0ea;border-radius:999px;padding:3px;gap:2px}
+.sm-seg button{padding:6px 16px;border-radius:999px;font-weight:600;font-size:15px;color:#5f6577;background:none;border:0;min-width:46px;cursor:pointer}
+.sm-seg button.on{background:#324dc7;color:#fff}
+.sm-note{font-size:13px;color:#5f6577;margin:0}
+.sm-hist{width:100%;border-collapse:collapse;font-size:15px}
+.sm-hist th{text-align:left;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#5f6577;padding:6px 10px 6px 0;border-bottom:1.5px solid #191c26}
+.sm-hist td{padding:9px 10px 9px 0;border-bottom:1px solid #eef0f5}
+.sm-hist .num{font-variant-numeric:tabular-nums;font-weight:600}.sm-hist .dt{color:#8b90a0;white-space:nowrap}
+.sm-hist td:last-child{text-align:right;padding-right:0}
+.sm-scores{display:flex;gap:16px;margin:14px 0 8px;flex-wrap:wrap}
+.sm-score{border:1.5px solid #dde0ea;border-radius:16px;padding:14px 20px;min-width:200px}
+.sm-score.best{border-color:#324dc7}
+.sm-score .k{font:700 12.5px 'Noto Sans',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#5f6577}
+.sm-score .v{font:800 44px/1.05 'Bricolage Grotesque','Noto Sans',Arial,sans-serif;font-variant-numeric:tabular-nums}
+.sm-score .v small{font-size:24px;color:#5f6577}
+.sm-score .s{font-size:14px;color:#5f6577}
+.q-cap{font-size:14px;color:#444;margin-top:4px}
+@media (max-width:700px){
+  .sm-mill{grid-template-columns:1fr}.sm-c1,.sm-c2{border-right:0;border-bottom:1px solid #dde0ea}
+  .sm-hist .dt{display:none}.sm-hist th:first-child{display:none}
 }
 </style>
