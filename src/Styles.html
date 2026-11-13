@@ -656,4 +656,13 @@ mark.app-mode { background: #e8f0fe; color: var(--blue); font-weight: 700; paddi
   .b-item{grid-template-columns:1fr auto}
   .t-table{font-size:13.5px}.t-table th:nth-child(3),.t-table td:nth-child(3){display:none}
 }
+
+/* ---- v0.3.1: calculator / reference panels ---- */
+.float-panel.big .fp-resize,.float-panel.sheet .fp-resize{display:none}
+.float-panel.big .fp-head,.float-panel.sheet .fp-head{cursor:default}
+.float-panel.sheet{border-radius:14px 14px 0 0;min-width:0;box-shadow:0 -10px 30px rgba(0,0,0,.25);z-index:60}
+.float-panel.sheet .fp-head{padding:8px 8px 8px 14px}
+.float-panel.sheet #calc-x,.float-panel.sheet #ref-x{font-size:28px !important;padding:2px 12px;line-height:1}
+.fp-resize{width:28px;height:28px}
+#scr-test.calc-sheet #tmain{padding-bottom:var(--sheeth,0px)}
 </style>

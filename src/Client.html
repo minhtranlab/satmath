@@ -682,7 +682,7 @@
     var body = '<div class="q-text">' + before + '<div class="stem">' + noWrapMath(q.stem_html) + '</div>' + after + '</div>';
     var ans;
     if (q.type === 'spr') {
-      ans = '<div class="spr-box"><input class="spr-in" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="6" aria-label="Your answer"><div class="spr-prev">Answer Preview: <b class="spr-out"></b></div></div>';
+      ans = '<div class="spr-box"><input class="spr-in" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="6" aria-label="Your answer"><div class="spr-prev" title="This is how the app reads what you typed (e.g. 3/4 is the fraction three quarters).">Your answer will be read as: <b class="spr-out"></b></div></div>';
     } else {
       ans = '<div class="choices">' + q.choices.map(function (c) {
         return '<div class="ch-row" data-l="' + esc(c.label) + '"><button type="button" class="ch"><span class="ltr">' + esc(c.label) + '</span><span class="ctext">' + noWrapMath(c.html) + '</span></button>' +
@@ -1352,7 +1352,7 @@
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden' && A.st && (A.st.phase === 'test' || A.st.phase === 'review')) { persist(); autosave(); }
     });
-    window.addEventListener('resize', dockUpdate);
+    window.addEventListener('resize', fpOnWindowResize);
     window.addEventListener('online', function () { if (A.st && (A.st.phase === 'test' || A.st.phase === 'review')) autosave(); });
   }
   function setZoom(z) {
@@ -1395,31 +1395,93 @@
   }
 
   /* ---------- floating panels (drag + resize, mouse + touch) ---------- */
-  function makeFloating(panel, head, handle, onResize) {
-    head.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('button')) return;
-      e.preventDefault(); head.setPointerCapture(e.pointerId);
-      var r = panel.getBoundingClientRect(), host = panel.offsetParent.getBoundingClientRect();
-      var ox = e.clientX - r.left, oy = e.clientY - r.top;
+  /* ---------- floating panels (calculator, reference) ----------
+     Why the calculator "jumped" (Minh, 13 Nov): the old code added pointermove listeners on every pointerdown and removed them
+     only on pointerup. A pointercancel / lost capture (trackpad gesture, button released outside the frame) left them attached,
+     so merely hovering over the title bar or the corner kept moving / resizing the panel, and the next drag added a SECOND
+     listener with an old starting point — two listeners fought and the size jumped back and forth. Expand also kept a stale
+     "old size" and the question re-docked whenever the panel crossed x = 120 on a drag.
+     Now: one gesture at a time (ends on pointerup / pointercancel / lostpointercapture / a mouse move with no button), drag only
+     by the title bar, resize only from the corner, Expand/Collapse = two fixed sizes, the panel never resizes itself (a window
+     resize only keeps it inside the window), size + position remembered for the session. Phone: a bottom sheet. */
+  var PHONE_W = 700;
+  function viewW() { return document.documentElement.clientWidth || window.innerWidth; }
+  function isPhone() { return viewW() < PHONE_W; }
+  function hostRect() { var t = $('#tmain'); return { top: t.offsetTop, h: t.clientHeight, w: viewW() }; }
+  function fpLoad(panel) { try { return JSON.parse(sessionStorage.getItem('sml_fp_' + panel.id) || 'null'); } catch (e) { return null; } }
+  function fpSave(panel) { try { sessionStorage.setItem('sml_fp_' + panel.id, JSON.stringify({ box: panel._box, big: !!panel._big })); } catch (e) {} }
+  function fpBig() { var H = hostRect(); return { x: 8, y: H.top + 8, w: Math.min(H.w - 16, Math.max(640, Math.round(H.w * 0.6))), h: Math.max(260, H.h - 16) }; }
+  /** Puts the panel where its state says, kept inside the window. Never changes the saved size unless it no longer fits. */
+  function fpApply(panel) {
+    var H = hostRect(), st = panel.style;
+    panel.classList.toggle('big', !!panel._big);
+    if (isPhone()) {
+      panel.classList.add('sheet');
+      var hh = panel._big ? H.h : Math.round(H.h * 0.62);
+      st.left = '0px'; st.right = '0px'; st.width = 'auto'; st.height = hh + 'px'; st.top = (H.top + H.h - hh) + 'px';
+      return;
+    }
+    panel.classList.remove('sheet');
+    var b = panel._big ? fpBig() : panel._box;
+    if (!panel._big) {
+      b.w = Math.max(320, Math.min(b.w, H.w - 16)); b.h = Math.max(260, Math.min(b.h, H.h - 8));
+      b.x = Math.max(8, Math.min(b.x, H.w - b.w - 8)); b.y = Math.max(H.top + 4, Math.min(b.y, H.top + H.h - b.h - 4));
+    }
+    st.left = Math.round(b.x) + 'px'; st.top = Math.round(b.y) + 'px'; st.right = 'auto';
+    st.width = Math.round(b.w) + 'px'; st.height = Math.round(b.h) + 'px';
+  }
+  /** One pointer gesture on el: start() → move(dx, dy) … → end(). Always cleaned up, whatever ends it. */
+  function fpGesture(el, can, start, move, end) {
+    el.addEventListener('pointerdown', function (e) {
+      if ((e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('button') || !can() || el._gesture) return;
+      e.preventDefault();
+      var id = e.pointerId, sx = e.clientX, sy = e.clientY, raf = 0, last = null;
+      el._gesture = true;
+      try { el.setPointerCapture(id); } catch (x) {}
+      start();
       var mv = function (ev) {
-        var x = Math.max(0, Math.min(host.width - 80, ev.clientX - host.left - ox));
-        var y = Math.max(0, Math.min(host.height - 40, ev.clientY - host.top - oy));
-        panel.style.left = x + 'px'; panel.style.top = y + 'px'; panel.style.right = 'auto';
+        if (ev.pointerId !== id) return;
+        if (ev.pointerType === 'mouse' && ev.buttons === 0) { stop(); return; } // the button was released where we could not see it
+        last = [ev.clientX - sx, ev.clientY - sy];
+        if (!raf) raf = requestAnimationFrame(function () { raf = 0; if (last) move(last[0], last[1]); });
       };
-      var up = function () { head.removeEventListener('pointermove', mv); head.removeEventListener('pointerup', up); dockUpdate(); };
-      head.addEventListener('pointermove', mv); head.addEventListener('pointerup', up);
-    });
-    handle.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); handle.setPointerCapture(e.pointerId);
-      var r = panel.getBoundingClientRect(), sx = e.clientX, sy = e.clientY;
-      var mv = function (ev) {
-        panel.style.width = Math.max(300, r.width + ev.clientX - sx) + 'px';
-        panel.style.height = Math.max(260, r.height + ev.clientY - sy) + 'px';
-        if (onResize) onResize();
+      var stop = function () {
+        if (!el._gesture) return;
+        el._gesture = false;
+        el.removeEventListener('pointermove', mv);
+        ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { el.removeEventListener(t, stop); });
+        try { el.releasePointerCapture(id); } catch (x) {}
+        if (raf) { cancelAnimationFrame(raf); raf = 0; if (last) move(last[0], last[1]); }
+        end();
       };
-      var up = function () { handle.removeEventListener('pointermove', mv); handle.removeEventListener('pointerup', up); if (onResize) onResize(); };
-      handle.addEventListener('pointermove', mv); handle.addEventListener('pointerup', up);
+      el.addEventListener('pointermove', mv);
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { el.addEventListener(t, stop); });
     });
+  }
+  /** Drag by the title bar, resize from the corner (laptop only; not while expanded). opts: def() = first box, onChange(final). */
+  function makeFloating(panel, head, handle, opts) {
+    opts = opts || {};
+    var saved = fpLoad(panel);
+    panel._big = !!(saved && saved.big);
+    panel._box = saved && saved.box ? saved.box : null;
+    panel._def = opts.def;
+    var can = function () { return !isPhone() && !panel._big; }, b0 = null;
+    var done = function () { fpSave(panel); if (opts.onChange) opts.onChange(true); };
+    fpGesture(head, can, function () { b0 = JSON.parse(JSON.stringify(panel._box)); },
+      function (dx, dy) { panel._box.x = b0.x + dx; panel._box.y = b0.y + dy; fpApply(panel); }, done);
+    fpGesture(handle, can, function () { b0 = JSON.parse(JSON.stringify(panel._box)); },
+      function (dx, dy) { panel._box.w = b0.w + dx; panel._box.h = b0.h + dy; fpApply(panel); if (opts.onChange) opts.onChange(false); }, done);
+  }
+  function fpOpen(panel) {
+    if (!panel._box) panel._box = panel._def();
+    panel.classList.add('on');
+    fpApply(panel);
+  }
+  function fpToggleBig(panel) { panel._big = !panel._big; fpApply(panel); fpSave(panel); }
+  /** Window resized (or phone rotated): keep open panels inside the window; nothing else changes. */
+  function fpOnWindowResize() {
+    ['#calc-panel', '#ref-panel'].forEach(function (id) { var p = $(id); if (p && p.classList.contains('on') && p._box) fpApply(p); });
+    calcResize();
   }
 
   /* ---------- calculator (Desmos) ---------- */
@@ -1437,27 +1499,38 @@
     });
     return A.desmosLoading;
   }
-  /** On wide screens the question moves right of the calculator (when the panel sits on the left) so nothing is covered. */
+  /** Laptop: the calculator opens on the left and the question moves to its right, so nothing is covered (Bluebook).
+   *  Docked only when the panel sits in the left part of a wide window; checked when a gesture ENDS, never during it. */
   function dockUpdate() {
-    var panel = $('#calc-panel'), scr = $('#scr-test');
-    var on = panel.classList.contains('on') && window.innerWidth >= 1000 && panel.offsetLeft < 120 && !panel.classList.contains('big');
+    var panel = $('#calc-panel'), scr = $('#scr-test'), b = panel._box;
+    var on = !!b && panel.classList.contains('on') && !panel._big && !isPhone() && viewW() >= 1000 && b.x < viewW() * 0.3;
     scr.classList.toggle('calc-docked', on);
-    scr.style.setProperty('--calcw', panel.offsetWidth + 'px');
+    if (on) scr.style.setProperty('--calcw', Math.round(b.x + b.w - 16) + 'px');
+    // phone: the question can still scroll up above the bottom sheet
+    var sheet = panel.classList.contains('on') && isPhone();
+    scr.classList.toggle('calc-sheet', sheet);
+    if (sheet) scr.style.setProperty('--sheeth', panel.offsetHeight + 'px');
   }
-  function calcResize() { dockUpdate(); try { if (A.calc && A.calc.resize) A.calc.resize(); if (A.calcSci && A.calcSci.resize) A.calcSci.resize(); } catch (e) {} }
+  function calcResize(final) {
+    if (final !== false) dockUpdate();
+    try { if (A.calc && A.calc.resize) A.calc.resize(); if (A.calcSci && A.calcSci.resize) A.calcSci.resize(); } catch (e) {}
+  }
+  function calcDefault() {
+    var H = hostRect(), w = Math.round(Math.max(360, Math.min(480, H.w * 0.34)));
+    if (H.w < 1000) return { x: H.w - Math.min(420, Math.round(H.w * 0.45)) - 12, y: H.top + 12, w: Math.min(420, Math.round(H.w * 0.45)), h: Math.max(300, Math.min(560, H.h - 24)) };
+    return { x: 12, y: H.top + 12, w: w, h: Math.max(300, Math.min(620, H.h - 24)) };
+  }
   function initCalc() {
     var panel = $('#calc-panel');
-    makeFloating(panel, $('#calc-head'), $('#calc-rs'), calcResize);
+    makeFloating(panel, $('#calc-head'), $('#calc-rs'), { def: calcDefault, onChange: calcResize });
+    $('#calc-exp').textContent = panel._big ? 'Collapse' : 'Expand';
     $('#tool-calc').onclick = function () { panel.classList.contains('on') ? hideCalc() : showCalc(); };
     $('#calc-x').onclick = function () { hideCalc(); };
     $('#calc-g').onclick = function () { calcMode('g'); };
     $('#calc-s').onclick = function () { calcMode('s'); };
     $('#calc-exp').onclick = function () {
-      var big = panel.classList.toggle('big');
-      if (big) { panel._old = [panel.style.width, panel.style.height, panel.style.left, panel.style.top];
-        panel.style.left = '8px'; panel.style.top = '8px'; panel.style.width = Math.min(window.innerWidth - 16, Math.max(520, window.innerWidth * 0.55)) + 'px'; panel.style.height = ($('#tmain').clientHeight - 16) + 'px'; }
-      else if (panel._old) { panel.style.width = panel._old[0]; panel.style.height = panel._old[1]; panel.style.left = panel._old[2]; panel.style.top = panel._old[3]; }
-      $('#calc-exp').textContent = big ? 'Collapse' : 'Expand';
+      fpToggleBig(panel);
+      $('#calc-exp').textContent = panel._big ? 'Collapse' : 'Expand';
       calcResize();
     };
   }
@@ -1470,8 +1543,8 @@
   function showCalc() {
     if (!pdef().calculator) return;
     var panel = $('#calc-panel');
-    panel.classList.add('on'); $('#tool-calc').classList.add('active');
-    if (!panel._sized) { panel._sized = 1; panel.style.width = Math.round(Math.max(380, Math.min(520, window.innerWidth * 0.42))) + 'px'; panel.style.height = Math.max(300, Math.min(640, $('#tmain').clientHeight - 24)) + 'px'; panel.style.top = ($('#tmain').offsetTop + 12) + 'px'; }
+    fpOpen(panel); $('#tool-calc').classList.add('active');
+    $('#calc-exp').textContent = panel._big ? 'Collapse' : 'Expand';
     dockUpdate();
     var q = curQ(); log('calc_open', q && A.st.phase === 'test' ? q.qid : null, null); persist();
     if (A.calc) { calcResize(); return; }
@@ -1523,10 +1596,14 @@
   /* ---------- reference sheet (SAT-ready) ---------- */
   function initRef() {
     var panel = $('#ref-panel');
-    makeFloating(panel, $('#ref-head'), $('#ref-rs'));
+    makeFloating(panel, $('#ref-head'), $('#ref-rs'), { def: function () {
+      var H = hostRect(), w = Math.round(Math.max(340, Math.min(520, H.w * 0.4)));
+      return { x: H.w - w - 16, y: H.top + 8, w: w, h: Math.max(320, Math.min(680, H.h - 16)) };
+    } });
     $('#tool-ref').onclick = function () {
-      var on = panel.classList.toggle('on'); $('#tool-ref').classList.toggle('active', on);
-      if (on && !panel._sized) { panel._sized = 1; panel.style.height = Math.max(320, Math.min(680, $('#tmain').clientHeight - 16)) + 'px'; }
+      var on = !panel.classList.contains('on');
+      if (on) fpOpen(panel); else panel.classList.remove('on');
+      $('#tool-ref').classList.toggle('active', on);
       if (on) { $('#ref-body').innerHTML = A.profile.reference_sheet === 'sat' ? SAT_REF_HTML : (A.profile.reference_html || '<p>No reference sheet for this test.</p>'); typeset($('#ref-body')); }
     };
     $('#ref-x').onclick = function () { panel.classList.remove('on'); $('#tool-ref').classList.remove('active'); };

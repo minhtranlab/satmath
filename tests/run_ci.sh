@@ -12,4 +12,5 @@ run node teacher_test.js      # teacher page: students + codes, classes, assignm
 run node sync_test.js         # a rebuilt batch reaches the Sheet (fixed key, version B, dropped item); Minh's own edits stay
 run node e2e_test.js          # browser: sign in → home → start 5 → answer → submit → result → review; wrong code; no key in payloads
 run node e2e_teacher_test.js  # browser: teacher page from sign-in to profile
+run node calc_test.js         # browser: calculator panel on laptop + phone (drag, resize, expand, close, window resize)
 echo "ALL SUITES PASSED"
