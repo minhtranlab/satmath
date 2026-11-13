@@ -26,6 +26,15 @@ Secret `CLASPRC_JSON` = clasp login of minhtranipad@gmail.com (scopes: script pr
 
 Note: the script was made with the Apps Script API `projects.create` + `parentId` = Sheet ID (clasp 3.4.1 `create --type sheets` ignores `--parentId` and makes a new Sheet).
 
+## Deploy by hand (while the secret `CLASPRC_JSON` is not set — Minh postponed it on 2026-11-13)
+The Action then only runs the tests. A chat deploys from a clone of this repo:
+`node tools/clasp_login.mjs start` → Minh opens the link, Allow, pastes back the `http://localhost:8888/?…` address →
+`node tools/clasp_login.mjs finish '<address>'` → `npx @google/clasp@3.4.1 push --force` →
+`npx @google/clasp@3.4.1 create-deployment --deploymentId "$(cat .deployment)" --description "<commit> <message>"` →
+`curl -sL "https://script.google.com/macros/s/$(cat .deployment)/exec?update=1"` (must answer `SAT Math Lib update: done` or `already up to date`).
+To switch auto-deploy on: Minh (Mac, Node installed) runs `npx -y @google/clasp@3.4.1 login`, then `pbcopy < ~/.clasprc.json`, and pastes it as repo
+secret `CLASPRC_JSON` (Settings → Secrets and variables → Actions). Chats cannot set Actions secrets (blocked through the proxy).
+
 ## Add a batch of questions (no code change)
 ```
 python3 tools/build_library.py "<project folder>/data/library" HM3          # 0 errors needed
