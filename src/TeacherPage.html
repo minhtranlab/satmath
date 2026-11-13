@@ -72,9 +72,9 @@
         }).join('') + '</table>';
       body().innerHTML = h;
       bindCopies(body());
-      $$('[data-class]', body()).forEach(function (b) { b.onclick = function () { openClass(b.getAttribute('data-class')); }; });
+      $$('[data-class]', body()).forEach(function (b) { b.onclick = function () { T.tab = 'go'; T.filter = ''; openClass(b.getAttribute('data-class')); }; });
       $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
-      $$('[data-go-st]', body()).forEach(function (b) { b.onclick = function () { openClass('st:' + b.getAttribute('data-go-st'), 'all'); }; });
+      $$('[data-go-st]', body()).forEach(function (b) { b.onclick = function () { T.tab = 'go'; T.filter = ''; openClass('st:' + b.getAttribute('data-go-st'), 'all'); }; });
       $('#t-new-st').onclick = newStudent; $('#t-new-cl').onclick = function () { editClass(null); };
     }).catch(fail);
   }
