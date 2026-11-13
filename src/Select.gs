@@ -1,72 +1,342 @@
 /**
- * SAT Math Lib — choosing the questions of a practice set + the student's home data.
- * Build B1/B2 (skeleton): unseen first, then items missed ≥ retry_wait_days ago, then the oldest seen; one item per twin
- * group; easier → harder. The adaptive levels of spec v1.1 §4 (templates E/M/H, missed sub-skills, probe) come in B3
- * and replace pickForPractice_ only.
+ * SAT Math Lib — choosing the questions of a set + the student's home data (spec v1.1 §4, §5).
+ *
+ * Self-practice (startPractice → pickForPractice_): the student picks ONE College Board skill k + n ∈ {5, 10, 20}; the app
+ * picks the difficulty. State per student × skill = Levels tab (level E/M/H, start M; R = weighted accuracy of the latest
+ * first tries; good_streak). Template of difficulty slots per level; up to ceil(missed_share·n) slots re-check the
+ * sub-skills the student missed (≤ n/5 per sub-skill, the easiest slots), one probe of a never-tried sub-skill, the rest
+ * spread over the sub-skills least practised first. Only live, version-A items of live batches; one item per twin group;
+ * items answered in the last block_days days only when the pool is too small. While E + M items of k are fewer than
+ * standin_min, Hard items stand in (E = Hard level 1, M = Hard level 2, H = Hard level 3).
+ * After a submitted set (afterSubmit_): R updated for every skill touched (practice + assignment, never Review); a
+ * practice set moves the level: 2 good sets (≥ good_set_pct) in a row → up, 1 weak set (< weak_set_pct) → down.
+ *
+ * Review (startReview / reviewAfterSubmit_): an item enters when try 1 was wrong / blank or right but slow; served in
+ * mini-sets of ≤ 5 (a live version B of it when one exists, else the A item); leaves after one clean pass (right on try
+ * 1, not slow).
  */
 
 /** Seeded shuffle (so a test can repeat a pick). */
 function shuffle_(a, seed) {
-  var s = seed || Date.now() % 2147483647;
+  var s = (seed || Date.now()) % 2147483646 + 1;
   var rnd = function () { s = (s * 16807) % 2147483647; return s / 2147483647; };
   for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
   return a;
 }
+function seedOf_(str) { var h = 7; String(str).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 2147483646; }); return h + 1; }
 var DIFF_ORDER_ = { E: 1, M: 2, H: 3 };
+var TEMPLATE_5_ = { E: ['E', 'E', 'E', 'M', 'M'], M: ['E', 'M', 'M', 'M', 'H'], H: ['M', 'M', 'H', 'H', 'H'] };
+var REVIEW_SET_SIZE = 5;
+function clean_(v) { return String(v === undefined || v === null ? '' : v).replace(/^'/, '').trim(); }
+
+/** Kind of every set ({set_id: kind}). */
+function setKinds_() {
+  var k = {}; readTable_('Sets').rows.forEach(function (s) { k[String(s.set_id)] = String(s.kind || 'practice'); }); return k;
+}
+
+/** One student's first tries, oldest first: [{qid, skill, subskill, right, blank, ms, kind, profile, twin}] (every set kind). */
+function firstTries_(codeN, kinds) {
+  kinds = kinds || setKinds_();
+  return readTable_('Responses').rows.filter(function (r) { return normCode_(r.student_code) === codeN; }).map(function (r) {
+    return { qid: String(r.qid), skill: clean_(r.skill), subskill: clean_(r.subskill), right: Number(r.try1_correct) === 1,
+             blank: String(r.profile) === 'BLANK', ms: toMs_(r.submitted_at), kind: kinds[String(r.set_id)] || 'practice',
+             profile: String(r.profile || ''), set_id: String(r.set_id) };
+  }).sort(function (a, b) { return a.ms - b.ms; });
+}
 
 /** {qid: {last_ms, last_right, n}} of one student (first tries of every set). */
-function historyOf_(codeN) {
+function historyOf_(codeN, tries) {
   var h = {};
-  readTable_('Responses').rows.forEach(function (r) {
-    if (normCode_(r.student_code) !== codeN) return;
-    var q = String(r.qid), t = toMs_(r.submitted_at);
-    var o = h[q] = h[q] || { last_ms: 0, last_right: false, n: 0 };
+  (tries || firstTries_(codeN)).forEach(function (t) {
+    var o = h[t.qid] = h[t.qid] || { last_ms: 0, last_right: false, n: 0 };
     o.n++;
-    if (t >= o.last_ms) { o.last_ms = t; o.last_right = Number(r.try1_correct) === 1; }
+    if (t.ms >= o.last_ms) { o.last_ms = t.ms; o.last_right = t.right; }
   });
   return h;
 }
 
-function pickForPractice_(codeN, skill, n) {
-  var S = getSettings_(), hist = historyOf_(codeN), now = Date.now();
-  var pool = livePool_().filter(function (r) { return String(r.skill).replace(/^'/, '') === skill; });
-  var unseen = [], wrongOld = [], seen = [];
-  pool.forEach(function (r) {
+/** R = weighted accuracy of the latest `recent_window` first tries in skill k (Review sets excluded). */
+function recentR_(tries, skill, S) {
+  var xs = tries.filter(function (t) { return t.skill === skill && t.kind !== 'review'; }).slice(-S.recent_window).reverse();
+  if (!xs.length) return { R: null, n: 0 };
+  var num = 0, den = 0;
+  xs.forEach(function (t, i) { var w = Math.pow(S.recent_decay, i); den += w; if (t.right) num += w; });
+  return { R: num / den, n: tries.filter(function (t) { return t.skill === skill && t.kind !== 'review'; }).length };
+}
+
+/* ---------------- Levels ---------------- */
+function levelRow_(codeN, skill) {
+  var rows = readTable_('Levels').rows;
+  for (var i = 0; i < rows.length; i++) if (normCode_(rows[i].student_code) === codeN && clean_(rows[i].skill) === skill) return rows[i];
+  return null;
+}
+/** Level state of a student in a skill (Levels row, else the start level). */
+function levelState_(codeN, skill, tries, S) {
+  var row = levelRow_(codeN, skill);
+  if (row && /^[EMH]$/.test(String(row.level))) {
+    return { level: String(row.level), R: row.recent_pct === '' ? null : Number(row.recent_pct), good_streak: Number(row.good_streak) || 0, row: row };
+  }
+  return { level: initialLevel_(tries, skill, S), R: recentR_(tries, skill, S).R, good_streak: 0, row: null };
+}
+/** A skill never practised on its own: ≥ 5 first tries from assignments → R decides; else M. */
+function initialLevel_(tries, skill, S) {
+  var r = recentR_(tries, skill, S);
+  if (r.n >= 5) return r.R >= S.good_set_pct ? 'H' : r.R < S.weak_set_pct ? 'E' : 'M';
+  return 'M';
+}
+function up_(l) { return l === 'E' ? 'M' : 'H'; }
+function down_(l) { return l === 'H' ? 'M' : 'E'; }
+
+/** After a submitted set: R for every skill touched; a practice set also moves the level of its skill. */
+function afterSubmit_(s, rows) {
+  var kind = String(s.kind || 'practice');
+  if (kind === 'review') return '';
+  var codeN = normCode_(s.student_code), S = getSettings_(), tries = firstTries_(codeN);
+  var touched = {};
+  rows.forEach(function (r) { var k = clean_(r.skill); if (k) touched[k] = 1; });
+  var notes = [];
+  Object.keys(touched).forEach(function (k) {
+    var st = levelState_(codeN, k, tries, S), rr = recentR_(tries, k, S);
+    if (!st.row && kind !== 'practice') return; // assignment only: the level starts when the skill is first practised (initialLevel_)
+    var lvl = st.row ? st.level : (String(s.level_at_start || '') || st.level), streak = st.good_streak, hist = st.row ? String(st.row.history || '') : '';
+    if (kind === 'practice' && clean_(s.skill) === k) {
+      var mine = rows.filter(function (r) { return clean_(r.skill) === k; });
+      var ft = mine.filter(function (r) { return Number(r.try1_correct) === 1; }).length / Math.max(1, mine.length);
+      var before = lvl;
+      if (ft >= S.good_set_pct) streak++; else streak = 0;
+      if (streak >= 2 && lvl !== 'H') { lvl = up_(lvl); streak = 0; }
+      else if (ft < S.weak_set_pct && lvl !== 'E') { lvl = down_(lvl); streak = 0; }
+      if (lvl !== before) { hist = (hist ? hist + ' · ' : '') + before + '→' + lvl + ' ' + fmtDate_(new Date(), 'd MMM'); notes.push(k + ' ' + before + '→' + lvl); }
+    }
+    var f = { student_code: codeN, skill: txt_(k), level: lvl, recent_pct: rr.R === null ? '' : round_(rr.R, 3), good_streak: streak,
+              n_items: rr.n, last_set_id: String(s.set_id), updated_at: nowIso_(), history: hist };
+    if (st.row) updateRow_('Levels', st.row._row, f); else appendObjects_('Levels', [f]);
+  });
+  return notes.join(', ');
+}
+
+/* ---------------- practice selection (§4.2) ---------------- */
+function template_(level, n) {
+  var t = TEMPLATE_5_[level] || TEMPLATE_5_.M, rep = Math.max(1, Math.round(n / 5)), out = [];
+  t.forEach(function (d) { for (var i = 0; i < rep; i++) out.push(d); });
+  return out.slice(0, n);
+}
+/** E/M/H slot → what to pick: real buckets, or Hard stand-ins while E + M items of the skill are thin. */
+function bucketMap_(pool, S) {
+  var em = pool.filter(function (r) { var d = String(r.difficulty).toUpperCase(); return d === 'E' || d === 'M'; }).length;
+  if (em < S.standin_min) return { E: { diff: 'H', levels: [1, 2, 3] }, M: { diff: 'H', levels: [2, 1, 3] }, H: { diff: 'H', levels: [3, 2, 1] }, standin: true };
+  return { E: { diff: 'E', levels: [] }, M: { diff: 'M', levels: [] }, H: { diff: 'H', levels: [] }, standin: false };
+}
+var NEIGHBOUR_ = { E: ['M'], M: ['E', 'H'], H: ['M'] };
+
+/**
+ * Picks the questions of a practice set. Returns {qids, level, slots, n, standin}.
+ * setSeed makes the random parts repeatable (tests); in the app it is the set id.
+ */
+function pickForPractice_(codeN, skill, n, setSeed) {
+  var S = getSettings_(), now = Date.now(), tries = firstTries_(codeN), hist = historyOf_(codeN, tries);
+  var st = levelState_(codeN, skill, tries, S);
+  var slots = template_(st.level, n);
+  var all = livePool_().filter(function (r) { return clean_(r.skill) === skill; });
+  var pool = all.filter(function (r) { var h = hist[String(r.qid)]; return !h || now - h.last_ms >= S.block_days * 86400000; });
+  if (pool.length < n) pool = all;                                  // block dropped only if the pool is too small
+  var map = bucketMap_(all, S);
+  var strong = st.level === 'H' && st.R !== null && st.R >= S.strong_r;
+  var seed = seedOf_(setSeed || (codeN + skill + now));
+  var rnd = {}; shuffle_(pool.slice(), seed).forEach(function (r, i) { rnd[String(r.qid)] = i; });
+
+  // sub-skills of k (taxonomy order) + this student's first tries in each
+  var subs = SKILLS_.filter(function (x) { return x.skill === skill && x.subskill; }).map(function (x) { return x.subskill; });
+  var bySub = {};
+  subs.forEach(function (c) { bySub[c] = []; });
+  tries.forEach(function (t) { if (t.skill === skill && bySub[t.subskill]) bySub[t.subskill].push(t); });
+  var hasItems = {}; pool.forEach(function (r) { hasItems[clean_(r.subskill)] = 1; });
+  var missed = subs.filter(function (c) {
+    var xs = bySub[c]; if (!xs.length || !hasItems[c]) return false;
+    var last5 = xs.slice(-5), wrong5 = last5.filter(function (t) { return !t.right; }).length;
+    return !xs[xs.length - 1].right || wrong5 >= 2;
+  }).sort(function (a, b) {
+    var la = bySub[a].filter(function (t) { return !t.right; }).pop(), lb = bySub[b].filter(function (t) { return !t.right; }).pop();
+    return (lb ? lb.ms : 0) - (la ? la.ms : 0);
+  });
+  var untried = subs.filter(function (c) { return !bySub[c].length && hasItems[c]; });
+  var missedTwins = {};                                              // twin groups of the items missed in each sub-skill
+  var rowOf = {}; all.forEach(function (r) { rowOf[String(r.qid)] = r; });
+  tries.forEach(function (t) { var r = rowOf[t.qid]; if (r && !t.right && r.twin_group) (missedTwins[t.subskill] = missedTwins[t.subskill] || {})[String(r.twin_group)] = 1; });
+
+  var chosen = slots.map(function () { return null; }), used = {}, twins = {}, perSub = {}, why = slots.map(function () { return ''; });
+  function free(i) { return chosen[i] === null; }
+  function cls(r, pref, sub) {
     var h = hist[String(r.qid)];
-    if (!h) unseen.push(r);
-    else if (!h.last_right && now - h.last_ms >= S.retry_wait_days * 86400000) wrongOld.push(r);
-    else seen.push(r);
+    switch (pref) {
+      case 'twin': return !h && r.twin_group && missedTwins[sub] && missedTwins[sub][String(r.twin_group)];
+      case 'unseen': return !h;
+      case 'wrong_old': return h && !h.last_right && now - h.last_ms >= S.retry_wait_days * 86400000;
+      case 'seen_right': return h && h.last_right;
+      default: return true;
+    }
+  }
+  function rank(r, prefs, sub, want) {
+    var p = prefs.length; for (var i = 0; i < prefs.length; i++) if (cls(r, prefs[i], sub)) { p = i; break; }
+    var lv = want.levels.length ? want.levels.indexOf(Number(r.level) || 1) : 0; if (lv < 0) lv = want.levels.length;
+    var h = hist[String(r.qid)];
+    return [p, lv, h ? h.last_ms : 0, rnd[String(r.qid)] || 0];
+  }
+  function cmp(a, b) { for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; }
+  function best(cands, prefs, sub, want, strict) {
+    var ok = cands.filter(function (r) {
+      if (used[String(r.qid)]) return false;
+      var tw = String(r.twin_group || ''); if (tw && twins[tw]) return false;
+      return !strict || prefs.some(function (p) { return cls(r, p, sub); });
+    });
+    if (!ok.length) return null;
+    ok.sort(function (a, b) { return cmp(rank(a, prefs, sub, want), rank(b, prefs, sub, want)); });
+    return ok[0];
+  }
+  function inDiff(r, want) { return String(r.difficulty).toUpperCase() === want.diff; }
+  function wantFor(slotDiff) {
+    var w = map[slotDiff], lv = w.levels.slice();
+    if (slotDiff === 'H' && strong) lv = [3, 2, 1];
+    return { diff: w.diff, levels: lv };
+  }
+  /** pick(pool, sub, slot, map, prefer) with fallbacks: neighbour difficulty → any sub-skill → any item of k. */
+  function pick(sub, slotDiff, prefs) {
+    var want = wantFor(slotDiff), inSub = pool.filter(function (r) { return clean_(r.subskill) === sub; });
+    var r = best(inSub.filter(function (x) { return inDiff(x, want); }), prefs, sub, want, true);
+    if (r) return r;
+    var nb = NEIGHBOUR_[slotDiff] || [];
+    for (var i = 0; i < nb.length && !r; i++) { var w2 = wantFor(nb[i]); r = best(inSub.filter(function (x) { return inDiff(x, w2); }), prefs, sub, w2, true); }
+    if (r) return r;
+    r = best(pool.filter(function (x) { return inDiff(x, want); }), ['unseen', 'wrong_old', 'seen_right'], '', want, false);
+    if (r) return r;
+    return best(pool, ['unseen', 'wrong_old', 'seen_right'], '', want, false);
+  }
+  function take(r, i, reason) {
+    if (!r) return false;
+    chosen[i] = r; used[String(r.qid)] = 1; why[i] = reason;
+    if (r.twin_group) twins[String(r.twin_group)] = 1;
+    var sb = clean_(r.subskill); perSub[sb] = (perSub[sb] || 0) + 1;
+    return true;
+  }
+  var lvlRank = DIFF_ORDER_[st.level];
+
+  // 1) re-check missed sub-skills: ≤ ceil(missed_share·n) slots, ≤ n/5 per sub-skill, the easiest free slots ≤ level
+  var maxRe = Math.ceil(S.missed_share * n), perMissed = Math.max(1, Math.floor(n / 5)), nRe = 0, progress = true;
+  while (missed.length && nRe < maxRe && progress) {
+    progress = false;
+    for (var m = 0; m < missed.length && nRe < maxRe; m++) {
+      var sub = missed[m];
+      if ((perSub[sub] || 0) >= perMissed) continue;
+      var si = -1;
+      for (var i = 0; i < slots.length; i++) if (free(i) && DIFF_ORDER_[slots[i]] <= lvlRank && (si < 0 || DIFF_ORDER_[slots[i]] < DIFF_ORDER_[slots[si]])) si = i;
+      if (si < 0) break;
+      var want = wantFor(slots[si]);
+      var inSub = pool.filter(function (r) { return clean_(r.subskill) === sub; });
+      var r = best(inSub.filter(function (x) { return inDiff(x, want); }), ['twin', 'unseen', 'wrong_old'], sub, want, true);
+      var nb = NEIGHBOUR_[slots[si]] || [];
+      for (var k = 0; k < nb.length && !r; k++) { var w2 = wantFor(nb[k]); r = best(inSub.filter(function (x) { return inDiff(x, w2); }), ['twin', 'unseen', 'wrong_old'], sub, w2, true); }
+      if (take(r, si, 'recheck ' + sub)) { nRe++; progress = true; }
+    }
+  }
+  // 2) one probe of a never-tried sub-skill
+  for (var p = 0; p < S.probes_per_set && untried.length; p++) {
+    var order = ['M', 'E', 'H'], pi = -1;
+    for (var o = 0; o < order.length && pi < 0; o++) for (var j = 0; j < slots.length; j++) if (free(j) && slots[j] === order[o]) { pi = j; break; }
+    if (pi < 0) break;
+    var probeSub = untried.shift(), want2 = wantFor(slots[pi]);
+    var pr = best(pool.filter(function (x) { return clean_(x.subskill) === probeSub; }), ['unseen'], probeSub, want2, true);
+    take(pr, pi, 'probe ' + probeSub);
+  }
+  // 3) fill the rest, spread over sub-skills (least practised first, round-robin)
+  var answered = {}; subs.forEach(function (c) { answered[c] = { n: bySub[c].length, last: bySub[c].length ? bySub[c][bySub[c].length - 1].ms : 0 }; });
+  for (var f = 0; f < slots.length; f++) {
+    if (!free(f)) continue;
+    var cand = subs.filter(function (c) { return hasItems[c]; }).sort(function (a, b) {
+      return ((answered[a].n + (perSub[a] || 0)) - (answered[b].n + (perSub[b] || 0))) || (answered[a].last - answered[b].last) || (subs.indexOf(a) - subs.indexOf(b));
+    });
+    var got = null;
+    for (var c = 0; c < cand.length && !got; c++) {
+      var wf = wantFor(slots[f]);
+      got = best(pool.filter(function (x) { return clean_(x.subskill) === cand[c] && inDiff(x, wf); }), ['unseen', 'seen_right'], cand[c], wf, true);
+    }
+    if (!got) got = pick(cand[0] || '', slots[f], ['unseen', 'seen_right']);
+    take(got, f, 'fill');
+  }
+  var picked = [];
+  chosen.forEach(function (r, i) { if (r) picked.push({ r: r, slot: slots[i], why: why[i] }); });
+  picked.sort(function (a, b) {
+    return (DIFF_ORDER_[String(a.r.difficulty).toUpperCase()] || 3) - (DIFF_ORDER_[String(b.r.difficulty).toUpperCase()] || 3) ||
+           (Number(a.r.level) || 0) - (Number(b.r.level) || 0) || (rnd[String(a.r.qid)] || 0) - (rnd[String(b.r.qid)] || 0);
   });
-  shuffle_(unseen); shuffle_(wrongOld);
-  seen.sort(function (a, b) { return hist[String(a.qid)].last_ms - hist[String(b.qid)].last_ms; });
-  var out = [], twins = {};
-  unseen.concat(wrongOld, seen).forEach(function (r) {
-    if (out.length >= n) return;
-    var tw = String(r.twin_group || '');
-    if (tw && twins[tw]) return;
-    if (tw) twins[tw] = 1;
-    out.push(r);
+  return { qids: picked.map(function (x) { return String(x.r.qid); }), level: st.level,
+           slots: picked.map(function (x) { return x.slot; }).join(','), why: picked.map(function (x) { return x.why; }), standin: map.standin };
+}
+
+/* ---------------- Review area (§5) ---------------- */
+function reviewRows_(codeN) { return readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === codeN; }); }
+function openReviewRows_(codeN) { return reviewRows_(codeN).filter(function (r) { return String(r.status || 'open') === 'open'; }); }
+
+/** After any submitted set: new Review items (try 1 wrong / blank, or right but slow); a Review set clears its clean items. */
+function reviewAfterSubmit_(s, rows) {
+  var codeN = normCode_(s.student_code), kind = String(s.kind || 'practice'), open = {}, now = nowIso_(), add = [];
+  openReviewRows_(codeN).forEach(function (r) { open[String(r.qid)] = r; });
+  var aOf = {};                                                    // review set: served qid → the A item of the Review row
+  if (kind === 'review') { var a = String(s.slots || '').split(','), q = setQids_(s); q.forEach(function (x, i) { aOf[x] = a[i] || x; }); }
+  var cleared = 0, still = 0;
+  rows.forEach(function (r) {
+    var qid = aOf[String(r.qid)] || String(r.qid), p = String(r.profile), right1 = Number(r.try1_correct) === 1;
+    var reason = p === 'BLANK' ? 'blank' : !right1 ? 'wrong' : p === 'SLOW_RIGHT' ? 'slow' : '';
+    if (kind === 'review' && open[qid]) {
+      var o = open[qid], f = { n_served: (Number(o.n_served) || 0) + 1 };
+      if (right1 && p !== 'SLOW_RIGHT') { f.status = 'cleared'; f.cleared_at = now; f.cleared_by = 'pass'; cleared++; } else still++;
+      updateRow_('Review', o._row, f);
+      return;
+    }
+    if (reason && !open[qid]) { add.push({ student_code: codeN, qid: qid, reason: reason, from_set: String(s.set_id), added_at: now, status: 'open', n_served: 0 }); open[qid] = 1; }
   });
-  out.sort(function (a, b) {
-    return (DIFF_ORDER_[String(a.difficulty).toUpperCase()] || 3) - (DIFF_ORDER_[String(b.difficulty).toUpperCase()] || 3) ||
-           (Number(a.level) || 0) - (Number(b.level) || 0);
+  appendObjects_('Review', add);
+  return { added: add.length, cleared: cleared, still: still };
+}
+
+/** The item served for a Review row: a live version B of it when one exists, else the A item itself. */
+function reviewServe_(aQid, pool) {
+  var live = batchLive_();
+  var b = questionRows_().filter(function (r) {
+    return String(r.version).toUpperCase() === 'B' && clean_(r.version_of) === aQid && String(r.status || '').toLowerCase() === 'live' && live[String(r.batch)];
   });
-  return { qids: out.map(function (r) { return String(r.qid); }), level: '', slots: '' };
+  return b.length ? String(b[0].qid) : aQid;
+}
+
+/** Start (or resume) a Review mini-set of ≤ 5 open items, picked at random. */
+function startReview(code) {
+  var st = requireStudent_(code), codeN = normCode_(st.student_code);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'review'; });
+    if (open.length) return { ok: true, set_id: String(open[open.length - 1].set_id), resumed: true };
+    var items = openReviewRows_(codeN).map(function (r) { return String(r.qid); });
+    var known = {}; questionRows_().forEach(function (r) { known[String(r.qid)] = 1; });
+    items = items.filter(function (q) { return known[q]; });
+    if (!items.length) throw new Error('FORM: Nothing to review right now.');
+    var setId = newSetId_(codeN);
+    var a = shuffle_(items, seedOf_(setId)).slice(0, REVIEW_SET_SIZE);
+    var served = a.map(function (q) { return reviewServe_(q); });
+    appendObjects_('Sets', [{ set_id: setId, student_code: codeN, kind: 'review', skill: '', n: served.length, qids: served.join(','),
+                              slots: a.join(','), created_at: nowIso_(), status: 'in_progress', events_saved: 0, last_saved_at: nowIso_() }]);
+    return { ok: true, set_id: setId, n: served.length };
+  } finally { lock.releaseLock(); }
 }
 
 /* ============================== home ============================== */
 
-/** Everything the home needs in one call: skills (with "n new" + progress dot), open sets, history. */
+/** Everything the home needs in one call: assignments (B6), open sets, skills (with "n new" + progress dot), Review, history. */
 function homeData(code) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
-  var pool = livePool_(), hist = historyOf_(codeN);
-  // accuracy of first tries per skill / sub-skill
+  var pool = livePool_(), tries = firstTries_(codeN), hist = historyOf_(codeN, tries);
   var acc = {};
-  readTable_('Responses').rows.forEach(function (r) {
-    if (normCode_(r.student_code) !== codeN || r.try1_correct === '') return;
-    [String(r.skill).replace(/^'/, ''), 's:' + String(r.subskill).replace(/^'/, '')].forEach(function (k) {
-      var o = acc[k] = acc[k] || { n: 0, r: 0 }; o.n++; if (Number(r.try1_correct) === 1) o.r++;
-    });
+  tries.forEach(function (t) {
+    [t.skill, 's:' + t.subskill].forEach(function (k) { var o = acc[k] = acc[k] || { n: 0, r: 0 }; o.n++; if (t.right) o.r++; });
   });
   var dot = function (k) {
     var o = acc[k]; if (!o || o.n < S.progress_dot_min) return 'n';
@@ -74,11 +344,10 @@ function homeData(code) {
   };
   var count = {};
   pool.forEach(function (r) {
-    var sk = String(r.skill).replace(/^'/, ''), ss = 's:' + String(r.subskill).replace(/^'/, '');
-    [sk, ss].forEach(function (k) { var c = count[k] = count[k] || { live: 0, fresh: 0 }; c.live++; if (!hist[String(r.qid)]) c.fresh++; });
+    [clean_(r.skill), 's:' + clean_(r.subskill)].forEach(function (k) { var c = count[k] = count[k] || { live: 0, fresh: 0 }; c.live++; if (!hist[String(r.qid)]) c.fresh++; });
   });
   var domains = [], dIdx = {};
-  (typeof SKILLS_ !== 'undefined' ? SKILLS_ : []).forEach(function (r) {
+  SKILLS_.forEach(function (r) {
     if (!dIdx[r.domain]) { dIdx[r.domain] = { domain: r.domain, name: r.domain_name, fresh: 0, skills: [], _s: {} }; domains.push(dIdx[r.domain]); }
     var d = dIdx[r.domain];
     if (!d._s[r.skill]) {
@@ -95,13 +364,21 @@ function homeData(code) {
   var sets = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === codeN && !isHidden_(s); });
   var open = sets.filter(function (s) { return isOpenStatus_(s.status); }).map(function (s) {
     var stt = parseState_(s) || {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length;
-    return { set_id: String(s.set_id), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
+    return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
+  });
+  var fixLeft = {};
+  readTable_('Responses').rows.forEach(function (r) {
+    if (normCode_(r.student_code) !== codeN) return;
+    if (Number(r.best_correct) !== 1 && !isYes_(r.locked)) fixLeft[String(r.set_id)] = (fixLeft[String(r.set_id)] || 0) + 1;
   });
   var history = sets.filter(isFinished_).sort(function (a, b) { return toMs_(b.submitted_at) - toMs_(a.submitted_at); }).slice(0, 50).map(function (s) {
-    return { set_id: String(s.set_id), title: setTitle_(s), date: dateStr_(s.submitted_at), n: Number(s.n) || 0,
-             first_try: Number(s.first_try) || 0, best: s.best_score === '' ? Number(s.first_try) || 0 : Number(s.best_score) };
+    return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), title: setTitle_(s), date: dateStr_(s.submitted_at), n: Number(s.n) || 0,
+             first_try: Number(s.first_try) || 0, best: s.best_score === '' ? Number(s.first_try) || 0 : Number(s.best_score),
+             fix_left: fixLeft[String(s.set_id)] || 0 };
   });
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
+  var nReview = openReviewRows_(codeN).length;
   return { ok: true, first_name: String(st.name || '').replace(/\(.*?\)/g, '').trim().split(/\s+/)[0] || '', domains: domains,
-           open: open, history: history, sizes: sizes };
+           assignments: [], open: open, history: history, sizes: sizes,
+           review: { open: nReview, next: Math.min(REVIEW_SET_SIZE, nReview) } };
 }

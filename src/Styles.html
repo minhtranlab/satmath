@@ -539,4 +539,29 @@ mark.app-mode { background: #e8f0fe; color: var(--blue); font-weight: 700; paddi
   .sm-mill{grid-template-columns:1fr}.sm-c1,.sm-c2{border-right:0;border-bottom:1px solid #dde0ea}
   .sm-hist .dt{display:none}.sm-hist th:first-child{display:none}
 }
+
+/* ---- v0.2: Ask teacher, question code, fix tries, Review card, nowrap math ---- */
+.q-ask{background:none;border:0;display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px;padding:6px 4px;color:var(--ink);cursor:pointer}
+.q-ask.on{color:#1d4ed8}.q-ask.on svg path:first-child{fill:#dbe6ff;stroke:#1d4ed8}
+.q-code{margin-left:auto;font:600 12px/1 ui-monospace,Menlo,Consolas,monospace;color:#6b7080;letter-spacing:.02em;padding:3px 6px;border:1px solid #d6d9e2;border-radius:4px;background:#fff;user-select:all}
+.q-askrow{display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 2px 0}
+.q.asked .q-askrow{display:flex}
+.ask-in{flex:1 1 260px;min-width:0;font:15px var(--hz-sans,system-ui);padding:7px 10px;border:1.5px solid #9db4f0;border-radius:6px}
+.ask-hint{font-size:12.5px;color:#5f6577}
+.nw{white-space:nowrap}
+.ch-row.tried .ch{opacity:.45;text-decoration:line-through;pointer-events:none}
+.q.fix-done .ch{pointer-events:none}
+#scr-test.fixing .q-mark,#scr-test.fixing .q-elim,#scr-test.fixing .strike,#scr-test.fixing .undo,#scr-test.fixing #btn-nav{display:none !important}
+#scr-test.ro .q-ask{display:inline-flex !important}
+.fix-msg{font-weight:600}.fix-best{margin-left:auto}
+#btn-check{padding:6px 18px;min-height:0}
+.sm-empty{margin:4px 0 0;color:#5f6577;font-size:15px}
+.sm-asg{margin-bottom:18px}
+.sm-revcard{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:26px 0 8px;padding:16px 18px;border:1.5px solid #191c26;border-radius:10px;background:#fff}
+.sm-revcard div{display:flex;flex-direction:column;gap:2px;min-width:0}.sm-revcard b{font-size:17px}.sm-revcard span{color:#5f6577;font-size:14.5px}
+.sm-hist td.act{white-space:nowrap}.sm-hist td.act .hz-link+.hz-link{margin-left:14px}
+.hz-link.fix{color:#b42318}
+.sm-fix{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 10px}.sm-fix span{color:#5f6577;font-size:14px;max-width:46ch}
+.sm-fixline,.sm-asked,.sm-revsum{margin:6px 0}
+.sm-revsum{font-size:17px}
 </style>

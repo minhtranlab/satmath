@@ -42,7 +42,10 @@ var README_ROWS_ = [
   ['Skills', 'The skill list (domain → College Board skill → sub-skill), written from the taxonomy on each deploy.'],
   ['Settings', 'Numbers and options the app reads (meaning next to each).'],
   ['Time_Norms', 'Normal time per question (seconds) by difficulty and type; below "fast" = rushed, above "slow" = slow. Editable.'],
-  ['Other tabs', 'Classes, Assignments, Levels, Review, Tries, Skill_Summary: filled by later versions of the app.'],
+  ['Levels', 'One row per student × College Board skill: the practice level (E / M / H, start M), recent accuracy, good sets in a row. 2 good sets → up, 1 weak set → down. Students never see it.'],
+  ['Review', 'One row per question in a student\'s Review list (wrong / blank / slow on the first try). It leaves after one clean try in Review (status cleared).'],
+  ['Tries', 'Every answer check: try 1 at submit, then each "Fix wrong answers" check (multiple choice: 3 tries in total, then locked; grid-in: no limit).'],
+  ['Other tabs', 'Classes, Assignments, Skill_Summary: filled by later versions of the app (teacher page).'],
   ['Dictionary', 'Every column of every tab explained.']
 ];
 
@@ -50,7 +53,10 @@ var DICT_ = {
   Students: { student_code: 'Code the student types to sign in (unique).', name: 'Name shown in the app.', active: 'Yes = can sign in.', classes: 'Classes of the student (filled by the app).', created_in: 'app / sheet', created_at: 'When the student was added.', note: 'Free text.' },
   Sets: { set_id: 'S-<date>-<code>-<n>.', kind: 'practice / assignment / review', skill: 'College Board skill code of a practice set.', n: 'Questions in the set.', qids: 'The questions, in order.', status: 'in_progress / submitted / abandoned', first_try: 'Right on the first try.', best_score: 'Right on any try (first try + fixed later).', time_used_min: 'Minutes on the questions (time away not counted).', state_json: 'Saved answers (used to resume).', progress: 'Live progress, e.g. "3/10 answered · Q4".' },
   Responses: { try1_answer: 'Answer on the first try.', try1_correct: '1 right / 0 wrong / blank.', best_correct: '1 = right on some try.', time_try1_sec: 'Seconds on the question (first try).', profile: 'RIGHT, SLOW_RIGHT, FAST_WRONG (rushed), SLOW_WRONG (didn\'t know), WRONG, BLANK — from Time_Norms.', flags: 'CHANGED_R_TO_W, CHANGED_W_TO_R, GUESS_LIKELY, ELIM_KEY, IDLE_LIKELY.', mistake_type: 'Teacher\'s mistake type (dropdown).', asked: 'Yes = the student asked the teacher about this question.' },
-  Questions: { qid: '<batch>-<number> (College Board: CB-<id>).', batch: 'Library file.', skill: 'Official College Board skill (separate from sub-skill).', subskill: 'Sub-skill code (taxonomy).', difficulty: 'E / M / H.', level: '1–3 inside a difficulty.', key: 'App key (typed here = wins over the file).', accepted: 'Grid-in: every accepted form, separated by |.', status: 'live / hold / excluded / candidate.' },
+  Questions: { qid: '<batch>-<number> (College Board: CB-<id>).', code: 'Short question code (E326, M12, H604): shown small on the question; use it in the teaching PDF.', batch: 'Library file.', skill: 'Official College Board skill (separate from sub-skill).', subskill: 'Sub-skill code (taxonomy).', difficulty: 'E / M / H.', level: '1–3 inside a difficulty.', key: 'App key (typed here = wins over the file).', accepted: 'Grid-in: every accepted form, separated by |.', status: 'live / hold / excluded / candidate.' },
+  Levels: { level: 'E / M / H — which difficulty mix the next practice set of this skill gets.', recent_pct: 'Weighted accuracy of the latest 10 first tries in the skill (0–1).', good_streak: 'Good practice sets in a row (≥ good_set_pct).', history: 'Level changes, e.g. "M→H 14 Nov".' },
+  Review: { reason: 'wrong / blank / slow (first try).', status: 'open / cleared.', n_served: 'Times served in a Review set.', cleared_by: 'pass (one clean try) / teacher.' },
+  Tries: { try_no: '1 = the submitted answer; 2, 3 … = fixes.', correct: '1 right / 0 wrong.', time_sec: 'Seconds for this try.' },
   Batches: { live: 'Yes = served to students.', n_live: 'Questions with status live.', file_id: 'Drive file id of the batch JSON.' }
 };
 function syncSheetTexts_() {

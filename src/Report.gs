@@ -1,6 +1,7 @@
 /**
  * SAT Math Lib — the result page of a set (student + teacher). Never a key, never an explanation.
- *   First Try = right on the first try / n · Best Score = right on any try / n (fix-tries come in B4; until then = First Try)
+ *   First Try = right on the first try / n · Best Score = right on any try / n (fix tries: checkTry, Code.gs)
+ *   Fix wrong answers (n) · "You asked your teacher about …" · Review sets: "2 cleared, 3 still to review"
  *   Results by skill: domain → CB skill → sub-skill, x/y, missed questions as chips
  *   Types of mistakes: Rushed and wrong (R) · Didn't know (slow and wrong) (S) · Wrong · Slow but right (S) · Blank
  *   Grid of the set's questions (✓ ✗ R S), each opens the question read-only (getReview)
@@ -56,6 +57,16 @@ function resultView_(s, rows, asTeacher) {
     first_try: { right: first, n: n }, best: { right: best, n: n }, groups: groups, types: types,
     review: [{ part: SET_PART, title: setTitle_(s), questions: rows.map(function (r) { var x = ref(r); x.no = Number(r.order); return x; }) }]
   };
+  // fix wrong answers (§3): items not right on try 1 that are neither fixed nor locked
+  v.kind = String(s.kind || 'practice');
+  v.fix = { open: rows.filter(function (r) { return Number(r.best_correct) !== 1 && !isYes_(r.locked); }).length,
+            fixed: rows.filter(function (r) { return Number(r.try1_correct) !== 1 && Number(r.best_correct) === 1; }).length,
+            locked: rows.filter(function (r) { return Number(r.best_correct) !== 1 && isYes_(r.locked); }).length };
+  v.asked = rows.filter(function (r) { return !!r.asked && String(r.ask_status) !== 'resolved'; }).map(ref);
+  if (v.kind === 'review') {
+    var clean = rows.filter(function (r) { return Number(r.try1_correct) === 1 && String(r.profile) !== 'SLOW_RIGHT'; }).length;
+    v.review_summary = { cleared: clean, still: n - clean };
+  }
   if (asTeacher) { v.teacher = true; v.student = st ? String(st.name || '') : String(s.student_code); v.student_code = normCode_(s.student_code); }
   return v;
 }

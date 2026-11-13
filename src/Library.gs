@@ -163,12 +163,12 @@ function domainName_(code) { return skillIdx_().domain[String(code)] || String(c
 /* ---------------- sync: library → Batches + Questions, taxonomy → Skills ---------------- */
 
 var QUESTION_COLS_FROM_FILE_ = ['batch', 'version', 'version_of', 'type', 'domain', 'skill', 'subskill', 'subskill2', 'difficulty', 'level',
-                                'twin_group', 'key', 'accepted', 'key_source', 'cb_question_id', 'flags', 'tag_status'];
+                                'twin_group', 'key', 'accepted', 'key_source', 'cb_question_id', 'flags', 'tag_status', 'code'];
 function questionRowFromFile_(batch, q) {
   var t = q.tags || {}, src = q.source || {};
   var st = String(q.status || 'keep').toLowerCase();
   return {
-    qid: q.qid, batch: batch, version: q.version || 'A', version_of: q.version_of || '', type: q.type || 'mcq',
+    qid: q.qid, code: txt_(q.code || ''), batch: batch, version: q.version || 'A', version_of: q.version_of || '', type: q.type || 'mcq',
     domain: t.domain || '', skill: txt_(t.skill || ''), subskill: txt_(t.subskill || ''), subskill2: txt_(t.subskill2 || ''),
     difficulty: t.difficulty || '', level: t.level || '', twin_group: q.twin_group || '',
     key: txt_(q.key), accepted: txt_((q.accepted || []).join('|')), key_source: txt_(q.key_source || ''),
@@ -185,7 +185,7 @@ function syncLibrary_() {
   if (!batches.length) return 'library: no batch files on Drive yet';
   var qt = readTable_('Questions'), have = {};
   qt.rows.forEach(function (r) { have[String(r.qid)] = r; });
-  var add = [], diffs = [], counts = {};
+  var add = [], diffs = [], counts = {}, codeFill = [];
   batches.forEach(function (b) {
     var data;
     try { data = libBatch_(b); } catch (e) { diffs.push(b + ': ' + e.message); return; }
@@ -197,6 +197,7 @@ function syncLibrary_() {
       var d = String((q.tags || {}).difficulty || '').toUpperCase(); if (c[d] !== undefined) c[d]++;
       var row = questionRowFromFile_(b, q), old = have[q.qid];
       if (!old) { add.push(row); have[q.qid] = row; return; }
+      if (q.code && !String(old.code || '').trim() && old._row) codeFill.push([old._row, q.code]);  // short code (E326) added later
       ['skill', 'subskill', 'difficulty', 'type'].forEach(function (k) {
         var a = String(old[k]).replace(/^'/, ''), f = String(row[k]).replace(/^'/, '');
         if (f && a !== f) diffs.push(q.qid + '.' + k + ': Sheet ' + a + ' / file ' + f);
@@ -204,6 +205,10 @@ function syncLibrary_() {
     });
   });
   appendObjects_('Questions', add);
+  if (codeFill.length) {
+    var ci = headers_('Questions').indexOf('code') + 1;
+    if (ci > 0) codeFill.forEach(function (x) { qt.sh.getRange(x[0], ci).setValue("'" + x[1]); });
+  }
   _qrows = null;
   // Batches: new rows (live = No), counts refreshed on existing rows (live kept)
   var bt = readTable_('Batches'), bRows = {};
@@ -220,7 +225,7 @@ function syncLibrary_() {
   appendObjects_('Batches', newB);
   _batchLive = null;
   if (diffs.length) console.warn('LIBRARY vs Questions tab (Sheet kept):\n' + diffs.slice(0, 200).join('\n'));
-  return 'library: ' + batches.length + ' batch file(s), questions added: ' + add.length + (newB.length ? ', new batches: ' + newB.map(function (x) { return x.batch; }).join(' ') + ' (live = No)' : '') +
+  return 'library: ' + batches.length + ' batch file(s), questions added: ' + add.length + (codeFill.length ? ', codes filled: ' + codeFill.length : '') + (newB.length ? ', new batches: ' + newB.map(function (x) { return x.batch; }).join(' ') + ' (live = No)' : '') +
          (diffs.length ? ', ' + diffs.length + ' difference(s) Sheet vs file (log)' : '');
 }
 

@@ -50,7 +50,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "E9101"
   },
   {
    "qid": "FX1-002",
@@ -98,7 +99,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "M9102"
   },
   {
    "qid": "FX1-003",
@@ -156,7 +158,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "M9103"
   },
   {
    "qid": "FX1-004",
@@ -189,7 +192,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "H9104"
   },
   {
    "qid": "FX1-005",
@@ -224,7 +228,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "H9105"
   },
   {
    "qid": "FX1-006",
@@ -272,7 +277,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "H9106"
   },
   {
    "qid": "FX1-007",
@@ -320,7 +326,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "E9107"
   },
   {
    "qid": "FX1-008",
@@ -353,7 +360,8 @@
    "status": "keep",
    "version": "A",
    "version_of": null,
-   "transcription_notes": "made-up fixture"
+   "transcription_notes": "made-up fixture",
+   "code": "M9108"
   }
  ]
 }

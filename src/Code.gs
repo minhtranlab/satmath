@@ -3,7 +3,8 @@
  * -------------------------------------------------------------------------------------------------------------------
  * A student practises in SETS (5 / 10 / 20 questions picked from the private library on Drive). No timer, ever;
  * time per question is recorded. Server calls from the browser (only these):
- *   login · homeData · startPractice · getSet · getFigures · autosave · submit · getResult · getReview
+ *   login · homeData · startPractice · startReview · getSet · getFigures · autosave · submit · getResult · getReview
+ *   getFix · checkTry (fix wrong answers after the result) · askTeacher (after the result; during a set it rides on autosave)
  *   teacher (teacher_code): teacherOverview · teacherResult · teacherReview · teacherAnswer
  * The answer key never leaves the server: clientQuestion_() whitelists the fields it sends; grading is server-side.
  * All Sheet access is by header name (row 1), never by column position.
@@ -13,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.1 (2026-11-13, skeleton: sets + library)';
+var APP_VERSION = 'v0.2 (2026-11-13, practice by skill, fix tries, Review, Ask teacher)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -310,7 +311,7 @@ function setProfile_(s, n) {
 /** Client-safe question object — whitelist only (never key, accepted, tags, source, notes). Figures: src only when given. */
 function clientQuestion_(q, withFigs) {
   return {
-    qid: q.qid, part: q.part, display_no: q.display_no, type: q.type || 'mcq',
+    qid: q.qid, code: q.code || '', part: q.part, display_no: q.display_no, type: q.type || 'mcq',
     stem_html: q.stem_html || '', passage_html: q.passage_html || '',
     figures: (q.figures || []).map(function (f, i) {
       return { fid: q.qid + '#' + i, src: withFigs ? figSrc_(f) : '', alt: f.alt || '', position: f.position || 'before_stem',
@@ -334,9 +335,9 @@ function startPractice(code, skill, n) {
   try {
     var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'practice' && String(r.skill) === skill; });
     if (open.length) return { ok: true, set_id: String(open[open.length - 1].set_id), resumed: true }; // one open practice set per skill
-    var pick = pickForPractice_(codeN, skill, n);
-    if (!pick.qids.length) throw new Error('FORM: There are no questions for this skill yet. Try another skill.');
     var setId = newSetId_(codeN);
+    var pick = pickForPractice_(codeN, skill, n, setId);
+    if (!pick.qids.length) throw new Error('FORM: There are no questions for this skill yet. Try another skill.');
     appendObjects_('Sets', [{
       set_id: setId, student_code: codeN, kind: 'practice', skill: txt_(skill), n: pick.qids.length, qids: pick.qids.join(','),
       level_at_start: pick.level || '', slots: pick.slots || '', created_at: nowIso_(), status: 'in_progress',
@@ -377,7 +378,8 @@ function getSet(code, setId, opts) {
     resumed: !!parseState_(s), state: parseState_(s), copy: copy, server_now: Date.now(),
     profile: setProfile_(s, qs.length),
     questions: qs.map(function (q, i) { return clientQuestion_(q, i < FIGS_WITH_SET); }),
-    settings: { app_name: S.app_name, autosave_sec: S.autosave_sec, desmos_api_key: desmosKey_(), show_results: 'score_and_right_wrong' }
+    settings: { app_name: S.app_name, autosave_sec: S.autosave_sec, desmos_api_key: desmosKey_(), show_results: 'score_and_right_wrong' },
+    ask_note_max: Number(S.ask_note_max) || 200
   };
 }
 
@@ -440,7 +442,9 @@ function cleanAnswers_(qs, state) {
       elim[qid] = ps.elim[qid].map(function (l) { return String(l).toUpperCase(); }).filter(function (l, i, a) { return ok.indexOf(l) >= 0 && a.indexOf(l) === i; });
     });
     Object.keys(ps.mark || {}).forEach(function (qid) { if (byQ[qid] && ps.mark[qid]) mark[qid] = true; });
-    ps.ans = ans; ps.elim = elim; ps.mark = mark;
+    var max = Number(getSettings_().ask_note_max) || 200;
+    Object.keys(ps.ask || {}).forEach(function (qid) { var v = ps.ask[qid]; if (byQ[qid] && v !== false && v !== null && v !== undefined) ask[qid] = String(v === true ? '' : v).slice(0, max); });
+    ps.ans = ans; ps.elim = elim; ps.mark = mark; ps.ask = ask;
   });
   return state;
 }
@@ -690,7 +694,9 @@ function gradeSet_(s, state, events) {
       n_tries: fin ? 1 : 0, locked: '', fixed_at: '', n_changes: nCh, change_pattern: pattern, eliminated: elim.join(','),
       ever_marked: !!(x.ever_marked || (ps.mark && ps.mark[q.qid])), visits: x.visits,
       time_try1_sec: round_(timeSec, 1), time_total_sec: round_(timeSec, 1), pace_ratio: round_(tp.ratio, 2),
-      calc_used: !!x.calc, ref_used: !!x.ref, profile: tp.profile, flags: flags.join(','), asked: '', submitted_at: now
+      calc_used: !!x.calc, ref_used: !!x.ref, profile: tp.profile, flags: flags.join(','), submitted_at: now,
+      asked: ps.ask && q.qid in ps.ask ? 1 : '', ask_note: ps.ask && ps.ask[q.qid] ? txt_(ps.ask[q.qid]) : '',
+      ask_at: ps.ask && q.qid in ps.ask ? now : '', ask_status: ps.ask && q.qid in ps.ask ? 'open' : ''
     });
   });
   return { rows: rows, right: right, n: qs.length };
@@ -713,6 +719,9 @@ function submit(code, setId, payload) {
     var evSaved = storeEvents_(s, payload);
     var g = gradeSet_(s, state, all);
     appendObjects_('Responses', g.rows);
+    appendObjects_('Tries', g.rows.filter(function (r) { return r.try1_correct !== ''; }).map(function (r) {
+      return { set_id: r.set_id, student_code: r.student_code, qid: r.qid, try_no: 1, answer: r.try1_answer, correct: r.try1_correct, time_sec: r.time_try1_sec, at: r.submitted_at };
+    }));
     var used = g.rows.reduce(function (a, r) { return a + (Number(r.time_total_sec) || 0); }, 0);
     var fields = { submitted_at: nowIso_(), status: 'submitted', events_saved: evSaved, last_saved_at: nowIso_(), progress: 'Submitted',
                    state_json: compactState_(state), first_try: g.right, best_score: g.right,
@@ -720,6 +729,8 @@ function submit(code, setId, payload) {
     if (payload.device) fields.device = txt_(String(payload.device).slice(0, 60));
     updateRow_('Sets', s._row, fields);
     var done = {}; Object.keys(s).forEach(function (k) { done[k] = s[k]; }); Object.keys(fields).forEach(function (k) { done[k] = fields[k]; });
+    try { reviewAfterSubmit_(done, g.rows); } catch (e) { console.error('REVIEW UPDATE FAILED ' + setId + ': ' + (e && e.stack || e)); }
+    try { afterSubmit_(done, g.rows); } catch (e) { console.error('LEVELS UPDATE FAILED ' + setId + ': ' + (e && e.stack || e)); }
     return resultView_(done, g.rows, false);
   } finally { lock.releaseLock(); }
 }
@@ -744,7 +755,8 @@ function reviewData_(s, rows) {
     o.answer = String(r.final_answer === undefined ? '' : r.final_answer).replace(/^'/, '');
     o.status = String(r.profile) === 'BLANK' || o.answer === '' ? 'blank' : (Number(r.best_correct) === 1 ? 'right' : 'wrong');
     o.time_s = Math.round(Number(r.time_total_sec) || 0);
-    o.code = 'Q' + q.display_no; o.badge = qBadge_(String(r.profile));
+    o.label = 'Q' + q.display_no; o.badge = qBadge_(String(r.profile)); o.no = q.display_no;
+    o.asked = !!r.asked && String(r.ask_status) !== 'resolved'; o.ask_note = String(r.ask_note || '').replace(/^'/, '');
     return o;
   });
   var p = setProfile_(s, qs.length).parts[0];
@@ -757,6 +769,99 @@ function getReview(code, setId) {
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
   return reviewData_(s, responsesOf_(setId));
+}
+
+/* ============================== fix wrong answers · Ask teacher (spec v1.1 §3, §8) ============================== */
+
+function triesOf_(setId, qid) {
+  return readTable_('Tries').rows.filter(function (r) { return String(r.set_id) === String(setId) && String(r.qid) === String(qid); })
+    .sort(function (a, b) { return Number(a.try_no) - Number(b.try_no); });
+}
+function mcqMax_() { return Number(getSettings_().mcq_max_tries) || 3; }
+/** Fix state of one Responses row: fixed / locked / open, letters already tried (MCQ), tries left (MCQ; grid-in = unlimited). */
+function fixState_(q, r, tries) {
+  var mcq = (q.type || 'mcq') === 'mcq', n = Number(r.n_tries) || 0;
+  var status = Number(r.try1_correct) === 1 ? 'right' : Number(r.best_correct) === 1 ? 'fixed' : isYes_(r.locked) || String(r.locked) === '1' ? 'locked' : 'open';
+  return { status: status, n_tries: n, tries_left: mcq ? Math.max(0, mcqMax_() - n) : null,
+           tried: mcq ? tries.filter(function (t) { return Number(t.correct) !== 1; }).map(function (t) { return String(t.answer).replace(/^'/, '').toUpperCase(); }) : [],
+           answer: String(r.final_answer === undefined ? '' : r.final_answer).replace(/^'/, ''),
+           asked: !!r.asked && String(r.ask_status) !== 'resolved', ask_note: String(r.ask_note || '').replace(/^'/, '') };
+}
+
+/** The questions of a submitted set that were not right on try 1 — to fix them (never the key). */
+function getFix(code, setId) {
+  var s = requireSet_(code, setId);
+  if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
+  var rows = responsesOf_(setId), by = {};
+  rows.forEach(function (r) { by[String(r.qid)] = r; });
+  var allTries = readTable_('Tries').rows.filter(function (t) { return String(t.set_id) === String(setId); });
+  var d = reviewData_(s, rows);
+  d.questions = d.questions.filter(function (o) { return Number(by[o.qid].try1_correct) !== 1; }).map(function (o) {
+    var q = setQuestions_(s).filter(function (x) { return x.qid === o.qid; })[0];
+    var fx = fixState_(q, by[o.qid], allTries.filter(function (t) { return String(t.qid) === o.qid; }));
+    Object.keys(fx).forEach(function (k) { o[k] = fx[k]; });
+    return o;
+  });
+  d.max_tries = mcqMax_();
+  d.best = { right: rows.filter(function (r) { return Number(r.best_correct) === 1; }).length, n: rows.length };
+  d.ask_note_max = Number(getSettings_().ask_note_max) || 200;
+  return d;
+}
+
+/** One fix try: graded on the server at once. Answers only right / wrong + tries left — never the key. */
+function checkTry(code, setId, qid, answer, timeSec) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var s = requireSet_(code, setId);
+    if (!isFinished_(s)) throw new Error('SESSION: Submit the set first.');
+    var q = setQuestions_(s).filter(function (x) { return x.qid === String(qid); })[0];
+    var r = responsesOf_(setId).filter(function (x) { return String(x.qid) === String(qid); })[0];
+    if (!q || !r) throw new Error('SESSION: Question not found.');
+    var tries = triesOf_(setId, qid), fx = fixState_(q, r, tries);
+    var out = function (extra) {
+      var rows = responsesOf_(setId);
+      var o = { ok: true, qid: q.qid, best: { right: rows.filter(function (x) { return Number(x.best_correct) === 1; }).length, n: rows.length } };
+      Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
+      return o;
+    };
+    if (fx.status === 'right' || fx.status === 'fixed') return out({ correct: true, status: fx.status, tries_left: fx.tries_left, tried: fx.tried });
+    if (fx.status === 'locked') return out({ correct: false, status: 'locked', tries_left: 0, tried: fx.tried });
+    var a = cleanAnswer_(q, answer);
+    if (a === null) return { ok: false, msg: (q.type === 'spr' ? 'This answer does not fit the answer box.' : 'Choose one of the answers.') };
+    if (a === '') return { ok: false, msg: 'Enter an answer first.' };
+    if ((q.type || 'mcq') === 'mcq' && fx.tried.indexOf(a) >= 0) return { ok: false, msg: 'You already tried ' + a + '.' };
+    var n = fx.n_tries + 1, corr = isCorrect_(q, a), now = nowIso_();
+    var locked = !corr && (q.type || 'mcq') === 'mcq' && n >= mcqMax_();
+    appendObjects_('Tries', [{ set_id: String(setId), student_code: normCode_(s.student_code), qid: q.qid, try_no: n, answer: txt_(a), correct: corr ? 1 : 0,
+                               time_sec: round_(Math.max(0, Math.min(Number(timeSec) || 0, 3600)), 1), at: now }]);
+    var f = { n_tries: n, final_answer: txt_(a), time_total_sec: round_((Number(r.time_total_sec) || 0) + Math.max(0, Math.min(Number(timeSec) || 0, 3600)), 1) };
+    if (corr) { f.best_correct = 1; f.fixed_at = now; }
+    if (locked) f.locked = 1;
+    updateRow_('Responses', r._row, f);
+    var best = responsesOf_(setId).filter(function (x) { return Number(x.best_correct) === 1; }).length;
+    updateRow_('Sets', s._row, { best_score: best });
+    var tried = fx.tried.slice(); if (!corr && (q.type || 'mcq') === 'mcq') tried.push(a);
+    return out({ correct: corr, status: corr ? 'fixed' : locked ? 'locked' : 'open', n_tries: n,
+                 tries_left: (q.type || 'mcq') === 'mcq' ? Math.max(0, mcqMax_() - n) : null, tried: tried });
+  } finally { lock.releaseLock(); }
+}
+
+/** Ask teacher on a question of a submitted set (during a set the ask rides on the autosaved state). */
+function askTeacher(code, setId, qid, on, note) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var s = requireSet_(code, setId);
+    if (!isFinished_(s)) throw new Error('SESSION: This set is still open.');
+    var r = responsesOf_(setId).filter(function (x) { return String(x.qid) === String(qid); })[0];
+    if (!r) throw new Error('SESSION: Question not found.');
+    var max = Number(getSettings_().ask_note_max) || 200;
+    var f = on ? { asked: 1, ask_note: txt_(String(note || '').slice(0, max)), ask_at: nowIso_(), ask_status: 'open', resolved_at: '' }
+               : { asked: '', ask_note: '', ask_at: '', ask_status: '' };
+    updateRow_('Responses', r._row, f);
+    return { ok: true, qid: String(qid), asked: !!on, note: on ? String(note || '').slice(0, max) : '' };
+  } finally { lock.releaseLock(); }
 }
 
 /* ---- teacher mode (Settings → teacher_code): read-only; "Show answer" reveals one key on request.

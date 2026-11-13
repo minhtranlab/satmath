@@ -43,6 +43,31 @@ Q = [
   mcq(7, 'Q.B', 'Q.B.1', 'E', 1, '<p>What is \\(20\\%\\) of \\(150\\)?</p>', ['\\(15\\)', '\\(20\\)', '\\(30\\)', '\\(75\\)'], 'C'),
   spr(8, 'Q.B', 'Q.B.2', 'M', 1, '<p>A price goes from \\(\\$80\\) to \\(\\$100\\). By what percent did the price go up?</p>', '25', ['25']),
 ]
+for q in Q: q['code'] = '%s%d' % (q['tags']['difficulty'], 9100 + int(q['qid'][-3:]))   # made-up short codes (E9101 …)
+# FX2: a bigger made-up batch for the adaptive selection (Linear functions only): every sub-skill × E/M/H, short codes,
+# one twin pair and one version-B candidate (never served in practice).
+def fx2():
+    out, n, codes = [], 0, {'E': 9000, 'M': 9000, 'H': 9000}
+    plan = [('E', 1, 2), ('M', 1, 2), ('H', 1, 1), ('H', 2, 1), ('H', 3, 1)]
+    for sub in ['H.B.1', 'H.B.2', 'H.B.3', 'H.B.4', 'H.B.5']:
+        for diff, lvl, k in plan:
+            for _ in range(k):
+                n += 1; a, b = 2 + n % 7, 3 + n % 5
+                stem = '<p>Made-up item %d. The function \\(f\\) is defined by \\(f(x) = %dx + %d\\). What is \\(f(1)\\)?</p>' % (n, a, b)
+                if n % 4 == 0:
+                    q = spr(n, 'H.B', sub, diff, lvl, stem, str(a + b), [str(a + b)])
+                else:
+                    ch = [str(a + b - 1), str(a + b), str(a + b + 1), str(a * b)]
+                    q = mcq(n, 'H.B', sub, diff, lvl, stem, ['\\(%s\\)' % c for c in ch], 'B')
+                q['qid'] = 'FX2-%03d' % n; q['batch'] = 'FX2'; q['source'] = {'set': 'FX2', 'page': n}
+                codes[diff] += 1; q['code'] = '%s%d' % (diff, codes[diff])
+                out.append(q)
+    out[0]['twin_group'] = 'TW-FX01'; out[1]['twin_group'] = 'TW-FX01'
+    vb = json.loads(json.dumps(out[0])); vb.update({'qid': 'FX2-B01', 'version': 'B', 'version_of': out[0]['qid'], 'status': 'candidate', 'code': out[0]['code'] + 'B'})
+    out.append(vb)
+    return out
+json.dump({'batch': 'FX2', 'title': 'Fixture 2 (made-up, adaptive)', 'source_type': 'fixture', 'schema': 1, 'questions': fx2()},
+          open(os.path.join(LIB, 'questions', 'FX2.json'), 'w'), indent=1, ensure_ascii=False)
 fig_line(os.path.join(LIB, 'figures', 'FX1', 'FX1-003_f1.png'))
 json.dump({'batch': 'FX1', 'title': 'Fixture (made-up)', 'source_type': 'fixture', 'schema': 1, 'questions': Q},
           open(os.path.join(LIB, 'questions', 'FX1.json'), 'w'), indent=1, ensure_ascii=False)

@@ -45,6 +45,15 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     for (let i = 0; i < n; i++) {
       const box = await page.$('#qwrap .q.on');
       const spr = await box.$('.spr-in');
+      if (i === 0) {
+        check(await box.$eval('.q-code', e => /^[EMH]\d+$/.test(e.textContent)), 'short question code shown small on the question: ' + await box.$eval('.q-code', e => e.textContent));
+        check(await box.$$eval('.stem .nw', a => a.length) > 0, 'math + the punctuation after it kept together (no "?" alone on a line)');
+      }
+      if (i === 1) {
+        await (await box.$('.q-ask')).click();
+        await (await box.$('.ask-in')).fill('I do not get the graph');
+        check(await box.$eval('.q-askrow', e => getComputedStyle(e).display !== 'none'), 'Ask teacher: note box opens');
+      }
       if (i === 0) { /* leave the first one blank */ }
       else if (spr) { await spr.fill('3/4'); await spr.press('Tab'); await sleep(200); }
       else { const ch = await box.$$('.ch'); await ch[i % ch.length].click(); }
@@ -53,6 +62,12 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     }
     await page.waitForSelector('#v-review.on');
     check(await page.$eval('#v-review', e => /1<\/b> unanswered|1 unanswered/.test(e.innerHTML) || /1\s*unanswered/.test(e.innerText)), 'Check Your Work: 1 unanswered');
+    await page.click('#btn-save-later');
+    await page.waitForSelector('#pickup .hz-resume button');
+    check(/4\/5 answered/.test(await page.$eval('#pickup', e => e.innerText)), 'Save and continue later → home: "Continue · 4/5 answered"');
+    await page.click('#pickup .hz-resume button');
+    await page.waitForSelector('#v-review.on');
+    check(true, 'Continue → back on Check Your Work');
     await page.click('#btn-next');
     await page.waitForSelector('#modal-root.on');
     check(await page.$eval('#modal-root', e => /Submit this set\?/.test(e.innerText) && /blank: they count as wrong/.test(e.innerText)), 'confirm: "Submit this set?" + blank warning');
@@ -71,10 +86,52 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     check(/Your answer/.test(bar) && !/Correct answer/.test(bar) && !(await page.$('#rv-show')), 'review: own answer shown, no correct answer, no Show answer button');
     await shot(page, 'e2e_review');
     await page.click('#btn-view-back');
+    check(/Q2/.test(await page.$eval('#asked-list', e => e.innerText)), 'result: "You asked your teacher about: Q2"');
+
+    console.log('fix wrong answers');
+    const Qt = {}; E.st.gas.table('Questions').forEach(r => { Qt[r.qid] = r; });
+    await page.click('#btn-fix');
+    await page.waitForSelector('#btn-check');
+    await waitMath(page);
+    let fixed = 0;
+    for (let k = 0; k < 6; k++) {
+      const cur = await page.$('#qwrap .q.on'); if (!cur) break;
+      const qid = await cur.getAttribute('data-qid'), key = String(Qt[qid].key).replace(/^'/, '');
+      if (!(await page.$('#btn-check'))) { if (await page.$('#btn-next:not([disabled])')) { await page.click('#btn-next'); await sleep(200); continue; } break; }
+      if (Qt[qid].type === 'spr') {
+        await (await cur.$('.spr-in')).fill('98'); await page.click('#btn-check'); await page.waitForFunction(() => /Not yet/.test(document.querySelector('#view-bar').innerText));
+        check(true, 'grid-in wrong → "Not yet"');
+        await (await cur.$('.spr-in')).fill(key);
+      } else {
+        const wrong = ['A', 'B', 'C', 'D'].find(l => l !== key);
+        await (await cur.$('.ch-row[data-l="' + wrong + '"] .ch')).click(); await page.click('#btn-check');
+        await page.waitForFunction(() => /Not yet/.test(document.querySelector('#view-bar').innerText));
+        check(await cur.$eval('.ch-row[data-l="' + wrong + '"]', e => e.classList.contains('tried')) && /2 tries left/.test(await page.$eval('#view-bar', e => e.innerText)), 'MCQ wrong → "Not yet — 2 tries left", the letter crossed out');
+        await (await cur.$('.ch-row[data-l="' + key + '"] .ch')).click();
+      }
+      await page.click('#btn-check');
+      await page.waitForFunction(() => /Fixed/.test(document.querySelector('#view-bar').innerText));
+      fixed++;
+      await shot(page, 'e2e_fix');
+      break;
+    }
+    check(fixed === 1, 'right answer → "✓ Fixed" (the key itself never sent)');
+    await page.click('#btn-view-back');
+    await page.waitForSelector('#score-best');
+    const bs2 = await page.$eval('#score-best .v', e => e.textContent);
+    check(Number(bs2.split('/')[0]) === Number(ft.split('/')[0]) + 1, 'Best Score after the fix: ' + bs2 + ' (First Try still ' + await page.$eval('#score-first .v', e => e.textContent) + ')');
     await page.click('#res-home');
     await page.waitForSelector('#history');
+    check(await page.$eval('#assigned', e => /Nothing from your teacher/.test(e.innerText)), 'home: "Assigned by your teacher" (empty for now)');
+    check(/\d+ questions? to review/.test(await page.$eval('#review-card', e => e.innerText)), 'home: Review card "n questions to review"');
+    await shot(page, 'e2e_home2');
     const hist = await page.$eval('#history', e => e.innerText);
     check(/Linear functions/.test(hist) && hist.includes(ft), 'home history: the set with its First Try');
+
+    console.log('review area');
+    await page.click('#btn-review');
+    await page.waitForSelector('#btn-begin');
+    check((await page.$eval('#tb-title', e => e.textContent)) === 'Review', 'Review mini-set opens ("Review")');
 
     console.log('payloads');
     const bad = E.st.rpcLog.filter(r => /"key"|"accepted"|key_source|"tags"|drive_id|transcription_notes/.test(r.res));

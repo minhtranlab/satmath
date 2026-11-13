@@ -1,0 +1,1652 @@
+{
+ "batch": "FX2",
+ "title": "Fixture 2 (made-up, adaptive)",
+ "source_type": "fixture",
+ "schema": 1,
+ "questions": [
+  {
+   "qid": "FX2-001",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 1
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 1. The function \\(f\\) is defined by \\(f(x) = 3x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": "TW-FX01",
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9001"
+  },
+  {
+   "qid": "FX2-002",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 2
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 2. The function \\(f\\) is defined by \\(f(x) = 4x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": "TW-FX01",
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9002"
+  },
+  {
+   "qid": "FX2-003",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 3
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 3. The function \\(f\\) is defined by \\(f(x) = 5x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9001"
+  },
+  {
+   "qid": "FX2-004",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 4
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 4. The function \\(f\\) is defined by \\(f(x) = 6x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "13",
+   "key": "13",
+   "accepted": [
+    "13"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9002"
+  },
+  {
+   "qid": "FX2-005",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 5
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 5. The function \\(f\\) is defined by \\(f(x) = 7x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(21\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9001"
+  },
+  {
+   "qid": "FX2-006",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 6
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 6. The function \\(f\\) is defined by \\(f(x) = 8x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(32\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9002"
+  },
+  {
+   "qid": "FX2-007",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 7
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 7. The function \\(f\\) is defined by \\(f(x) = 2x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(10\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 3,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9003"
+  },
+  {
+   "qid": "FX2-008",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 8
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 8. The function \\(f\\) is defined by \\(f(x) = 3x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "9",
+   "key": "9",
+   "accepted": [
+    "9"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9003"
+  },
+  {
+   "qid": "FX2-009",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 9
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 9. The function \\(f\\) is defined by \\(f(x) = 4x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(28\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9004"
+  },
+  {
+   "qid": "FX2-010",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 10
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 10. The function \\(f\\) is defined by \\(f(x) = 5x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(15\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9003"
+  },
+  {
+   "qid": "FX2-011",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 11
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 11. The function \\(f\\) is defined by \\(f(x) = 6x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9004"
+  },
+  {
+   "qid": "FX2-012",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 12
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 12. The function \\(f\\) is defined by \\(f(x) = 7x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "12",
+   "key": "12",
+   "accepted": [
+    "12"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9004"
+  },
+  {
+   "qid": "FX2-013",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 13
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 13. The function \\(f\\) is defined by \\(f(x) = 8x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(48\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9005"
+  },
+  {
+   "qid": "FX2-014",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 14
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 14. The function \\(f\\) is defined by \\(f(x) = 2x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 3,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9006"
+  },
+  {
+   "qid": "FX2-015",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 15
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 15. The function \\(f\\) is defined by \\(f(x) = 3x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(9\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9005"
+  },
+  {
+   "qid": "FX2-016",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 16
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 16. The function \\(f\\) is defined by \\(f(x) = 4x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "8",
+   "key": "8",
+   "accepted": [
+    "8"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9006"
+  },
+  {
+   "qid": "FX2-017",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 17
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 17. The function \\(f\\) is defined by \\(f(x) = 5x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(25\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9005"
+  },
+  {
+   "qid": "FX2-018",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 18
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 18. The function \\(f\\) is defined by \\(f(x) = 6x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(36\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9006"
+  },
+  {
+   "qid": "FX2-019",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 19
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 19. The function \\(f\\) is defined by \\(f(x) = 7x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(49\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9007"
+  },
+  {
+   "qid": "FX2-020",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 20
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 20. The function \\(f\\) is defined by \\(f(x) = 8x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "11",
+   "key": "11",
+   "accepted": [
+    "11"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9008"
+  },
+  {
+   "qid": "FX2-021",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 21
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 21. The function \\(f\\) is defined by \\(f(x) = 2x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(8\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.3",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 3,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9009"
+  },
+  {
+   "qid": "FX2-022",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 22
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 22. The function \\(f\\) is defined by \\(f(x) = 3x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(15\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9007"
+  },
+  {
+   "qid": "FX2-023",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 23
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 23. The function \\(f\\) is defined by \\(f(x) = 4x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9008"
+  },
+  {
+   "qid": "FX2-024",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 24
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 24. The function \\(f\\) is defined by \\(f(x) = 5x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "12",
+   "key": "12",
+   "accepted": [
+    "12"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9007"
+  },
+  {
+   "qid": "FX2-025",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 25
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 25. The function \\(f\\) is defined by \\(f(x) = 6x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(18\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9008"
+  },
+  {
+   "qid": "FX2-026",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 26
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 26. The function \\(f\\) is defined by \\(f(x) = 7x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(28\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9010"
+  },
+  {
+   "qid": "FX2-027",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 27
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 27. The function \\(f\\) is defined by \\(f(x) = 8x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9011"
+  },
+  {
+   "qid": "FX2-028",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 28
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 28. The function \\(f\\) is defined by \\(f(x) = 2x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "8",
+   "key": "8",
+   "accepted": [
+    "8"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.4",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 3,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9012"
+  },
+  {
+   "qid": "FX2-029",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 29
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 29. The function \\(f\\) is defined by \\(f(x) = 3x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(21\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9009"
+  },
+  {
+   "qid": "FX2-030",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 30
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 30. The function \\(f\\) is defined by \\(f(x) = 4x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9010"
+  },
+  {
+   "qid": "FX2-031",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 31
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 31. The function \\(f\\) is defined by \\(f(x) = 5x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9009"
+  },
+  {
+   "qid": "FX2-032",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 32
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up item 32. The function \\(f\\) is defined by \\(f(x) = 6x + 5\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "11",
+   "key": "11",
+   "accepted": [
+    "11"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9010"
+  },
+  {
+   "qid": "FX2-033",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 33
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 33. The function \\(f\\) is defined by \\(f(x) = 7x + 6\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(42\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9013"
+  },
+  {
+   "qid": "FX2-034",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 34
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 34. The function \\(f\\) is defined by \\(f(x) = 8x + 7\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(56\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9014"
+  },
+  {
+   "qid": "FX2-035",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 35
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 35. The function \\(f\\) is defined by \\(f(x) = 2x + 3\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(4\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(6\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.5",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 3,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9015"
+  },
+  {
+   "qid": "FX2-B01",
+   "batch": "FX2",
+   "source": {
+    "set": "FX2",
+    "page": 1
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up item 1. The function \\(f\\) is defined by \\(f(x) = 3x + 4\\). What is \\(f(1)\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": "TW-FX01",
+   "flags": [],
+   "status": "candidate",
+   "version": "B",
+   "version_of": "FX2-001",
+   "transcription_notes": "made-up fixture",
+   "code": "E9001B"
+  }
+ ]
+}
