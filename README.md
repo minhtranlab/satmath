@@ -42,6 +42,9 @@ node tools/upload_library.mjs "<project folder>/data/library" HM3           # PN
 ```
 Then the next deploy (or Apps Script editor → `syncLibrary`) adds the Batches row (live = No) and the Questions rows.
 Minh sets `Batches.live = Yes` → served. A key typed in `Questions.key` wins over the file; `status = hold` pulls one question.
+Re-uploading a rebuilt batch (Intake fixed a key, turned an item into version B, dropped one) refreshes its Questions rows at the next
+update: Intake-owned columns follow the file; `key` / `accepted` follow it while they still equal `key_file` / `accepted_file` (= untouched);
+a key Minh typed and a status `hold` / `excluded` he set stay. An item gone from its file becomes `excluded`.
 
 ## Taxonomy changes
 `python3 tools/build_skills.py "<project folder>/taxonomy/sml_skills.csv" "<project folder>/reuse/taxonomy/sat_skills.csv"` → commit `src/Skills.gs`.
