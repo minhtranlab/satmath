@@ -47,7 +47,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
       const spr = await box.$('.spr-in');
       if (i === 0) {
         check(await box.$eval('.q-code', e => /^[EMH]\d+$/.test(e.textContent)), 'short question code shown small on the question: ' + await box.$eval('.q-code', e => e.textContent));
-        check(await box.$$eval('.stem .nw', a => a.length) > 0, 'math + the punctuation after it kept together (no "?" alone on a line)');
+        check(await page.$$eval('#qwrap .stem .nw', a => a.length) > 0, 'math + the punctuation after it kept together (no "?" alone on a line)');
       }
       if (i === 1) {
         await (await box.$('.q-ask')).click();
