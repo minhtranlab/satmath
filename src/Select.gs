@@ -365,7 +365,7 @@ function homeData(code) {
   });
   domains.forEach(function (d) { delete d._s; });
   var sets = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === codeN && !isHidden_(s); });
-  var open = sets.filter(function (s) { return isOpenStatus_(s.status); }).map(function (s) {
+  var open = sets.filter(function (s) { return isOpenStatus_(s.status) && String(s.kind) !== 'assignment'; }).map(function (s) {
     var stt = parseState_(s) || {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length;
     return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
   });
@@ -382,6 +382,6 @@ function homeData(code) {
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
   var nReview = openReviewRows_(codeN).length;
   return { ok: true, first_name: String(st.name || '').replace(/\(.*?\)/g, '').trim().split(/\s+/)[0] || '', domains: domains,
-           assignments: [], open: open, history: history, sizes: sizes,
+           assignments: assignmentsFor_(codeN, sets), open: open, history: history, sizes: sizes,
            review: { open: nReview, next: Math.min(REVIEW_SET_SIZE, nReview) } };
 }

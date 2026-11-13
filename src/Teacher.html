@@ -1,0 +1,408 @@
+<script>
+/* ======================= SAT Math Lib — teacher page (spec v1.1 §2.2, §7–§9) =======================
+ * Classes (start) · class screen (What to go over · Grid · Assignments) · question panel (correct answer, tries, mistake type,
+ * asks) · student profile · Asked inbox · assignment builder. Short codes (E326) big with a copy button; search accepts a code.
+ * Server: teacherHome, createStudent, editStudent, saveClass, classView, questionPanel, tagMistake, resolveAsk, asksInbox,
+ * studentProfile, assignmentTree, pickAssignment, publishAssignment, closeAssignment, teacherResult (Teacher.gs / Code.gs).
+ */
+(function () {
+  'use strict';
+  var X, A, $, $$, el, esc, call, toast;
+  var T = { home: null, view: null, cv: null, filter: '', tab: 'go', gridF: '' };
+
+  function body() { return $('#t-body'); }
+  function spin() { body().innerHTML = '<div class="spinner"></div>'; }
+  function fail(e) { body().innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; }
+  function dotHtml(c) { return '<i class="sm-dot ' + (c || 'n') + '"></i>'; }
+  function diffName(d) { return { E: 'Easy', M: 'Medium', H: 'Hard' }[d] || d; }
+
+  /** Copy a short code: clipboard API, else a hidden text box + execCommand (the Apps Script frame may refuse the API). */
+  function copyText(t, btn) {
+    var done = function () { toast('Copied ' + t, 1500); if (btn) { btn.classList.add('ok'); setTimeout(function () { btn.classList.remove('ok'); }, 1200); } };
+    var fallback = function () {
+      var ta = el('textarea', { class: 't-copybuf', readonly: 'readonly' }); ta.value = t; document.body.appendChild(ta);
+      ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta); if (ok) done(); else toast('Select the code and copy it: ' + t, 3000);
+    };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(done, fallback); return; } } catch (e) {}
+    fallback();
+  }
+  function codeHtml(code, cb, big) {
+    if (!code) return '<span class="t-code none">—</span>';
+    return '<span class="t-codebox' + (big ? ' big' : '') + '"><b class="t-code">' + esc(code) + '</b><button type="button" class="t-copy" data-copy="' + esc(code) + '" title="Copy ' + esc(code) + '">Copy</button>' +
+      (cb ? '<span class="t-cb">CB ' + esc(cb) + '</span>' : '') + '</span>';
+  }
+  function bindCopies(root) { $$('[data-copy]', root).forEach(function (b) { b.onclick = function (ev) { ev.stopPropagation(); copyText(b.getAttribute('data-copy'), b); }; }); }
+
+  /** A dialog with form fields; resolves with the button value, read() gives the field values before it closes. */
+  function dialog(title, html, buttons, onOpen) {
+    return new Promise(function (resolve) {
+      var root = $('#modal-root'); root.innerHTML = '';
+      var m = el('div', { class: 'modal t-modal', role: 'dialog' }, '<h3>' + esc(title) + '</h3><div class="body">' + html + '</div>');
+      var b = el('div', { class: 'btns' });
+      buttons.forEach(function (bt) {
+        var x = el('button', { class: bt.cls || 'btn-blue', type: 'button' }, esc(bt.label));
+        x.onclick = function () {
+          var vals = {}; $$('[name]', m).forEach(function (f) { vals[f.name] = f.type === 'checkbox' ? (vals[f.name] || []).concat(f.checked ? [f.value] : []) : f.value; });
+          if (bt.check && !bt.check(vals)) return;
+          root.classList.remove('on'); root.innerHTML = ''; resolve({ v: bt.value, vals: vals });
+        };
+        b.appendChild(x);
+      });
+      m.appendChild(b); root.appendChild(m); root.classList.add('on');
+      if (onOpen) onOpen(m);
+    });
+  }
+
+  /* ================= classes (start screen) ================= */
+  function showHome() {
+    T.view = 'home'; closePanel(); spin();
+    call('teacherHome', A.code).then(function (r) {
+      T.home = r; $('#t-asks-n').textContent = r.open_asks ? '(' + r.open_asks + ')' : '';
+      var h = '<div class="t-head"><h1>Classes</h1><div class="t-actions"><button class="btn-outline" type="button" id="t-new-st">New student</button><button class="btn-blue" type="button" id="t-new-cl">New class</button></div></div>';
+      h += '<div class="t-cards">' + r.classes.filter(function (c) { return c.active; }).map(function (c) {
+        return '<button type="button" class="t-card" data-class="' + esc(c.class_id) + '"><b>' + esc(c.name) + '</b><span class="t-mem">' + c.members.map(function (m) { return esc(m.name); }).join(', ') + '</span>' +
+          '<span class="t-meta">' + (c.last ? 'Last activity ' + esc(c.last) : 'No activity yet') + (c.asks ? ' · <b class="t-red">' + c.asks + ' asked</b>' : '') + (c.open_assignments ? ' · ' + c.open_assignments + ' assignment(s) open' : '') + '</span></button>';
+      }).join('') + '<button type="button" class="t-card all" data-class="all"><b>All students</b><span class="t-mem">' + r.students.filter(function (s) { return s.active; }).length + ' active students</span><span class="t-meta">Everything they did</span></button></div>';
+      h += '<h2 class="t-h2">Students</h2><table class="t-table" id="t-students"><tr><th>Name</th><th>Code</th><th>Classes</th><th>Last activity</th><th>Asked</th><th>Review</th><th></th></tr>' +
+        r.students.map(function (s) {
+          return '<tr class="' + (s.active ? '' : 'off') + '"><td><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button>' + (s.active ? '' : ' <span class="muted">(off)</span>') + '</td>' +
+            '<td>' + codeHtml(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
+            '<td><button type="button" class="hz-link" data-go-st="' + esc(s.code) + '">What to go over</button></td></tr>';
+        }).join('') + '</table>';
+      body().innerHTML = h;
+      bindCopies(body());
+      $$('[data-class]', body()).forEach(function (b) { b.onclick = function () { openClass(b.getAttribute('data-class')); }; });
+      $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
+      $$('[data-go-st]', body()).forEach(function (b) { b.onclick = function () { openClass('st:' + b.getAttribute('data-go-st'), 'all'); }; });
+      $('#t-new-st').onclick = newStudent; $('#t-new-cl').onclick = function () { editClass(null); };
+    }).catch(fail);
+  }
+  function newStudent() {
+    var cls = (T.home && T.home.classes) || [];
+    dialog('New student', '<label class="t-lab">Name<input class="field" name="name" maxlength="60" placeholder="e.g. Nguyễn An"></label>' +
+      (cls.length ? '<p class="t-lab">Classes</p><div class="t-checks">' + cls.map(function (c) { return '<label><input type="checkbox" name="cls" value="' + esc(c.class_id) + '"> ' + esc(c.name) + '</label>'; }).join('') + '</div>' : '') +
+      '<p class="muted">The app makes the sign-in code. It is shown once here (and stays in the Students tab).</p>',
+      [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Create', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }],
+      function (m) { var i = $('[name=name]', m); if (i) i.focus(); }).then(function (r) {
+      if (!r.v) return;
+      call('createStudent', A.code, r.vals.name, r.vals.cls || []).then(function (x) {
+        dialog('Student created', '<p><b>' + esc(x.name) + '</b> signs in with:</p><p class="t-newcode">' + codeHtml(x.student_code, '', true) + '</p><p class="muted">Copy it now and give it to the student.</p>',
+          [{ label: 'Done', value: 1 }], bindCopies).then(showHome);
+      }).catch(function (e) { toast(X.errMsg(e), 3500); });
+    });
+  }
+  function editClass(c) {
+    var studs = (T.home && T.home.students) || [], mem = c ? c.members.map(function (m) { return m.code; }) : [];
+    dialog(c ? 'Edit class' : 'New class', '<label class="t-lab">Class name<input class="field" name="name" maxlength="60" value="' + esc(c ? c.name : '') + '" placeholder="e.g. An 1-on-1"></label>' +
+      '<p class="t-lab">Students (most classes are one student; a student can be in several classes)</p><div class="t-checks">' +
+      studs.filter(function (s) { return s.active; }).map(function (s) { return '<label><input type="checkbox" name="st" value="' + esc(s.code) + '"' + (mem.indexOf(s.code) >= 0 ? ' checked' : '') + '> ' + esc(s.name) + ' <span class="muted">' + esc(s.code) + '</span></label>'; }).join('') + '</div>',
+      [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: c ? 'Save' : 'Create class', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }]).then(function (r) {
+      if (!r.v) return;
+      call('saveClass', A.code, { class_id: c ? c.class_id : '', name: r.vals.name, student_codes: r.vals.st || [] }).then(function (x) {
+        toast(c ? 'Saved.' : 'Class created.', 1800); if (c) openClass(c.class_id); else showHome();
+      }).catch(function (e) { toast(X.errMsg(e), 3500); });
+    });
+  }
+
+  /* ================= class screen ================= */
+  function openClass(target, scope) {
+    T.view = 'class'; T.target = target; closePanel(); spin();
+    return call('classView', A.code, target, scope || '').then(function (r) { T.cv = r; renderClass(); return r; }).catch(fail);
+  }
+  function renderClass() {
+    var r = T.cv, isCls = r.target.kind === 'class';
+    var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(r.target.title) + '</h1>' +
+      '<div class="t-chips">' + r.members.map(function (m) { return '<button type="button" class="t-chip" data-prof="' + esc(m.code) + '">' + esc(m.name) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="t-actions">' + (isCls ? '<button class="btn-outline" type="button" id="t-edit-cl">Edit class</button>' : '') +
+      (r.target.kind !== 'all' ? '<button class="btn-blue" type="button" id="t-new-asg">New assignment</button>' : '') + '</div></div>';
+    h += '<div class="t-bar"><label>Look at <select id="t-scope" class="field">' + r.scopes.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === r.scope ? ' selected' : '') + '>' + esc(s.label) + '</option>'; }).join('') + '</select></label>' +
+      '<input id="t-search" class="field" placeholder="Find a question: E326, M12, CB id…" autocomplete="off" value="' + esc(T.filter) + '"></div>';
+    h += '<div class="t-tabs" role="tablist">' + [['go', 'What to go over'], ['grid', 'Grid'], ['asg', 'Assignments (' + r.assignments.length + ')']].map(function (t) {
+      return '<button type="button" role="tab" data-tab="' + t[0] + '" class="' + (T.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</div><div id="t-tabbody"></div>';
+    body().innerHTML = h;
+    $('#t-back').onclick = showHome;
+    $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
+    var ec = $('#t-edit-cl'); if (ec) ec.onclick = function () { editClass((T.home.classes || []).filter(function (c) { return c.class_id === r.target.id; })[0] || { class_id: r.target.id, name: r.target.title, members: r.members }); };
+    var na = $('#t-new-asg'); if (na) na.onclick = function () { openBuilder(r.target.kind === 'student' ? 'st:' + r.target.id : r.target.id); };
+    $('#t-scope').onchange = function () { openClass(T.target, this.value); };
+    var si = $('#t-search');
+    si.oninput = function () { T.filter = si.value.trim(); renderTab(); };
+    si.onkeydown = function (e) {
+      if (e.key !== 'Enter' || !si.value.trim()) return;
+      var hit = filtered()[0];
+      if (hit) openPanel(hit.qid); else openPanel(si.value.trim()); // not in this list: open it from the library by its code
+    };
+    $$('[data-tab]', body()).forEach(function (b) { b.onclick = function () { T.tab = b.getAttribute('data-tab'); $$('[data-tab]', body()).forEach(function (x) { x.classList.toggle('on', x === b); }); renderTab(); }; });
+    renderTab();
+  }
+  function filtered() {
+    var f = T.filter.toUpperCase();
+    return T.cv.rows.filter(function (q) { return !f || [q.code, q.qid, q.cb_id].some(function (x) { return String(x || '').toUpperCase().indexOf(f) >= 0; }); });
+  }
+  var GROUPS = { 1: 'Wrong on the first try', 2: 'Right on the first try, but asked', 3: 'Right, but slow', 4: 'Right, fast, nobody asked' };
+  function renderTab() {
+    var tb = $('#t-tabbody'), r = T.cv;
+    if (T.tab === 'asg') { tb.innerHTML = asgListHtml(r.assignments); bindAsg(tb); return; }
+    var rows = filtered();
+    if (!rows.length) { tb.innerHTML = '<div class="empty">' + (T.filter ? 'No question "' + esc(T.filter) + '" in this list. Press Enter to open it from the library.' : 'Nothing done in this period yet. Pick another period above.') + '</div>'; return; }
+    if (T.tab === 'grid') { renderGrid(tb, rows); return; }
+    var h = '';
+    if (r.weak && r.weak.length) h += '<p class="t-weak">Weak sub-skills: ' + r.weak.map(function (w) { return '<span>' + dotHtml('r') + esc(w.name) + ' · ' + w.right + '/' + w.n + ' first try</span>'; }).join('') + '</p>';
+    var g = 0;
+    rows.forEach(function (q, i) {
+      if (q.group !== g) {
+        if (g === 4) h += '</details>';
+        g = q.group;
+        var n = rows.filter(function (x) { return x.group === g; }).length;
+        h += g === 4 ? '<details class="t-fold"><summary>' + GROUPS[g] + ' (' + n + ')</summary>' : '<h3 class="t-grp">' + GROUPS[g] + ' <span class="muted">' + n + '</span></h3>';
+      }
+      h += '<div class="t-row" data-q="' + esc(q.qid) + '" tabindex="0"><div class="t-rc">' + codeHtml(q.code, q.cb_id, true) + '</div>' +
+        '<div class="t-rm"><b>' + esc(q.subskill_name || q.skill_name) + '</b><span class="muted"> · ' + diffName(q.difficulty) + '</span><div class="t-sum">' + esc(q.summary) +
+        (q.untagged ? ' · <span class="t-untag">' + q.untagged + ' untagged</span>' : '') + '</div></div>' +
+        '<div class="t-rs">' + q.students.map(function (s) {
+          return '<span class="t-mini ' + (s.right1 ? 'right' : s.best ? 'fixed' : 'wrong') + '" title="' + esc(s.name) + '">' + esc(s.name.split(/\s+/)[0]) + (s.asked && s.ask_status === 'open' ? ' ?' : '') + (s.badge ? ' ' + s.badge : '') + '</span>';
+        }).join('') + '</div></div>';
+    });
+    if (g === 4) h += '</details>';
+    tb.innerHTML = h;
+    bindCopies(tb);
+    $$('.t-row', tb).forEach(function (row) {
+      row.onclick = function () { openPanel(row.getAttribute('data-q')); };
+      row.onkeydown = function (e) { if (e.key === 'Enter') openPanel(row.getAttribute('data-q')); };
+    });
+  }
+  var GRID_F = [['', 'All'], ['wrong', 'Wrong'], ['slow', 'Slow'], ['rushed', 'Rushed'], ['asked', 'Asked'], ['untagged', 'Untagged'], ['tries', 'Many tries']];
+  function gridKeep(s) {
+    switch (T.gridF) {
+      case 'wrong': return !s.right1; case 'slow': return /SLOW/.test(s.profile); case 'rushed': return s.profile === 'FAST_WRONG';
+      case 'asked': return s.asked && s.ask_status === 'open'; case 'untagged': return !s.right1 && !s.mistake_type; case 'tries': return s.n_tries >= 2;
+      default: return true;
+    }
+  }
+  function renderGrid(tb, rows) {
+    var mem = T.cv.members;
+    var keepRows = rows.filter(function (q) { return q.students.some(gridKeep); });
+    var h = '<div class="t-gridf">' + GRID_F.map(function (f) { return '<button type="button" data-gf="' + f[0] + '" class="' + (T.gridF === f[0] ? 'on' : '') + '">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="t-gridwrap"><table class="t-grid"><tr><th>Question</th>' + mem.map(function (m) { return '<th>' + esc(m.name) + '</th>'; }).join('') + '</tr>' +
+      keepRows.map(function (q) {
+        return '<tr data-q="' + esc(q.qid) + '"><td class="t-gq"><b>' + esc(q.code || q.qid) + '</b><span class="muted"> ' + esc(q.difficulty) + '</span></td>' + mem.map(function (m) {
+          var s = q.students.filter(function (x) { return x.code === m.code; })[0];
+          if (!s) return '<td class="t-gc none"></td>';
+          var path = s.tries.length ? s.tries.map(function (t) { return esc(t.a || '–'); }).join(' → ') : '–';
+          return '<td class="t-gc ' + (s.right1 ? 'right' : s.best ? 'fixed' : 'wrong') + (gridKeep(s) ? '' : ' dim') + '"><span class="t-gpath">' + path + ' ' + (s.right1 ? '✓' : s.best ? '✓ later' : '✗') + '</span>' +
+            '<span class="t-gmeta">' + s.time_s + ' s' + (s.badge ? ' · ' + s.badge : '') + (s.asked && s.ask_status === 'open' ? ' · ?' : '') + (s.mistake_type ? ' · <i class="t-tagdot" title="' + esc(s.mistake_type) + '"></i>' : '') + '</span></td>';
+        }).join('') + '</tr>';
+      }).join('') + '</table></div>';
+    tb.innerHTML = h;
+    $$('[data-gf]', tb).forEach(function (b) { b.onclick = function () { T.gridF = b.getAttribute('data-gf'); renderGrid(tb, rows); }; });
+    $$('tr[data-q]', tb).forEach(function (tr) { tr.onclick = function () { openPanel(tr.getAttribute('data-q')); }; });
+  }
+  function asgListHtml(list) {
+    if (!list.length) return '<div class="empty">No assignments yet.</div>';
+    return list.slice().reverse().map(function (a) {
+      return '<div class="t-asg"><div><b>' + esc(a.title) + '</b> <span class="muted">' + a.n + ' questions · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
+        '<div class="t-asgst">' + a.students.map(function (s) { return '<span class="t-mini ' + (s.state === 'done' ? 'right' : s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + (s.state === 'done' ? s.first_try + '/' + a.n + ' → ' + s.best + '/' + a.n : s.state) + '</span>'; }).join('') + '</div>' +
+        '<div class="t-asgbtn"><button type="button" class="hz-link" data-ascope="' + esc(a.assignment_id) + '">What to go over</button>' +
+        (a.status === 'published' ? '<button type="button" class="hz-link" data-aclose="' + esc(a.assignment_id) + '">Close</button>' : '') + '</div></div>';
+    }).join('');
+  }
+  function bindAsg(tb) {
+    $$('[data-ascope]', tb).forEach(function (b) { b.onclick = function () { T.tab = 'go'; openClass(T.target, 'a:' + b.getAttribute('data-ascope')); }; });
+    $$('[data-aclose]', tb).forEach(function (b) { b.onclick = function () {
+      call('closeAssignment', A.code, b.getAttribute('data-aclose'), false).then(function () { toast('Closed: students no longer see it.', 2000); openClass(T.target, T.cv.scope); }).catch(function (e) { toast(X.errMsg(e)); });
+    }; });
+  }
+
+  /* ================= question panel ================= */
+  function closePanel() { var p = $('#t-panel'); if (p) { p.classList.remove('on'); p.setAttribute('aria-hidden', 'true'); } }
+  function openPanel(qid) {
+    var p = $('#t-panel'), pin = $('#t-panel-in');
+    p.classList.add('on'); p.setAttribute('aria-hidden', 'false');
+    pin.innerHTML = '<div class="spinner"></div>';
+    call('questionPanel', A.code, qid).then(function (r) { renderPanel(r.q); }).catch(function (e) { pin.innerHTML = '<p class="empty">' + esc(X.errMsg(e)) + '</p><button class="btn-outline" type="button" onclick="this.closest(\'.t-panel\').classList.remove(\'on\')">Close</button>'; });
+  }
+  function renderPanel(q) {
+    var pin = $('#t-panel-in'), row = T.cv ? T.cv.rows.filter(function (x) { return x.qid === q.qid; })[0] : null;
+    var types = (T.home && T.home.mistake_types) || [], ph = (T.home && T.home.mistake_placeholder) || '— choose a mistake type —';
+    var figs = function (pos) { return q.figures.filter(function (f) { return pos === 'after' ? f.position === 'after_stem' : f.position !== 'after_stem'; }).map(X.figHtml).join(''); };
+    var h = '<div class="t-ph"><div>' + codeHtml(q.code, q.cb_id, true) + '<div class="muted">' + esc(q.subskill_name || q.skill_name) + ' · ' + diffName(q.difficulty) + (q.level ? ' level ' + q.level : '') + (q.norm_sec ? ' · normal time ' + q.norm_sec + ' s' : '') + '</div></div>' +
+      '<button type="button" class="btn-outline" id="t-pclose">Close</button></div>';
+    h += '<div class="t-pq serif">' + figs('before') + '<div class="stem">' + X.noWrapMath(q.stem_html) + '</div>' + figs('after') +
+      (q.type === 'mcq' ? '<div class="t-pch">' + q.choices.map(function (c) { return '<div class="t-pc' + (q.key.indexOf(c.label) >= 0 ? ' key' : '') + '"><b>' + esc(c.label) + '</b><span>' + X.noWrapMath(c.html) + '</span></div>'; }).join('') + '</div>' : '') +
+      '</div><p class="t-key">Correct answer: <b>' + esc(q.key.join(' or ')) + '</b></p>' +
+      (q.rationale_html ? '<details class="t-rat"><summary>College Board explanation (teacher only)</summary>' + q.rationale_html + '</details>' : '');
+    if (row) {
+      h += '<h3 class="t-h3">Students</h3>' + row.students.map(function (s, i) {
+        var tries = s.tries.length ? s.tries.map(function (t) { return '<span class="' + (t.ok ? 'ok' : 'no') + '">' + esc(t.a || '–') + '</span>'; }).join(' → ') : '<span class="no">blank</span>';
+        return '<div class="t-ps" data-i="' + i + '"><div class="t-psh"><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button><span class="muted">' + esc(s.set_title) + ' · ' + esc(s.date) + '</span></div>' +
+          '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · ' + s.time_s + ' s' + (s.pace ? ' (' + Math.round(s.pace * 100) + '% of normal)' : '') + (s.badge ? ' ' + X.bdg(s.badge) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
+          (s.asked ? '<div class="t-pask">Asked' + (s.ask_note ? ': “' + esc(s.ask_note) + '”' : '') + ' <button type="button" class="hz-link" data-resolve="' + i + '">' + (s.ask_status === 'resolved' ? 'Open again' : 'Resolve') + '</button>' + (s.ask_status === 'resolved' ? ' <span class="muted">(resolved)</span>' : '') + '</div>' : '') +
+          '<div class="t-ptag"><select class="field" data-tag="' + i + '"><option value="">' + esc(ph) + '</option>' + types.map(function (t) { return '<option' + (t === s.mistake_type ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>' +
+          '<input class="field" data-note="' + i + '" maxlength="300" placeholder="Note (optional)" value="' + esc(s.mistake_note) + '"><button type="button" class="btn-outline" data-save="' + i + '">Save</button></div></div>';
+      }).join('');
+      var idx = T.cv.rows.indexOf(row), next = T.cv.rows[idx + 1];
+      if (next) h += '<p class="t-next"><button type="button" class="btn-blue" id="t-pnext">Next to go over → ' + esc(next.code || next.qid) + '</button></p>';
+    } else h += '<p class="muted">Nobody in this list has done this question in the chosen period.</p>';
+    pin.innerHTML = h; pin.scrollTop = 0;
+    bindCopies(pin);
+    X.typeset(pin);
+    $('#t-pclose').onclick = closePanel;
+    $$('[data-prof]', pin).forEach(function (b) { b.onclick = function () { closePanel(); openProfile(b.getAttribute('data-prof')); }; });
+    var nb = $('#t-pnext'); if (nb) nb.onclick = function () { openPanel(T.cv.rows[T.cv.rows.indexOf(row) + 1].qid); };
+    if (!row) return;
+    $$('[data-save]', pin).forEach(function (b) { b.onclick = function () {
+      var i = +b.getAttribute('data-save'), s = row.students[i], type = $('[data-tag="' + i + '"]', pin).value, note = $('[data-note="' + i + '"]', pin).value;
+      b.disabled = true;
+      call('tagMistake', A.code, s.set_id, row.qid, type, note).then(function (r) {
+        b.disabled = false; s.mistake_type = type; s.mistake_note = note;
+        if (!s.right1 && row.untagged && type) row.untagged--;
+        toast(type ? 'Saved: ' + type + (r.review_added ? ' · added to ' + s.name.split(/\s+/)[0] + '\'s Review' : '') : 'Tag removed.', 2500);
+      }).catch(function (e) { b.disabled = false; toast(X.errMsg(e)); });
+    }; });
+    $$('[data-resolve]', pin).forEach(function (b) { b.onclick = function () {
+      var s = row.students[+b.getAttribute('data-resolve')], reopen = s.ask_status === 'resolved';
+      call('resolveAsk', A.code, s.set_id, row.qid, reopen).then(function () { s.ask_status = reopen ? 'open' : 'resolved'; if (!reopen && row.asks) row.asks--; renderPanel(q); toast(reopen ? 'Open again.' : 'Resolved.', 1500); })
+        .catch(function (e) { toast(X.errMsg(e)); });
+    }; });
+  }
+
+  /* ================= Asked inbox ================= */
+  function showAsks() {
+    T.view = 'asks'; closePanel(); spin();
+    call('asksInbox', A.code).then(function (r) {
+      $('#t-asks-n').textContent = r.asks.length ? '(' + r.asks.length + ')' : '';
+      var h = '<h1>Asked</h1><p class="sub">Questions students asked you about. Open one to see it with the student\'s tries; Resolve when you have gone over it.</p>';
+      h += r.asks.length ? '<table class="t-table"><tr><th>Question</th><th>Student</th><th>Note</th><th>Set</th><th></th></tr>' + r.asks.map(function (a, i) {
+        return '<tr><td>' + codeHtml(a.code) + '</td><td>' + esc(a.student) + '</td><td>' + (a.note ? '“' + esc(a.note) + '”' : '<span class="muted">(no note)</span>') + '</td><td class="muted">' + esc(a.set_title) + ' · ' + esc(a.date) + ' · ' + (a.right1 ? 'right' : a.best ? 'fixed later' : 'wrong') + '</td>' +
+          '<td><button type="button" class="hz-link" data-open="' + i + '">Open</button> <button type="button" class="hz-link" data-res="' + i + '">Resolve</button></td></tr>';
+      }).join('') + '</table>' : '<div class="empty">No open questions. 🎉</div>';
+      body().innerHTML = h; bindCopies(body());
+      $$('[data-open]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-open')]; openClass('st:' + a.student_code, 's:' + a.set_id).then(function () { openPanel(a.qid); }); }; });
+      $$('[data-res]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-res')]; call('resolveAsk', A.code, a.set_id, a.qid, false).then(showAsks).catch(function (e) { toast(X.errMsg(e)); }); }; });
+    }).catch(fail);
+  }
+
+  /* ================= student profile ================= */
+  function openProfile(sc) {
+    T.view = 'profile'; T.pcode = sc; closePanel(); spin();
+    call('studentProfile', A.code, sc).then(function (r) {
+      var s = r.student, t = r.totals, pct = function (a, b) { return b ? Math.round(100 * a / b) + '%' : '–'; };
+      var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(s.name) + '</h1><div class="muted">' + codeHtml(s.code) + ' · ' + esc(s.classes || 'no class') + (s.active ? '' : ' · <b>off</b>') + '</div></div>' +
+        '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button></div></div>';
+      h += '<div class="t-stats"><div><b>' + t.answers + '</b>answers</div><div><b>' + pct(t.first_try_right, t.answers) + '</b>first try</div><div><b>' + pct(t.best_right, t.answers) + '</b>best</div>' +
+        '<div><b>' + t.tries + '</b>tries</div><div><b>' + t.time_min + '</b>minutes</div><div><b>' + r.review_open + '</b>in Review</div><div><b>' + r.asks_open + '</b>asked</div></div>';
+      var pf = r.profiles, mk = r.mistakes;
+      h += '<p class="t-line">Timing: ' + [['FAST_WRONG', 'Rushed and wrong'], ['SLOW_WRONG', "Didn't know (slow, wrong)"], ['WRONG', 'Wrong'], ['SLOW_RIGHT', 'Slow but right'], ['RIGHT', 'Right'], ['BLANK', 'Blank']]
+        .map(function (x) { return x[1] + ' <b>' + (pf[x[0]] || 0) + '</b>'; }).join(' · ') + '</p>';
+      if (Object.keys(mk).length) h += '<p class="t-line">Mistake types: ' + Object.keys(mk).map(function (k) { return esc(k) + ' <b>' + mk[k] + '</b>'; }).join(' · ') + '</p>';
+      h += '<h2 class="t-h2">Level per skill</h2><table class="t-table t-lv"><tr><th>Skill</th><th>Level</th><th>Recent</th><th>Good sets in a row</th><th>First try</th></tr>' + r.skills.map(function (k, i) {
+        return '<tr class="' + (k.n ? '' : 'off') + '"><td>' + (k.subs.length ? '<button type="button" class="hz-link" data-sub="' + i + '">' + esc(k.name) + '</button>' : esc(k.name)) + '<div class="muted t-dom">' + esc(k.domain) + '</div></td>' +
+          '<td>' + (k.level ? '<span class="t-lvl ' + k.level + '">' + diffName(k.level) + '</span>' : '<span class="muted">—</span>') + '</td><td>' + (k.recent === null ? '' : Math.round(k.recent * 100) + '%') + '</td><td>' + (k.level ? k.streak : '') + '</td>' +
+          '<td>' + (k.n ? dotHtml(k.dot) + k.right + '/' + k.n : '') + '</td></tr>' +
+          (k.subs.length ? '<tr class="t-subs" id="t-sub-' + i + '" hidden><td colspan="5">' + k.subs.map(function (x) { return '<span>' + dotHtml(x.dot) + esc(x.name) + ' ' + x.right + '/' + x.n + '</span>'; }).join('') + '</td></tr>' : '');
+      }).join('') + '</table>';
+      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<table class="t-table"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th></th></tr>' + r.sets.map(function (x, i) {
+        return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td><td>' + (x.time_min ? x.time_min + ' min' : '') + '</td>' +
+          '<td>' + (x.done ? '<button type="button" class="hz-link" data-res="' + i + '">Result</button> <button type="button" class="hz-link" data-sgo="' + i + '">Go over</button>' : '') + '</td></tr>';
+      }).join('') + '</table>' : '<div class="empty">No sets yet.</div>');
+      body().innerHTML = h; bindCopies(body());
+      $('#t-back').onclick = showHome;
+      $('#t-p-go').onclick = function () { openClass('st:' + s.code, 'all'); };
+      $('#t-p-asg').onclick = function () { openBuilder('st:' + s.code); };
+      $('#t-p-act').onclick = function () { call('editStudent', A.code, s.code, { active: !s.active }).then(function () { openProfile(s.code); }).catch(function (e) { toast(X.errMsg(e)); }); };
+      $$('[data-sub]', body()).forEach(function (b) { b.onclick = function () { var tr = $('#t-sub-' + b.getAttribute('data-sub')); tr.hidden = !tr.hidden; }; });
+      $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
+        var x = r.sets[+b.getAttribute('data-res')];
+        call('teacherResult', A.code, x.set_id).then(X.renderResult).catch(function (e) { toast(X.errMsg(e)); });
+      }; });
+      $$('[data-sgo]', body()).forEach(function (b) { b.onclick = function () { openClass('st:' + s.code, 's:' + r.sets[+b.getAttribute('data-sgo')].set_id); }; });
+    }).catch(fail);
+  }
+
+  /* ================= assignment builder (§7) ================= */
+  function openBuilder(target) {
+    T.view = 'build'; closePanel(); spin();
+    var go = function () {
+      var h = T.home;
+      var opts = '<option value="">— choose a student or a class —</option><optgroup label="Classes">' + h.classes.filter(function (c) { return c.active; }).map(function (c) { return '<option value="' + esc(c.class_id) + '">' + esc(c.name) + '</option>'; }).join('') + '</optgroup>' +
+        '<optgroup label="Students">' + h.students.filter(function (s) { return s.active; }).map(function (s) { return '<option value="st:' + esc(s.code) + '">' + esc(s.name) + '</option>'; }).join('') + '</optgroup>';
+      var today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+      body().innerHTML = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><h1>New assignment</h1><p class="sub">Untimed, like practice. Tick topics, how many questions and which difficulties; the app picks the questions (those nobody has done first). Same questions for everyone in a class.</p>' +
+        '<div class="t-form"><label>To<select id="b-to" class="field">' + opts + '</select></label><label>Title<input id="b-title" class="field" maxlength="80" value="Homework – ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '"></label>' +
+        '<label>Available from<input id="b-from" type="date" class="field" value="' + today + '"></label><label>Due (optional)<input id="b-due" type="date" class="field"></label></div>' +
+        '<div id="b-tree"><p class="muted">Choose who it is for first.</p></div><div id="b-pick"></div>';
+      $('#t-back').onclick = showHome;
+      var to = $('#b-to'); if (target) to.value = target;
+      to.onchange = function () { loadTree(to.value); };
+      if (to.value) loadTree(to.value);
+    };
+    if (T.home) go(); else call('teacherHome', A.code).then(function (r) { T.home = r; go(); }).catch(fail);
+  }
+  function loadTree(target) {
+    var box = $('#b-tree'); $('#b-pick').innerHTML = '';
+    if (!target) { box.innerHTML = '<p class="muted">Choose who it is for first.</p>'; return; }
+    box.innerHTML = '<div class="spinner"></div>';
+    call('assignmentTree', A.code, target).then(function (r) {
+      T.tree = r;
+      var cnt = function (c, d) { return c ? '<span class="muted">' + c['f' + d] + ' new / ' + c[d] + '</span>' : '<span class="muted">0</span>'; };
+      var topic = function (code, name, c, sub) {
+        return '<div class="b-topic' + (sub ? ' sub' : '') + '" data-code="' + esc(code) + '"><label class="b-tick"><input type="checkbox" class="b-on"' + (c ? '' : ' disabled') + '> ' + esc(name) + '</label>' +
+          '<span class="b-set"><input type="number" class="field b-n" min="1" max="40" value="3" aria-label="Number of questions">' +
+          ['E', 'M', 'H'].map(function (d) { return '<label class="b-d"><input type="checkbox" class="b-diff" value="' + d + '"' + (d === 'M' ? ' checked' : '') + (c && c[d] ? '' : ' disabled') + '> ' + diffName(d) + ' ' + cnt(c, d) + '</label>'; }).join('') + '</span></div>';
+      };
+      box.innerHTML = '<h2 class="t-h2">Topics</h2>' + r.domains.map(function (d) {
+        return '<details class="b-dom" open><summary>' + esc(d.name) + '</summary>' + d.skills.map(function (k) {
+          return '<div class="b-skill">' + topic(k.code, k.name, k.count, false) + '<details class="b-subs"><summary class="muted">Sub-skills</summary>' + k.subs.map(function (x) { return topic(x.code, x.name, x.count, true); }).join('') + '</details></div>';
+        }).join('') + '</details>';
+      }).join('') + '<p><button type="button" class="btn-blue" id="b-pickbtn">Pick questions</button></p>';
+      $$('.b-on', box).forEach(function (c) { c.onchange = function () { c.closest('.b-topic').classList.toggle('on', c.checked); }; });
+      $('#b-pickbtn').onclick = function () { pick(target); };
+    }).catch(function (e) { box.innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; });
+  }
+  function pick(target) {
+    var topics = $$('.b-topic.on').map(function (t) {
+      return { code: t.getAttribute('data-code'), n: +$('.b-n', t).value || 1, diffs: $$('.b-diff', t).filter(function (x) { return x.checked; }).map(function (x) { return x.value; }).join(',') };
+    });
+    if (!topics.length) { toast('Tick at least one topic.', 2500); return; }
+    var bad = topics.filter(function (t) { return !t.diffs; })[0];
+    if (bad) { toast('Tick Easy, Medium or Hard for every topic.', 2500); return; }
+    var box = $('#b-pick'); box.innerHTML = '<div class="spinner"></div>';
+    call('pickAssignment', A.code, { target: target, topics: topics }).then(function (r) {
+      T.pick = r; T.pickTopics = topics; renderPick();
+    }).catch(function (e) { box.innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; });
+  }
+  function renderPick() {
+    var r = T.pick, box = $('#b-pick'), total = r.topics.reduce(function (a, t) { return a + t.picked.length; }, 0);
+    box.innerHTML = '<h2 class="t-h2">Questions (' + total + ') for ' + esc(r.target.title) + '</h2>' + r.topics.map(function (t, ti) {
+      return '<div class="b-ptopic"><h3>' + esc(t.name) + ' <span class="muted">' + t.n + ' · ' + t.diffs.split(',').map(diffName).join(' + ') + '</span>' + (t.short ? ' <span class="t-red">' + esc(t.short) + '</span>' : '') + '</h3>' +
+        t.picked.map(function (x, i) {
+          return '<div class="b-item">' + codeHtml(x.code) + '<span>' + esc(x.subskill_name) + ' · ' + diffName(x.difficulty) + '</span><span class="' + (x.status === 'new for all' ? 'muted' : 't-red') + '">' + esc(x.status) + '</span>' +
+            '<button type="button" class="hz-link" data-swap="' + ti + ':' + i + '"' + (t.queue.length ? '' : ' disabled') + '>Swap</button></div>';
+        }).join('') + '</div>';
+    }).join('') + '<p class="b-pub"><button type="button" class="btn-blue" id="b-publish">Publish to ' + esc(r.target.title) + '</button></p>';
+    bindCopies(box);
+    $$('[data-swap]', box).forEach(function (b) { b.onclick = function () {
+      var p = b.getAttribute('data-swap').split(':'), t = r.topics[+p[0]], i = +p[1];
+      if (!t.queue.length) return;
+      var out = t.picked[i]; t.picked[i] = t.queue.shift(); t.queue.push(out); renderPick();
+    }; });
+    $('#b-publish').onclick = function () {
+      var btn = this; btn.disabled = true;
+      var qids = []; r.topics.forEach(function (t) { t.picked.forEach(function (x) { qids.push(x.qid); }); });
+      call('publishAssignment', A.code, { target: $('#b-to').value, title: $('#b-title').value, available_from: $('#b-from').value, due: $('#b-due').value, qids: qids, topics: T.pickTopics })
+        .then(function (x) { toast('Published: ' + x.n + ' questions.', 2500); var tg = $('#b-to').value; T.tab = 'asg'; openClass(tg); })
+        .catch(function (e) { btn.disabled = false; toast(X.errMsg(e), 3500); });
+    };
+  }
+
+  /* ================= entry ================= */
+  function init() {
+    X = window.SMLX; A = X.A; $ = X.$; $$ = X.$$; el = X.el; esc = X.esc; call = X.call; toast = X.toast;
+    $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openBuilder(''); }; });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+  }
+  window.SMLT = { init: init, show: function () { if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
+  if (window.SMLX) init();
+})();
+</script>

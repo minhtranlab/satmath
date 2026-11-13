@@ -142,16 +142,12 @@
   <!-- ============ Review (read-only questions of a finished attempt) ============ -->
   <!-- ============ Teacher ============ -->
   <section id="scr-teacher" class="screen">
-    <div class="topbar-simple">
+    <div class="topbar-simple t-top">
       <div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px;font-size:14px">SM</span><span class="app-name">SAT Math Lib</span><span class="t-badge">Teacher</span></div>
-      <div><button class="btn-plain" id="t-logout">Sign out</button></div>
+      <nav class="t-nav"><button class="btn-plain" type="button" data-go="home">Classes</button><button class="btn-plain" type="button" data-go="asks">Asked <span id="t-asks-n"></span></button><button class="btn-plain" type="button" data-go="build">New assignment</button><button class="btn-plain" id="t-logout" type="button">Sign out</button></nav>
     </div>
-    <div class="home-body">
-      <h1>Students</h1>
-      <p class="sub">Open a set to see the result page the student saw, then every question with the student's answer.</p>
-      <input id="t-filter" class="field t-filter" placeholder="Filter by name or code" autocomplete="off">
-      <div id="t-list"><div class="spinner"></div></div>
-    </div>
+    <div class="t-body" id="t-body"><div class="spinner"></div></div>
+    <div id="t-panel" class="t-panel" aria-hidden="true"><div class="t-panel-in" id="t-panel-in"></div></div>
   </section>
 </div>
 
@@ -166,5 +162,6 @@
 </svg>
 
 <?!= include('Client'); ?>
+<?!= include('Teacher'); ?>
 </body>
 </html>

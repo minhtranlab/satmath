@@ -1,7 +1,8 @@
 /**
  * SAT Math Lib — Sheet update after a new version (Test Zone pattern). Runs once per deploy (stamp = APP_VERSION +
  * APP_BUILD, the commit id the Action writes into Code.gs). Each step is safe to repeat:
- *   ensureTabs_ → ensureSettingsRows_ → syncSheetTexts_ → ensureTimeNorms_ → syncSkills_ → syncLibrary_ → checkSheet_
+ *   ensureTabs_ → ensureSettingsRows_ → syncSheetTexts_ → ensureTimeNorms_ → syncSkills_ → syncLibrary_ → syncStudents_ (codes,
+ *   classes mirror) → syncTaggedReview_ (Sheet tags → Review) → ensureMistakeDropdown_ → checkSheet_
  * Then Settings row `code_version` = the stamp (its meaning cell = when it ran + a one-line result).
  * Who starts it: 1. the GitHub Action, right after the deploy, opens <web app URL>?update=1 (doGet);
  *                2. fallback: run updateAfterNewVersion in the Apps Script editor (also the one-time authorization).
@@ -42,7 +43,8 @@ function currentStamp_() {
 
 function doUpdate_() {
   var steps = [['tabs', ensureTabs_], ['settings', ensureSettingsRows_], ['texts', syncSheetTexts_], ['time norms', ensureTimeNorms_],
-               ['skills', syncSkills_], ['library', syncLibrary_], ['check', checkSheet_]];
+               ['skills', syncSkills_], ['library', syncLibrary_], ['students', syncStudents_], ['tags', syncTaggedReview_],
+               ['dropdown', ensureMistakeDropdown_], ['check', checkSheet_]];
   var notes = [], failed = 0, log = [];
   steps.forEach(function (s) {
     try { var msg = String(s[1]() || ''); log.push('[' + s[0] + '] ' + msg); notes.push(msg); }

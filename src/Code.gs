@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.2 (2026-11-13, practice by skill, fix tries, Review, Ask teacher)';
+var APP_VERSION = 'v0.3 (2026-11-13, teacher page: classes, What to go over, assignments)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -292,7 +292,7 @@ function setTitle_(s) {
   var kind = String(s.kind || 'practice');
   if (kind === 'practice') return 'Practice · ' + (skillName_(String(s.skill || '')) || 'Mixed');
   if (kind === 'review') return 'Review';
-  return String(s.title || 'Assignment');
+  return s.assignment_id ? assignmentTitle_(s.assignment_id) : 'Assignment';
 }
 
 /** Profile of a set: one part, no time limit, calculator + reference (SAT Math). */

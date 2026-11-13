@@ -1,6 +1,7 @@
 <script>
 /* ======================= SAT Math Lib — client engine (from Test Zone v1.13) =======================
- * All interaction is local. Server calls: login, homeData, startPractice, getSet, getFigures, autosave, submit, getResult, getReview.
+ * All interaction is local. Server calls: login, homeData, startPractice, startReview, startAssignment, getSet, getFigures, autosave,
+ * submit, getResult, getReview, getFix, checkTry, askTeacher. The teacher page is Teacher.html (window.SMLT).
  * A set is ONE part with no time limit: no timer is ever shown; time per question is still logged.
  * State is saved to localStorage on every change and to the server every autosave_sec.
  * The server-side clock decides remaining time: remaining = limit − (serverNow − part_start).
@@ -165,8 +166,14 @@
       if (r.assignments && r.assignments.length) {
         r.assignments.forEach(function (a) {
           var row = el('div', { class: 'hz-resume' });
-          row.innerHTML = '<div><b>' + esc(a.title) + '</b><span>' + esc(a.when || '') + '</span></div>';
-          var b = el('button', { class: 'hz-btn', type: 'button' }, a.set_id ? 'Continue' : 'Start'); b.onclick = function () { openTest(a.set_id, {}); };
+          row.innerHTML = '<div><b>' + esc(a.title) + '</b><span>' + a.n + ' questions · ' + esc(a.when || '') + (a.set_id ? ' · ' + a.answered + '/' + a.n + ' answered' : '') + '</span></div>';
+          var b = el('button', { class: 'hz-btn', type: 'button' }, a.set_id ? 'Continue' : 'Start');
+          b.onclick = function () {
+            if (a.set_id) { openTest(a.set_id, {}); return; }
+            b.disabled = true;
+            call('startAssignment', A.code, a.assignment_id).then(function (r) { openTest(r.set_id, {}); })
+              .catch(function (e) { b.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+          };
           row.appendChild(b); asg.appendChild(row);
         });
       } else asg.appendChild(el('p', { class: 'sm-empty' }, 'Nothing from your teacher right now.'));
@@ -1289,40 +1296,14 @@
   function fmtTime(s) { s = Math.round(s || 0); var m = Math.floor(s / 60), r = s % 60; return m ? m + ' min ' + r + ' s' : r + ' s'; }
   function initReview() { $('#btn-view-back').onclick = exitViewer; }
 
-  /* ================= teacher mode (Settings → teacher_code) ================= */
-  function showTeacher() {
-    show('scr-teacher');
-    $('#t-list').innerHTML = '<div class="spinner"></div>';
-    call('teacherOverview', A.code).then(function (r) {
-      A.tdata = r.students;
-      renderTeacher();
-    }).catch(function (e) { $('#t-list').innerHTML = '<div class="empty">' + esc(errMsg(e)) + '</div>'; });
+  /* ================= teacher page: Teacher.html (window.SMLT) ================= */
+  function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
+  function initTeacher() {
+    // the teacher page (Teacher.html) uses these helpers of the student client
+    window.SMLX = { A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset,
+                    figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell };
+    if (window.SMLT) window.SMLT.init();
   }
-  function renderTeacher() {
-    var f = String($('#t-filter').value || '').trim().toLowerCase();
-    var list = (A.tdata || []).filter(function (s) { return !f || (s.name + ' ' + s.code).toLowerCase().indexOf(f) >= 0; });
-    var h = '';
-    list.forEach(function (s) {
-      h += '<div class="card t-card"><h3><span>' + esc(s.name) + ' <span class="muted">· ' + esc(s.code) + ' · ' + esc(s.track) + (s.active ? '' : ' · locked') + '</span></span><span class="muted">' +
-        (s.attempts.length ? s.attempts.length + (s.attempts.length === 1 ? ' attempt' : ' attempts') : 'no attempts yet') + '</span></h3>';
-      if (s.attempts.length) {
-        h += '<table class="attempts"><tr><th>Test</th><th>Attempt</th><th>Date</th><th>Score</th><th></th><th></th></tr>' + s.attempts.map(function (a) {
-          return '<tr><td>' + esc(a.title) + '</td><td>#' + a.attempt_no + '</td><td>' + esc(a.date) + '</td><td>' + (a.right === null ? '—' : a.right + ' / ' + a.n) + '</td><td>' +
-            (a.reliable === 'No' ? '<span class="tag abandoned">not reliable</span> ' : '') + (a.sittings > 1 ? '<span class="tag paused">' + a.sittings + ' sittings</span>' : '') + '</td><td>' +
-            (a.available ? '<button type="button" class="btn-plain t-open" data-sid="' + esc(a.session_id) + '">Open</button>' : '<span class="muted">form not on Drive</span>') + '</td></tr>';
-        }).join('') + '</table>';
-      }
-      h += '</div>';
-    });
-    $('#t-list').innerHTML = h || '<div class="empty">No students match.</div>';
-    $$('#t-list .t-open').forEach(function (b) {
-      b.onclick = function () {
-        show('scr-result'); $('#result-body').innerHTML = '<div class="page"><div class="spinner"></div></div>';
-        call('teacherResult', A.code, b.getAttribute('data-sid')).then(renderResult).catch(function (e) { toast(errMsg(e)); showTeacher(); });
-      };
-    });
-  }
-  function initTeacher() { $('#t-filter').addEventListener('input', renderTeacher); }
 
   /* ================= tools: directions / more / zoom / line reader / help ================= */
   function initTools() {
