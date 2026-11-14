@@ -153,6 +153,7 @@
   }
   function showHome() {
     A.profile = null; stopLoops(); clearTimeout(A.subT); // nothing of a set runs behind the home
+    A.pl = false; $('#scr-test').classList.remove('placement');
     show('scr-home');
     $('#home-name').textContent = A.student.name;
     $('#home-hello').textContent = '';
@@ -166,7 +167,10 @@
       if (r.assignments && r.assignments.length) {
         r.assignments.forEach(function (a) {
           var row = el('div', { class: 'hz-resume' });
-          row.innerHTML = '<div><b>' + esc(a.title) + '</b><span>' + a.n + ' questions · ' + esc(a.when || '') + (a.set_id ? ' · ' + a.answered + '/' + a.n + ' answered' : '') + '</span></div>';
+          row.innerHTML = a.placement
+            ? '<div><b>' + esc(a.title) + '</b><span>About 15–24 questions, one at a time · no timer · ' + esc(a.when || '') + (a.set_id ? ' · ' + a.answered + ' answered' : '') + '</span></div>'
+            : '<div><b>' + esc(a.title) + '</b><span>' + a.n + ' questions · ' + esc(a.when || '') + (a.set_id ? ' · ' + a.answered + '/' + a.n + ' answered' : '') + '</span></div>';
+          if (a.placement) row.id = 'placement-card';
           var b = el('button', { class: 'hz-btn', type: 'button' }, a.set_id ? 'Continue' : 'Start');
           b.onclick = function () {
             if (a.set_id) { openTest(a.set_id, {}); return; }
@@ -210,8 +214,9 @@
         var t = el('table', { class: 'sm-hist', id: 'history' });
         t.innerHTML = '<tr><th>Date</th><th>Set</th><th>First Try</th><th>Best Score</th><th></th></tr>';
         r.history.forEach(function (h) {
-          var tr = el('tr'); tr.innerHTML = '<td class="dt">' + esc(h.date) + '</td><td>' + esc(h.title) + '</td><td class="num">' + h.first_try + '/' + h.n + '</td><td class="num">' + h.best + '/' + h.n + '</td><td class="act"></td>';
-          if (h.fix_left) { var fb = el('button', { class: 'hz-link fix', type: 'button' }, 'Fix ' + h.fix_left + ' more'); fb.onclick = function () { A.result = null; openFix(h.set_id); }; tr.lastChild.appendChild(fb); }
+          var pl = h.kind === 'placement';
+          var tr = el('tr'); tr.innerHTML = '<td class="dt">' + esc(h.date) + '</td><td>' + esc(h.title) + '</td><td class="num">' + (pl ? '–' : h.first_try + '/' + h.n) + '</td><td class="num">' + (pl ? '–' : h.best + '/' + h.n) + '</td><td class="act"></td>';
+          if (h.fix_left && !pl) { var fb = el('button', { class: 'hz-link fix', type: 'button' }, 'Fix ' + h.fix_left + ' more'); fb.onclick = function () { A.result = null; openFix(h.set_id); }; tr.lastChild.appendChild(fb); }
           var b = el('button', { class: 'hz-link', type: 'button' }, 'Open'); b.onclick = function () { openResult(h.set_id); }; tr.lastChild.appendChild(b);
           t.appendChild(tr);
         });
@@ -333,6 +338,8 @@
   }
   function setupTest0(res) {
     A.test = res; A.profile = res.profile; A.parts = {}; A.qs = {}; A.ending = false;
+    A.pl = !!res.profile.placement;                                 // placement test: one question at a time, no going back
+    $('#scr-test').classList.toggle('placement', A.pl); $('#mm-save').hidden = !A.pl;
     A.copy = res.copy || ''; A.dead = false; // N1: this window's copy token (the server keeps only the newest)
     setSaveDot('');                          // N3: no "Saved hh:mm" left over from another attempt
     $('#tool-annot span').textContent = res.profile.annotate_label || 'Annotate';
@@ -381,7 +388,8 @@
         if (A.st.ended[p]) { advanceAfter(p); return; }
         if (remainingMs() <= 0) { endPart('timeout'); return; }
         buildPart(p).then(function () {
-          if (A.st.phase === 'review') showReview(true); else goTo(pst().cur || 0, true);
+          if (A.pl) goTo(qlist().length - 1, true);
+          else if (A.st.phase === 'review') showReview(true); else goTo(pst().cur || 0, true);
         }).catch(loadTrouble);
         break;
       case 'transition':
@@ -524,9 +532,11 @@
     var overview = ci && firstPart ? '<div class="test-overview"><div class="to-h"><b>' + esc(ci.title) + '</b><span class="fc-time">' + esc(ci.total) + '</span></div>' + ci.lines + '</div>' : '';
     var unt = !Number(d.time_limit_sec);
     $('#v-directions').innerHTML = '<div class="page dir-page">' + overview + '<h1>' + esc(d.title || 'Part ' + d.part) + '</h1>' +
-      '<div class="part-facts"><div><b>' + n + '</b>questions</div><div><b>' + (unt ? 'No' : fmt(d.time_limit_sec * 1000)) + '</b>' + (unt ? 'timer' : 'time') + '</div><div><b>' + (d.calculator ? 'Yes' : 'No') + '</b>calculator</div></div>' +
+      '<div class="part-facts"><div><b>' + (A.pl ? esc(A.profile.n_range || '8–24') : n) + '</b>questions</div><div><b>' + (unt ? 'No' : fmt(d.time_limit_sec * 1000)) + '</b>' + (unt ? 'timer' : 'time') + '</div><div><b>' + (d.calculator ? 'Yes' : 'No') + '</b>calculator</div></div>' +
       '<div class="dir-text">' + (d.directions_html || '') + '</div>' +
-      (unt ? '<p class="lead">Take your time. Your answers are saved as you go: you can close the page and continue later from your home page. ' +
+      (A.pl ? '<p class="lead"><b>Take your time — the time on each question is recorded.</b> Answer each question before you go on; ' +
+              'the next question depends on your answer. Your answers are saved: you can close the page and continue later from your home page.</p>'
+       : unt ? '<p class="lead">Take your time. Your answers are saved as you go: you can close the page and continue later from your home page. ' +
              'When you are done, go to <b>Check Your Work</b> and submit.</p>'
            : '<p class="lead">The timer starts when you click <b>Begin</b>. Once you leave this ' + word() + ' you cannot come back to it.</p>') +
       '<div class="center"><button class="btn-blue" id="btn-begin" type="button" style="min-width:180px">Begin</button></div></div>';
@@ -541,7 +551,7 @@
     A.st.phase = 'test';
     log('part_start', null, p);
     persist();
-    buildPart(p).then(function () { goTo(0, true); autosave(); }).catch(loadTrouble);
+    buildPart(p).then(function () { goTo(A.pl ? qlist().length - 1 : 0, true); autosave(); }).catch(loadTrouble);
   }
   /** "Save and Continue Later" is offered after a part with pause_after:true (SAT: only at the section break),
    *  or after any part when the profile allows pausing between parts (AP). */
@@ -801,8 +811,8 @@
     view('v-question');
     $$('#qwrap .q').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-qid') === q.qid); });
     $('#tmain').scrollTop = 0;
-    $('#nav-label').textContent = 'Question ' + (i + 1) + ' of ' + l.length;
-    $('#btn-back').disabled = i === 0;
+    $('#nav-label').textContent = A.pl ? 'Question ' + (i + 1) : 'Question ' + (i + 1) + ' of ' + l.length;
+    $('#btn-back').disabled = i === 0 || A.pl;
     $('#btn-next').disabled = false;
     hideHlToolbar(); closePops();
     refreshQ(q.qid);
@@ -905,6 +915,7 @@
       '<span><i class="lg-un"></i>Unanswered</span><span><svg width="14" height="18"><use href="#i-flag"/></svg>For Review</span>';
   }
   function openNav() {
+    if (A.pl && !A.view) return;                                     // placement: no question list, no going back
     var pop = $('#nav-pop');
     if (pop.classList.contains('on')) { closePops(); return; }
     closePops();
@@ -954,6 +965,7 @@
   }
   function onNext() {
     if (A.view) { viewNext(1); return; }
+    if (A.pl) { plNext(); return; }
     if (A.st.phase === 'review') {
       var last = A.st.part_idx >= A.st.seq_parts.length - 1 && !(A.profile.routing || []).some(function (r) { return r.from === curPart(); });
       modal(last ? (untimed() ? 'Submit this set?' : 'Submit your test?') : 'Move on to the next ' + word() + '?',
@@ -967,8 +979,55 @@
   }
   function onBack() {
     if (A.view) { viewNext(-1); return; }
+    if (A.pl) return;
     if (A.st.phase === 'review') { goTo(qlist().length - 1, true); return; }
     var i = pst().cur; if (i > 0) goTo(i - 1);
+  }
+
+  /* ================= placement test: the server picks the next question ================= */
+  function plNext() {
+    var q = curQ(); if (!q || A.plBusy) return;
+    var go = function () {
+      A.plBusy = true; var nb = $('#btn-next'); nb.disabled = true; nb.textContent = 'Saving…';
+      var sp = $('.spr-in', qBox(q.qid)); if (sp) sp.blur();
+      log('q_leave', q.qid, null); persist();
+      var pl = payload(); pl.qid = q.qid;
+      var sent = A.evBase + A.events.length;
+      call('placementNext', A.code, A.st.session_id, pl).then(function (r) {
+        A.plBusy = false; nb.textContent = 'Next';
+        if (r && r.other_copy) { onOtherCopy(); return; }
+        if (!r || !r.ok) { nb.disabled = false; toast((r && r.msg) || 'Could not save. Try Next again.', 3000); return; }
+        A.acked = Math.max(A.acked, sent);
+        if (r.done) { stopLoops(); LS.del(lsKey()); LS.del('tz_active'); renderResult(r.result); return; }
+        var nq = r.question, l = qlist();
+        if (!l.some(function (x) { return x.qid === nq.qid; })) {
+          l.push(nq); A.test.questions.push(nq);
+          var box = buildQuestion(nq, l.length - 1, pdef()); $('#qwrap').appendChild(box);
+          typeset(box).then(function () { refreshQ(nq.qid); });
+        }
+        goTo(l.length - 1, true);
+        persist(); setSaveDot('Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }).catch(function (e) {
+        A.plBusy = false; nb.disabled = false; nb.textContent = 'Next';
+        log('q_enter', q.qid, pst().cur + 1); persist();
+        modal('Could not reach the server', 'Your answer is kept on this device. Check the internet connection, then select <b>Next</b> again.', [{ label: 'OK', value: 1 }]); errMsg(e);
+      });
+    };
+    if (!pst().ans[q.qid]) {
+      modal('Go on without an answer?', 'You cannot come back to this question. A question without an answer counts as not known.',
+        [{ label: 'Answer it', value: false, cls: 'btn-outline' }, { label: 'Skip it', value: true }]).then(function (ok) { if (ok) go(); });
+    } else go();
+  }
+  function renderPlacementResult(res) {
+    show('scr-result');
+    var h = brandBar('res-home', 'Back to home') + '<div class="page res-page pl-res"><h1>Your Placement Test</h1>' +
+      '<p class="lead res-meta">' + esc(res.date || '') + (res.n ? ' · ' + res.n + ' questions' : '') + '</p>' +
+      '<div class="pl-doms" id="pl-doms">' + (res.domains || []).map(function (d) {
+        return '<div class="pl-dom ' + esc(String(d.word).toLowerCase()) + '"><span class="n">' + esc(d.name) + '</span><b>' + esc(d.word || '–') + '</b></div>';
+      }).join('') + '</div>' +
+      '<p class="lead">Thank you! Your teacher will go over the test with you. Your practice now starts at the right level for you in each area.</p></div>';
+    $('#result-body').innerHTML = h;
+    $('#res-home').onclick = showHome;
   }
 
   /* ================= ending parts + submit ================= */
@@ -1078,6 +1137,7 @@
     show('scr-result');
     var b = $('#result-body');
     if (!res || !res.ok) { b.innerHTML = brandBar('res-home', 'Back to home') + '<div class="page"><p class="lead">' + esc((res && res.msg) || 'No result.') + '</p></div>'; $('#res-home').onclick = showHome; return; }
+    if (res.placement) { renderPlacementResult(res); return; }
     A.result = res;
     var teacher = !!res.teacher;
     var h = brandBar('res-home', teacher ? 'Back to students' : 'Back to home') + '<div class="page res-page">';
@@ -1203,6 +1263,7 @@
     call(teacher ? 'teacherReview' : 'getReview', A.code, sessionId).then(go).catch(function (e) { toast(errMsg(e), 4000); exitViewer(); });
   }
   function startViewer(d, sid, teacher, qid, fix) {
+    A.pl = false; $('#scr-test').classList.remove('placement');
     var keep = VW && VW.sid === sid && VW.teacher === teacher ? VW.keys : {};
     VW = { d: d, sid: sid, teacher: teacher, keys: keep, fix: !!fix, t0: {}, msg: {}, best: d.best || null };
     var prof = { parts: d.parts.map(function (p) {

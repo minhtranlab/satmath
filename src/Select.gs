@@ -57,11 +57,12 @@ function historyOf_(codeN, tries) {
 
 /** R = weighted accuracy of the latest `recent_window` first tries in skill k (Review sets excluded). */
 function recentR_(tries, skill, S) {
-  var xs = tries.filter(function (t) { return t.skill === skill && t.kind !== 'review'; }).slice(-S.recent_window).reverse();
+  var use = function (t) { return t.skill === skill && t.kind !== 'review' && t.kind !== 'placement'; };   // placement items set the level, not R
+  var xs = tries.filter(use).slice(-S.recent_window).reverse();
   if (!xs.length) return { R: null, n: 0 };
   var num = 0, den = 0;
   xs.forEach(function (t, i) { var w = Math.pow(S.recent_decay, i); den += w; if (t.right) num += w; });
-  return { R: num / den, n: tries.filter(function (t) { return t.skill === skill && t.kind !== 'review'; }).length };
+  return { R: num / den, n: tries.filter(use).length };
 }
 
 /* ---------------- Levels ---------------- */
@@ -76,10 +77,12 @@ function levelState_(codeN, skill, tries, S) {
   if (row && /^[EMH]$/.test(String(row.level))) {
     return { level: String(row.level), R: row.recent_pct === '' ? null : Number(row.recent_pct), good_streak: Number(row.good_streak) || 0, row: row };
   }
-  return { level: initialLevel_(tries, skill, S), R: recentR_(tries, skill, S).R, good_streak: 0, row: null };
+  return { level: initialLevel_(tries, skill, S, codeN), R: recentR_(tries, skill, S).R, good_streak: 0, row: null };
 }
-/** A skill never practised on its own: ≥ 5 first tries from assignments → R decides; else M. */
-function initialLevel_(tries, skill, S) {
+/** A skill with no Levels row: the domain level of the latest placement test; else ≥ 5 first tries from assignments → R
+ *  decides; else E. */
+function initialLevel_(tries, skill, S, codeN) {
+  if (codeN) { var pl = plLatestLevels_(codeN)[String(skill).charAt(0)]; if (pl) return pl; }
   var r = recentR_(tries, skill, S);
   if (r.n >= 5) return r.R >= S.good_set_pct ? 'H' : r.R < S.weak_set_pct ? 'E' : 'M';
   return 'E';                                        // Minh 13 Nov: a new student starts Easy (3 E + 2 M), going up as usual
@@ -305,7 +308,7 @@ function pickMixed_(codeN, n, setSeed) {
   var blank = !tries.length, perSkill = Math.max(1, Math.floor(2 * n / 5)), order = [];
   var lvCache = {}, levelOf = function (k) { return lvCache[k] || (lvCache[k] = levelState_(codeN, k, tries, S).level); };
   var lvRows = {}; readTable_('Levels').rows.forEach(function (r) { if (normCode_(r.student_code) === codeN && /^[EMH]$/.test(String(r.level))) lvRows[clean_(r.skill)] = String(r.level); });
-  skills.forEach(function (k) { lvCache[k] = lvRows[k] || initialLevel_(tries, k, S); });   // one Sheet read, not one per skill
+  skills.forEach(function (k) { lvCache[k] = lvRows[k] || initialLevel_(tries, k, S, codeN); });   // one Sheet read, not one per skill
   if (blank) {
     // mini placement: round-robin over the 4 domains, a random skill of each, Medium
     var doms = {}; skills.forEach(function (k) { (doms[domainOf[k]] = doms[domainOf[k]] || []).push(k); });
@@ -313,7 +316,8 @@ function pickMixed_(codeN, n, setSeed) {
     var dk = shuffle_(Object.keys(doms), seed + 1), i = 0;
     while (order.length < skills.length) { var d = dk[i % dk.length], l = doms[d]; if (l.length) order.push(l.shift()); i++; if (i > 400) break; }
   } else {
-    var resp = readTable_('Responses').rows.filter(function (r) { return normCode_(r.student_code) === codeN; });
+    var kinds = setKinds_();
+    var resp = readTable_('Responses').rows.filter(function (r) { return normCode_(r.student_code) === codeN && kinds[String(r.set_id)] !== 'placement'; });
     var hurt = {};
     resp.forEach(function (r) {
       var k = clean_(r.skill); if (!k) return;
@@ -468,13 +472,14 @@ function homeData(code) {
   });
   domains.forEach(function (d) { delete d._s; });
   var sets = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === codeN && !isHidden_(s); });
-  var open = sets.filter(function (s) { return isOpenStatus_(s.status) && String(s.kind) !== 'assignment'; }).map(function (s) {
+  var plSet = {}; sets.forEach(function (s) { if (String(s.kind) === 'placement') plSet[String(s.set_id)] = 1; });
+  var open = sets.filter(function (s) { return isOpenStatus_(s.status) && String(s.kind) !== 'assignment' && String(s.kind) !== 'placement'; }).map(function (s) {
     var stt = parseState_(s) || {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length;
     return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
   });
   var fixLeft = {};
   readTable_('Responses').rows.forEach(function (r) {
-    if (normCode_(r.student_code) !== codeN) return;
+    if (normCode_(r.student_code) !== codeN || plSet[String(r.set_id)]) return;
     if (Number(r.best_correct) !== 1 && !isYes_(r.locked)) fixLeft[String(r.set_id)] = (fixLeft[String(r.set_id)] || 0) + 1;
   });
   var history = sets.filter(isFinished_).sort(function (a, b) { return toMs_(b.submitted_at) - toMs_(a.submitted_at); }).slice(0, 50).map(function (s) {

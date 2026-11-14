@@ -81,6 +81,29 @@ def fx3():
     return out
 json.dump({'batch': 'FX3', 'title': 'Fixture 3 (made-up, mixed)', 'source_type': 'fixture', 'schema': 1, 'questions': fx3()},
           open(os.path.join(LIB, 'questions', 'FX3.json'), 'w'), indent=1, ensure_ascii=False)
+
+# FX4: made-up placement forms (blueprint v2.2 shape): 2 forms × 4 domains × slots E1–E3, M1–M4, H1–H3 (+ H4 Advanced Math) = 82 items.
+PL_SKILLS = {'ALG': ('H.B', 'H.D', 'H.C'), 'ADV': ('P.C', 'P.B', 'P.A'), 'PSD': ('Q.C', 'Q.A', 'Q.B'), 'GEO': ('S.B', 'S.A', 'S.C')}
+PL_SLOT = {'E1': 0, 'E2': 1, 'E3': 2, 'M1': 1, 'M2': 2, 'M3': 0, 'M4': 1, 'H1': 2, 'H2': 0, 'H3': 1, 'H4': 2}
+def fx4():
+    out, rows, n, codes = [], [], 0, {'E': 9600, 'M': 9600, 'H': 9600}
+    for form in 'AB':
+        for dom, sks in PL_SKILLS.items():
+            for slot in ['E1', 'E2', 'E3', 'M1', 'M2', 'M3', 'M4', 'H1', 'H2', 'H3'] + (['H4'] if dom == 'ADV' else []):
+                n += 1; sk = sks[PL_SLOT[slot]]; diff = slot[0]; a, b = 2 + n % 9, 3 + n % 7
+                stem = '<p>Made-up placement item %d (%s %s %s). What is \\(%d + %d\\)?</p>' % (n, form, dom, slot, a, b)
+                if n % 5 == 0:
+                    q = spr(n, sk, sk + '.1', diff, 1, stem, str(a + b), [str(a + b)])
+                else:
+                    q = mcq(n, sk, sk + '.1', diff, 1, stem, ['\\(%d\\)' % (a + b - 1), '\\(%d\\)' % (a + b), '\\(%d\\)' % (a + b + 1), '\\(%d\\)' % (a * b)], 'B')
+                q['qid'] = 'FX4-%03d' % n; q['batch'] = 'FX4'; q['source'] = {'set': 'FX4', 'page': n}
+                codes[diff] += 1; q['code'] = '%s%d' % (diff, codes[diff]); out.append(q)
+                rows.append([form, dom, slot, diff, sk, q['code'], q['qid']])
+    return out, rows
+FX4Q, FX4_FORMS = fx4()
+json.dump({'batch': 'FX4', 'title': 'Fixture 4 (made-up, placement)', 'source_type': 'fixture', 'schema': 1, 'questions': FX4Q},
+          open(os.path.join(LIB, 'questions', 'FX4.json'), 'w'), indent=1, ensure_ascii=False)
+json.dump(FX4_FORMS, open(os.path.join(HERE, 'fixtures', 'placement_forms_fx4.json'), 'w'))
 fig_line(os.path.join(LIB, 'figures', 'FX1', 'FX1-003_f1.png'))
 json.dump({'batch': 'FX1', 'title': 'Fixture (made-up)', 'source_type': 'fixture', 'schema': 1, 'questions': Q},
           open(os.path.join(LIB, 'questions', 'FX1.json'), 'w'), indent=1, ensure_ascii=False)

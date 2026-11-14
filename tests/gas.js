@@ -215,7 +215,7 @@ function createGas(appDir, tabs, opts = {}) {
     calls() { return CALLS; }, resetCalls() { CALLS = 0; },
     admin(fn) { return ctx[fn + '_'](); },
     call(fn, args) { if (typeof ctx[fn] !== 'function' || fn.endsWith('_')) throw new Error('No such server function: ' + fn); return ctx[fn](...args); },
-    fresh() { ['_settings', '_qrows', '_batchLive', '_skillIdx', '_libIdx', '_timeNorms', '_ss'].forEach(k => { if (k in ctx) ctx[k] = null; }); ctx._batch = {}; ctx._setQ = {}; }, // = a new Apps Script execution
+    fresh() { ['_settings', '_qrows', '_batchLive', '_skillIdx', '_libIdx', '_timeNorms', '_ss', '_plForms'].forEach(k => { if (k in ctx) ctx[k] = null; }); ctx._batch = {}; ctx._setQ = {}; ctx._plLatest = {}; }, // = a new Apps Script execution
     shift(ms) { SHIFT += ms; }, resetShift() { SHIFT = 0; },
     table(name) { const k = Object.keys(sheets).find(x => sheets[x].name === name); const rows = sheets[k].rows; const h = rows[0]; return rows.slice(1).filter(r => r.some(v => v !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i] === undefined ? '' : shown(r[i])]))); }
   };

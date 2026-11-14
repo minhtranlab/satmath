@@ -23,7 +23,7 @@ check(qrowsAll.find(r => r.qid === 'FX2-001').code === 'E9001', 'Questions.code 
 check(qrows.every(r => !('stem_html' in r)) && !JSON.stringify(G.table('Questions')).includes('<p>'), 'Questions tab holds no question text');
 check(qrows.find(r => r.qid === 'FX1-005').accepted === '3/4|.75|0.75', 'grid-in accepted forms kept as text ("3/4" not a date)');
 const b = G.table('Batches');
-check(b.length === 3 && b[0].batch === 'FX1' && b[0].live === 'No' && Number(b[0].n_items) === 8 && b[1].live === 'No', 'Batches: FX1 (8 items) + FX2 + FX3, live = No (new batches)');
+check(b.length === 4 && b[0].batch === 'FX1' && b[0].live === 'No' && Number(b[0].n_items) === 8 && b[1].live === 'No', 'Batches: FX1 (8 items) + FX2 + FX3 + FX4, live = No (new batches)');
 const settings = G.table('Settings');
 check(settings.some(r => r.key === 'mistake_types' && /Concept Gap; Didn't Understand The Question; Misread A Detail; Careless Calculation; Wrong Input\/Format; Others; Not A Mistake/.test(r.value)), "Settings: Minh's 7 mistake types in order");
 check(settings.find(r => r.key === 'teacher_code').value === 'TEACH-FX-9', 'Settings: an existing value is never changed');

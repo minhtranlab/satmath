@@ -1,0 +1,3786 @@
+{
+ "batch": "FX4",
+ "title": "Fixture 4 (made-up, placement)",
+ "source_type": "fixture",
+ "schema": 1,
+ "questions": [
+  {
+   "qid": "FX4-001",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 1
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 1 (A ALG E1). What is \\(3 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9601"
+  },
+  {
+   "qid": "FX4-002",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 2
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 2 (A ALG E2). What is \\(4 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9602"
+  },
+  {
+   "qid": "FX4-003",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 3
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 3 (A ALG E3). What is \\(5 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.C",
+    "subskill": "H.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9603"
+  },
+  {
+   "qid": "FX4-004",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 4
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 4 (A ALG M1). What is \\(6 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(42\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9601"
+  },
+  {
+   "qid": "FX4-005",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 5
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 5 (A ALG M2). What is \\(7 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "15",
+   "key": "15",
+   "accepted": [
+    "15"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.C",
+    "subskill": "H.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9602"
+  },
+  {
+   "qid": "FX4-006",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 6
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 6 (A ALG M3). What is \\(8 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(72\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9603"
+  },
+  {
+   "qid": "FX4-007",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 7
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 7 (A ALG M4). What is \\(9 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(27\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9604"
+  },
+  {
+   "qid": "FX4-008",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 8
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 8 (A ALG H1). What is \\(10 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.C",
+    "subskill": "H.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9601"
+  },
+  {
+   "qid": "FX4-009",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 9
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 9 (A ALG H2). What is \\(2 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(10\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9602"
+  },
+  {
+   "qid": "FX4-010",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 10
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 10 (A ALG H3). What is \\(3 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "9",
+   "key": "9",
+   "accepted": [
+    "9"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9603"
+  },
+  {
+   "qid": "FX4-011",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 11
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 11 (A ADV E1). What is \\(4 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(28\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.C",
+    "subskill": "P.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9604"
+  },
+  {
+   "qid": "FX4-012",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 12
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 12 (A ADV E2). What is \\(5 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9605"
+  },
+  {
+   "qid": "FX4-013",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 13
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 13 (A ADV E3). What is \\(6 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(54\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9606"
+  },
+  {
+   "qid": "FX4-014",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 14
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 14 (A ADV M1). What is \\(7 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(21\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9605"
+  },
+  {
+   "qid": "FX4-015",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 15
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 15 (A ADV M2). What is \\(8 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "12",
+   "key": "12",
+   "accepted": [
+    "12"
+   ],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9606"
+  },
+  {
+   "qid": "FX4-016",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 16
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 16 (A ADV M3). What is \\(9 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(45\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.C",
+    "subskill": "P.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9607"
+  },
+  {
+   "qid": "FX4-017",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 17
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 17 (A ADV M4). What is \\(10 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(60\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9608"
+  },
+  {
+   "qid": "FX4-018",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 18
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 18 (A ADV H1). What is \\(2 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9604"
+  },
+  {
+   "qid": "FX4-019",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 19
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 19 (A ADV H2). What is \\(3 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.C",
+    "subskill": "P.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9605"
+  },
+  {
+   "qid": "FX4-020",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 20
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 20 (A ADV H3). What is \\(4 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "13",
+   "key": "13",
+   "accepted": [
+    "13"
+   ],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9606"
+  },
+  {
+   "qid": "FX4-021",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 21
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 21 (A ADV H4). What is \\(5 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(15\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9607"
+  },
+  {
+   "qid": "FX4-022",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 22
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 22 (A PSD E1). What is \\(6 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.C",
+    "subskill": "Q.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9607"
+  },
+  {
+   "qid": "FX4-023",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 23
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 23 (A PSD E2). What is \\(7 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(35\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9608"
+  },
+  {
+   "qid": "FX4-024",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 24
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 24 (A PSD E3). What is \\(8 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(48\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.B",
+    "subskill": "Q.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9609"
+  },
+  {
+   "qid": "FX4-025",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 25
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 25 (A PSD M1). What is \\(9 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "16",
+   "key": "16",
+   "accepted": [
+    "16"
+   ],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9609"
+  },
+  {
+   "qid": "FX4-026",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 26
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 26 (A PSD M2). What is \\(10 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(19\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(80\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.B",
+    "subskill": "Q.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9610"
+  },
+  {
+   "qid": "FX4-027",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 27
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 27 (A PSD M3). What is \\(2 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(18\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.C",
+    "subskill": "Q.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9611"
+  },
+  {
+   "qid": "FX4-028",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 28
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 28 (A PSD M4). What is \\(3 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(9\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9612"
+  },
+  {
+   "qid": "FX4-029",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 29
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 29 (A PSD H1). What is \\(4 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(16\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.B",
+    "subskill": "Q.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9608"
+  },
+  {
+   "qid": "FX4-030",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 30
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 30 (A PSD H2). What is \\(5 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "10",
+   "key": "10",
+   "accepted": [
+    "10"
+   ],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.C",
+    "subskill": "Q.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9609"
+  },
+  {
+   "qid": "FX4-031",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 31
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 31 (A PSD H3). What is \\(6 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(36\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9610"
+  },
+  {
+   "qid": "FX4-032",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 32
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 32 (A GEO E1). What is \\(7 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(49\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.B",
+    "subskill": "S.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9610"
+  },
+  {
+   "qid": "FX4-033",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 33
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 33 (A GEO E2). What is \\(8 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(64\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9611"
+  },
+  {
+   "qid": "FX4-034",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 34
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 34 (A GEO E3). What is \\(9 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(19\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(81\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.C",
+    "subskill": "S.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9612"
+  },
+  {
+   "qid": "FX4-035",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 35
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 35 (A GEO M1). What is \\(10 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "13",
+   "key": "13",
+   "accepted": [
+    "13"
+   ],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9613"
+  },
+  {
+   "qid": "FX4-036",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 36
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 36 (A GEO M2). What is \\(2 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(8\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.C",
+    "subskill": "S.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9614"
+  },
+  {
+   "qid": "FX4-037",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 37
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 37 (A GEO M3). What is \\(3 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(15\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.B",
+    "subskill": "S.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9615"
+  },
+  {
+   "qid": "FX4-038",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 38
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 38 (A GEO M4). What is \\(4 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9616"
+  },
+  {
+   "qid": "FX4-039",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 39
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 39 (A GEO H1). What is \\(5 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(35\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.C",
+    "subskill": "S.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9611"
+  },
+  {
+   "qid": "FX4-040",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 40
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 40 (A GEO H2). What is \\(6 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "14",
+   "key": "14",
+   "accepted": [
+    "14"
+   ],
+   "tags": {
+    "domain": "S",
+    "skill": "S.B",
+    "subskill": "S.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9612"
+  },
+  {
+   "qid": "FX4-041",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 41
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 41 (A GEO H3). What is \\(7 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(63\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9613"
+  },
+  {
+   "qid": "FX4-042",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 42
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 42 (B ALG E1). What is \\(8 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9613"
+  },
+  {
+   "qid": "FX4-043",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 43
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 43 (B ALG E2). What is \\(9 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(36\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9614"
+  },
+  {
+   "qid": "FX4-044",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 44
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 44 (B ALG E3). What is \\(10 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(50\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.C",
+    "subskill": "H.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9615"
+  },
+  {
+   "qid": "FX4-045",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 45
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 45 (B ALG M1). What is \\(2 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "8",
+   "key": "8",
+   "accepted": [
+    "8"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9617"
+  },
+  {
+   "qid": "FX4-046",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 46
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 46 (B ALG M2). What is \\(3 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(21\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.C",
+    "subskill": "H.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9618"
+  },
+  {
+   "qid": "FX4-047",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 47
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 47 (B ALG M3). What is \\(4 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(32\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9619"
+  },
+  {
+   "qid": "FX4-048",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 48
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 48 (B ALG M4). What is \\(5 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(45\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9620"
+  },
+  {
+   "qid": "FX4-049",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 49
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 49 (B ALG H1). What is \\(6 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(18\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.C",
+    "subskill": "H.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9614"
+  },
+  {
+   "qid": "FX4-050",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 50
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 50 (B ALG H2). What is \\(7 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "11",
+   "key": "11",
+   "accepted": [
+    "11"
+   ],
+   "tags": {
+    "domain": "H",
+    "skill": "H.B",
+    "subskill": "H.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9615"
+  },
+  {
+   "qid": "FX4-051",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 51
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 51 (B ALG H3). What is \\(8 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "H",
+    "skill": "H.D",
+    "subskill": "H.D.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9616"
+  },
+  {
+   "qid": "FX4-052",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 52
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 52 (B ADV E1). What is \\(9 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(54\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.C",
+    "subskill": "P.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9616"
+  },
+  {
+   "qid": "FX4-053",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 53
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 53 (B ADV E2). What is \\(10 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(70\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9617"
+  },
+  {
+   "qid": "FX4-054",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 54
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 54 (B ADV E3). What is \\(2 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(16\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9618"
+  },
+  {
+   "qid": "FX4-055",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 55
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 55 (B ADV M1). What is \\(3 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "12",
+   "key": "12",
+   "accepted": [
+    "12"
+   ],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9621"
+  },
+  {
+   "qid": "FX4-056",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 56
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 56 (B ADV M2). What is \\(4 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9622"
+  },
+  {
+   "qid": "FX4-057",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 57
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 57 (B ADV M3). What is \\(5 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.C",
+    "subskill": "P.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9623"
+  },
+  {
+   "qid": "FX4-058",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 58
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 58 (B ADV M4). What is \\(6 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9624"
+  },
+  {
+   "qid": "FX4-059",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 59
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 59 (B ADV H1). What is \\(7 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(42\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9617"
+  },
+  {
+   "qid": "FX4-060",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 60
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 60 (B ADV H2). What is \\(8 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "15",
+   "key": "15",
+   "accepted": [
+    "15"
+   ],
+   "tags": {
+    "domain": "P",
+    "skill": "P.C",
+    "subskill": "P.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9618"
+  },
+  {
+   "qid": "FX4-061",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 61
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 61 (B ADV H3). What is \\(9 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(72\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.B",
+    "subskill": "P.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9619"
+  },
+  {
+   "qid": "FX4-062",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 62
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 62 (B ADV H4). What is \\(10 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(19\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(20\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(90\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "P",
+    "skill": "P.A",
+    "subskill": "P.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9620"
+  },
+  {
+   "qid": "FX4-063",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 63
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 63 (B PSD E1). What is \\(2 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(4\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(6\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.C",
+    "subskill": "Q.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9619"
+  },
+  {
+   "qid": "FX4-064",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 64
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 64 (B PSD E2). What is \\(3 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(12\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9620"
+  },
+  {
+   "qid": "FX4-065",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 65
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 65 (B PSD E3). What is \\(4 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "9",
+   "key": "9",
+   "accepted": [
+    "9"
+   ],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.B",
+    "subskill": "Q.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9621"
+  },
+  {
+   "qid": "FX4-066",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 66
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 66 (B PSD M1). What is \\(5 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(30\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9625"
+  },
+  {
+   "qid": "FX4-067",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 67
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 67 (B PSD M2). What is \\(6 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(42\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.B",
+    "subskill": "Q.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9626"
+  },
+  {
+   "qid": "FX4-068",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 68
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 68 (B PSD M3). What is \\(7 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(56\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.C",
+    "subskill": "Q.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9627"
+  },
+  {
+   "qid": "FX4-069",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 69
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 69 (B PSD M4). What is \\(8 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(72\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9628"
+  },
+  {
+   "qid": "FX4-070",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 70
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 70 (B PSD H1). What is \\(9 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "12",
+   "key": "12",
+   "accepted": [
+    "12"
+   ],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.B",
+    "subskill": "Q.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9621"
+  },
+  {
+   "qid": "FX4-071",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 71
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 71 (B PSD H2). What is \\(10 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(40\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.C",
+    "subskill": "Q.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9622"
+  },
+  {
+   "qid": "FX4-072",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 72
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 72 (B PSD H3). What is \\(2 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(10\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.A",
+    "subskill": "Q.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9623"
+  },
+  {
+   "qid": "FX4-073",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 73
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 73 (B GEO E1). What is \\(3 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(18\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.B",
+    "subskill": "S.B.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9622"
+  },
+  {
+   "qid": "FX4-074",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 74
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 74 (B GEO E2). What is \\(4 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(28\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9623"
+  },
+  {
+   "qid": "FX4-075",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 75
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 75 (B GEO E3). What is \\(5 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "13",
+   "key": "13",
+   "accepted": [
+    "13"
+   ],
+   "tags": {
+    "domain": "S",
+    "skill": "S.C",
+    "subskill": "S.C.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9624"
+  },
+  {
+   "qid": "FX4-076",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 76
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 76 (B GEO M1). What is \\(6 + 9\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(54\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9629"
+  },
+  {
+   "qid": "FX4-077",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 77
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 77 (B GEO M2). What is \\(7 + 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(21\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.C",
+    "subskill": "S.C.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9630"
+  },
+  {
+   "qid": "FX4-078",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 78
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 78 (B GEO M3). What is \\(8 + 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(32\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.B",
+    "subskill": "S.B.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9631"
+  },
+  {
+   "qid": "FX4-079",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 79
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 79 (B GEO M4). What is \\(9 + 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(45\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9632"
+  },
+  {
+   "qid": "FX4-080",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 80
+   },
+   "type": "spr",
+   "stem_html": "<p>Made-up placement item 80 (B GEO H1). What is \\(10 + 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [],
+   "key_source": "16",
+   "key": "16",
+   "accepted": [
+    "16"
+   ],
+   "tags": {
+    "domain": "S",
+    "skill": "S.C",
+    "subskill": "S.C.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9624"
+  },
+  {
+   "qid": "FX4-081",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 81
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 81 (B GEO H2). What is \\(2 + 7\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.B",
+    "subskill": "S.B.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9625"
+  },
+  {
+   "qid": "FX4-082",
+   "batch": "FX4",
+   "source": {
+    "set": "FX4",
+    "page": 82
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up placement item 82 (B GEO H3). What is \\(3 + 8\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "B",
+   "key": "B",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.A",
+    "subskill": "S.A.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9626"
+  }
+ ]
+}

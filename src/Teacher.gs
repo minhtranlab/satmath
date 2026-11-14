@@ -228,11 +228,12 @@ function classView(code, target, scope) {
 }
 function assignmentInfo_(a, names) {
   var mem = targetMembers_(a), sets = readTable_('Sets').rows.filter(function (s) { return String(s.assignment_id) === String(a.assignment_id); });
+  var pl = String(a.kind) === 'placement';
   return { assignment_id: String(a.assignment_id), title: String(a.title), target_type: String(a.target_type), target_id: String(a.target_id),
-           n: setQids_(a).length, available_from: fmtDay_(a.available_from), due: fmtDay_(a.due), status: String(a.status),
+           kind: pl ? 'placement' : 'questions', form: pl ? String(a.form || 'auto') : '', n: pl ? 0 : setQids_(a).length, available_from: fmtDay_(a.available_from), due: fmtDay_(a.due), status: String(a.status),
            students: mem.map(function (c) {
              var s = sets.filter(function (x) { return normCode_(x.student_code) === c; })[0];
-             return { code: c, name: (names || {})[c] || c, state: !s ? 'not started' : isFinished_(s) ? 'done' : 'in progress',
+             return { code: c, name: (names || {})[c] || c, state: !s ? 'not started' : isFinished_(s) ? 'done' : 'in progress', n: s ? Number(s.n) || 0 : 0,
                       first_try: s && isFinished_(s) ? Number(s.first_try) : null, best: s && isFinished_(s) ? Number(s.best_score) : null, set_id: s ? String(s.set_id) : '' };
            }) };
 }
@@ -357,15 +358,16 @@ function studentProfile(code, sc) {
     time += Number(r.time_total_sec) || 0; nTries += Number(r.n_tries) || 0;
   });
   var fixLeft = {}; resp.forEach(function (r) { if (Number(r.best_correct) !== 1 && !isYes_(r.locked)) fixLeft[r.set_id] = (fixLeft[r.set_id] || 0) + 1; });
+  var placements = []; try { placements = plSummaries_(c); } catch (e) {}
   var sets = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === c && !isHidden_(s); })
     .sort(function (a, b) { return (toMs_(b.submitted_at) || toMs_(b.created_at)) - (toMs_(a.submitted_at) || toMs_(a.created_at)); }).map(function (s) {
       return { set_id: String(s.set_id), title: setTitle_(s), kind: String(s.kind), date: dateStr_(s.submitted_at || s.created_at), done: isFinished_(s),
                n: Number(s.n) || 0, first_try: isFinished_(s) ? Number(s.first_try) || 0 : null, best: isFinished_(s) ? Number(s.best_score) || 0 : null,
-               time_min: Number(s.time_used_min) || 0, fix_left: fixLeft[String(s.set_id)] || 0, progress: String(s.progress || '') };
+               time_min: Number(s.time_used_min) || 0, fix_left: String(s.kind) === 'placement' ? 0 : fixLeft[String(s.set_id)] || 0, progress: String(s.progress || '') };
     });
   var review = readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === c && String(r.status) === 'open'; }).length;
   return { ok: true, student: { code: c, name: String(st.name || ''), active: isYes_(st.active), classes: String(st.classes || '') },
-           skills: skills, sets: sets, profiles: prof, mistakes: types, asks_open: asks, review_open: review,
+           skills: skills, sets: sets, placements: placements, profiles: prof, mistakes: types, asks_open: asks, review_open: review,
            totals: { answers: resp.length, first_try_right: resp.filter(function (r) { return Number(r.try1_correct) === 1; }).length,
                      best_right: resp.filter(function (r) { return Number(r.best_correct) === 1; }).length, tries: nTries, time_min: round_(time / 60, 1) } };
 }
@@ -470,19 +472,27 @@ function publishAssignment(code, a) {
   requireTeacher_(code);
   var T = resolveTarget_(a && a.target);
   if (T.kind === 'all') throw new Error('FORM: Choose a student or a class.');
-  var known = {}; livePool_().forEach(function (r) { known[String(r.qid)] = 1; });
-  var qids = (a.qids || []).map(String).filter(function (q, i, arr) { return known[q] && arr.indexOf(q) === i; });
-  if (!qids.length) throw new Error('FORM: Pick the questions first.');
-  var title = String(a.title || '').trim().slice(0, 80) || ('Homework – ' + fmtDate_(new Date(), 'd MMM'));
+  var pl = String(a.kind || '') === 'placement', qids = [], form = '';
+  if (pl) {
+    form = String(a.form || 'auto').toUpperCase(); if (['A', 'B', 'AUTO'].indexOf(form) < 0) form = 'AUTO';
+    var fm = plForms_(), slots = Object.keys(fm).filter(function (k) { return form === 'AUTO' || k.indexOf(form + '|') === 0; });
+    if (!slots.length) throw new Error('FORM: The placement forms are not in the Sheet yet (tab Placement_Forms).');
+  } else {
+    var known = {}; livePool_().forEach(function (r) { known[String(r.qid)] = 1; });
+    qids = (a.qids || []).map(String).filter(function (q, i, arr) { return known[q] && arr.indexOf(q) === i; });
+    if (!qids.length) throw new Error('FORM: Pick the questions first.');
+  }
+  var title = String(a.title || '').trim().slice(0, 80) || (pl ? PL_TITLE : 'Homework – ' + fmtDate_(new Date(), 'd MMM'));
   var from = /^\d{4}-\d{2}-\d{2}$/.test(String(a.available_from || '')) ? a.available_from : fmtDate_(new Date(), 'yyyy-MM-dd');
   var due = /^\d{4}-\d{2}-\d{2}$/.test(String(a.due || '')) ? a.due : '';
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     var day = fmtDate_(new Date(), 'yyyyMMdd'), n = readTable_('Assignments').rows.filter(function (x) { return String(x.assignment_id).indexOf('A-' + day + '-') === 0; }).length;
     var id = 'A-' + day + '-' + (n + 1);
-    appendObjects_('Assignments', [{ assignment_id: id, title: title, target_type: T.kind, target_id: T.id, topics: txt_(JSON.stringify(a.topics || [])),
-      qids: qids.join(','), available_from: txt_(from), due: txt_(due), status: a.draft ? 'draft' : 'published', created_at: nowIso_(), created_in: 'app' }]);
-    return { ok: true, assignment_id: id, n: qids.length };
+    appendObjects_('Assignments', [{ assignment_id: id, title: title, target_type: T.kind, target_id: T.id, topics: pl ? '' : txt_(JSON.stringify(a.topics || [])),
+      qids: qids.join(','), available_from: txt_(from), due: txt_(due), status: a.draft ? 'draft' : 'published', created_at: nowIso_(), created_in: 'app',
+      kind: pl ? 'placement' : '', form: pl ? form.toLowerCase() === 'auto' ? 'auto' : form : '' }]);
+    return { ok: true, assignment_id: id, n: qids.length, placement: pl };
   } finally { lock.releaseLock(); }
 }
 function closeAssignment(code, aid, reopen) {
@@ -503,6 +513,8 @@ function assignmentsFor_(c, sets) {
     if (s && isFinished_(s)) return null;
     var stt = s ? parseState_(s) || {} : {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length, n = setQids_(a).length;
     var due = fmtDay_(a.due), when = 'from ' + dayStr_(fmtDay_(a.available_from)) + (due ? ' · due ' + dayStr_(due, true) : '');
+    if (String(a.kind) === 'placement') return { assignment_id: String(a.assignment_id), title: String(a.title), placement: true, n: 0, when: when,
+      set_id: s ? String(s.set_id) : '', answered: s ? Math.max(0, (Number(s.n) || 1) - 1) : 0 };
     return { assignment_id: String(a.assignment_id), title: String(a.title), n: n, when: when, set_id: s ? String(s.set_id) : '', answered: nAns };
   }).filter(Boolean);
 }
@@ -518,6 +530,7 @@ function startAssignment(code, aid) {
     if (!a || !assignmentFor_(a, c) || fmtDay_(a.available_from) > fmtDate_(new Date(), 'yyyy-MM-dd')) throw new Error('FORM: This assignment is not available.');
     var have = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === c && String(s.assignment_id) === String(aid); })[0];
     if (have) return { ok: true, set_id: String(have.set_id), resumed: true, done: isFinished_(have) };
+    if (String(a.kind) === 'placement') return startPlacement_(a, c);
     var setId = newSetId_(c), q = setQids_(a);
     appendObjects_('Sets', [{ set_id: setId, student_code: c, kind: 'assignment', assignment_id: String(aid), skill: '', n: q.length, qids: q.join(','),
                               created_at: nowIso_(), status: 'in_progress', events_saved: 0, last_saved_at: nowIso_() }]);

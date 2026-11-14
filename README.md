@@ -39,6 +39,12 @@ secret `CLASPRC_JSON` (Settings → Secrets and variables → Actions). Chats ca
 Live: College Board 1,921 version-A items (ALG, ADV, PSD, GEO × E/M/H) + Hard Math HM1 100 · HM2 64 · HM3 57 version-A items = 2,142.
 Version B items (HM twins / variants, E413) stay `candidate` — never in practice sets or assignments (Review will use them later).
 
+## Placement test (v0.5, 14 Nov 2026)
+- Blueprint v2.2 (🧭 Skills, approved by Minh): `src/Placement.gs` ports `taxonomy/placement/routing.py`; every rule number is a Settings row (`pl_*`).
+- The items of forms A / B live in the Sheet tab `Placement_Forms` (form, domain, slot, code) — swap an item by editing its code there.
+- Results: tab `Placements` (one row per finished test) + the tested skills' rows in `Levels`; untested skills start at the domain level.
+- Tests: `tests/placement_test.js` replays all 718 paths of `placement_paths.csv` and simulates whole tests (min 8 · max 24).
+
 ## Add a batch of questions (no code change)
 ```
 python3 tools/build_library.py "<project folder>/data/library" HM3          # 0 errors needed

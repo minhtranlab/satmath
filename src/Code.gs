@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.4 (2026-11-13, Mixed Practice, codes teacher-only, new students start Easy)';
+var APP_VERSION = 'v0.5 (2026-11-14, Placement test)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -145,7 +145,11 @@ var SETTINGS_DEFAULTS_ = {
   dot_green: 0.8, dot_amber: 0.5, guess_min_time_sec: 15, fast_ratio: 0.5, slow_ratio: 1.5,
   mistake_placeholder: '— choose a mistake type —',
   mistake_types: "Concept Gap; Didn't Understand The Question; Misread A Detail; Careless Calculation; Wrong Input/Format; Others; Not A Mistake",
-  ask_note_max: 200
+  ask_note_max: 200,
+  // placement test (blueprint v2.2, Minh 14 Nov): time bands in seconds (fast ≤ fast, normal ≤ max, slow above; grid-in + spr extra)
+  pl_easy_fast_sec: 40, pl_easy_max_sec: 60, pl_medium_fast_sec: 60, pl_medium_max_sec: 90, pl_hard_fast_sec: 90, pl_hard_max_sec: 180,
+  pl_spr_extra_sec: 15, pl_slow_credit: 0.5, pl_max_per_domain: 6, pl_easy_cap: 3, pl_strong_run: 2, pl_wrong_stop: 2,
+  pl_pattern: 'ALG,PSD,ALG,GEO', pl_adv_medium_if: 'H'
 };
 var _settings = null;
 function getSettings_() {
@@ -293,6 +297,7 @@ function setTitle_(s) {
   if (kind === 'practice') return 'Practice · ' + (skillName_(String(s.skill || '')) || 'Mixed');
   if (kind === 'review') return 'Review';
   if (kind === 'mixed') return MIXED_TITLE;
+  if (kind === 'placement') return PL_TITLE;
   return s.assignment_id ? assignmentTitle_(s.assignment_id) : 'Assignment';
 }
 
@@ -371,14 +376,21 @@ function getSet(code, setId, opts) {
   } finally { lock.releaseLock(); }
   var qs = setQuestions_(s);
   if (!qs.length) throw new Error('FORM: The questions of this set are not available. Ask your teacher.');
-  var S = getSettings_();
+  var S = getSettings_(), pl = String(s.kind) === 'placement';
+  var prof = setProfile_(s, qs.length);
+  if (pl) {
+    prof.placement = true; prof.n_range = '8–24';
+    prof.parts[0].directions_html = '<p>This test finds your level in the four areas of SAT Math. You get one question at a time; the next one ' +
+      'depends on your answer. You cannot go back to a question. There is no timer, but the time on each question is recorded, so take your time ' +
+      'and work carefully. You may use the Desmos calculator and the reference sheet. You can stop and continue later from your home page.</p>';
+  }
   return {
     ok: true,
     session: { session_id: String(s.set_id), form_id: String(s.set_id), attempt_no: 1, student_name: String(st.name || ''),
                events_saved: Number(s.events_saved) || 0 },
     resumed: !!parseState_(s), state: parseState_(s), copy: copy, server_now: Date.now(),
-    profile: setProfile_(s, qs.length),
-    questions: qs.map(function (q, i) { return clientQuestion_(q, i < FIGS_WITH_SET); }),
+    profile: prof,
+    questions: qs.map(function (q, i) { return clientQuestion_(q, pl ? i === qs.length - 1 : i < FIGS_WITH_SET); }),
     settings: { app_name: S.app_name, autosave_sec: S.autosave_sec, desmos_api_key: desmosKey_(), show_results: 'score_and_right_wrong' },
     ask_note_max: Number(S.ask_note_max) || 200
   };
@@ -711,6 +723,7 @@ function submit(code, setId, payload) {
   lock.waitLock(30000);
   try {
     var s = requireSet_(code, setId);
+    if (String(s.kind) === 'placement') return isFinished_(s) ? placementStudentView_(s) : { ok: false, msg: 'Answer the questions one by one.' };
     if (isFinished_(s)) return resultView_(s, responsesOf_(setId), false);
     if (staleCopy_(s, payload)) return otherCopy_();
     var qs = setQuestions_(s);
@@ -745,6 +758,7 @@ function responsesOf_(setId) { return readTable_('Responses').rows.filter(functi
 function getResult(code, setId) {
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) return { ok: false, msg: 'This set has not been submitted yet.' };
+  if (String(s.kind) === 'placement') return placementStudentView_(s);
   return resultView_(s, responsesOf_(setId), false);
 }
 
@@ -771,6 +785,7 @@ function reviewData_(s, rows, asTeacher) {
 function getReview(code, setId) {
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
+  if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no question review. Your teacher goes over it with you.');
   return reviewData_(s, responsesOf_(setId));
 }
 
@@ -795,6 +810,7 @@ function fixState_(q, r, tries) {
 function getFix(code, setId) {
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
+  if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no fixes.');
   var rows = responsesOf_(setId), by = {};
   rows.forEach(function (r) { by[String(r.qid)] = r; });
   var allTries = readTable_('Tries').rows.filter(function (t) { return String(t.set_id) === String(setId); });
@@ -818,6 +834,7 @@ function checkTry(code, setId, qid, answer, timeSec) {
   try {
     var s = requireSet_(code, setId);
     if (!isFinished_(s)) throw new Error('SESSION: Submit the set first.');
+    if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no fixes.');
     var q = setQuestions_(s).filter(function (x) { return x.qid === String(qid); })[0];
     var r = responsesOf_(setId).filter(function (x) { return String(x.qid) === String(qid); })[0];
     if (!q || !r) throw new Error('SESSION: Question not found.');
@@ -897,7 +914,10 @@ function teacherSet_(code, setId) {
   if (!s || !isFinished_(s)) throw new Error('SESSION: This set was not found.');
   return s;
 }
-function teacherResult(code, setId) { var s = teacherSet_(code, setId); return resultView_(s, responsesOf_(setId), true); }
+function teacherResult(code, setId) {
+  var s = teacherSet_(code, setId);
+  return String(s.kind) === 'placement' ? placementReport_(s) : resultView_(s, responsesOf_(setId), true);
+}
 function teacherReview(code, setId) {
   var s = teacherSet_(code, setId), r = reviewData_(s, responsesOf_(setId), true), st = findStudent_(s.student_code);
   r.student = st ? String(st.name || '') : String(s.student_code);

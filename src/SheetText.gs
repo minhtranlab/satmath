@@ -28,6 +28,20 @@ var SETTING_MEANINGS_ = {
   mistake_placeholder: 'First line of the mistake-type dropdown.',
   mistake_types: 'Mistake types for the teacher, separated by ";" (order = dropdown order).',
   ask_note_max: 'Max characters of a student\'s "Ask teacher" note.',
+  pl_easy_fast_sec: 'Placement: an Easy item right within this many seconds = "fast" (shown to the teacher only).',
+  pl_easy_max_sec: 'Placement: an Easy item right within this many seconds = 1 step up; slower = slow (half a step).',
+  pl_medium_fast_sec: 'Placement: Medium "fast" up to this many seconds.',
+  pl_medium_max_sec: 'Placement: a Medium item right within this many seconds = 1 step up; slower = half a step.',
+  pl_hard_fast_sec: 'Placement: Hard "fast" up to this many seconds (time recorded only; at Hard any right counts).',
+  pl_hard_max_sec: 'Placement: Hard "normal" up to this many seconds (time recorded only).',
+  pl_spr_extra_sec: 'Placement: extra seconds for a grid-in (typed answer) in every band.',
+  pl_slow_credit: 'Placement: a slow right answer counts this much of a step (1 step = one level up).',
+  pl_max_per_domain: 'Placement: most items per domain (then the highest level passed decides).',
+  pl_easy_cap: 'Placement: after this many Easy items without moving up, the domain stops (Weak).',
+  pl_strong_run: 'Placement: Hard items right in a row for Strong.',
+  pl_wrong_stop: 'Placement: the domain stops at the Nth wrong answer at the same level.',
+  pl_pattern: 'Placement: order of the domains (repeats; ALG turns go to ADV once Algebra is done).',
+  pl_adv_medium_if: 'Placement: Advanced Math starts at Medium when the Algebra result is this level (H = Strong).',
   code_version: 'Code version + commit whose Sheet update has run (set automatically after each deploy).'
 };
 
@@ -45,7 +59,9 @@ var README_ROWS_ = [
   ['Levels', 'One row per student × College Board skill: the practice level (E / M / H, start M), recent accuracy, good sets in a row. 2 good sets → up, 1 weak set → down. Students never see it.'],
   ['Review', 'One row per question in a student\'s Review list (wrong / blank / slow on the first try). It leaves after one clean try in Review (status cleared).'],
   ['Tries', 'Every answer check: try 1 at submit, then each "Fix wrong answers" check (multiple choice: 3 tries in total, then locked; grid-in: no limit).'],
-  ['Other tabs', 'Classes, Assignments, Skill_Summary: filled by later versions of the app (teacher page).'],
+  ['Placement_Forms', 'The placement test: one row per form (A first time, B retake) × domain × slot (E1–E3, M1–M4, H1–H4) with the question code. Edit a code here to swap an item.'],
+  ['Placements', 'One row per finished placement test: level per domain (H Strong, M Medium, E Weak, <E below Easy), level per tested skill, "teach first" skills, the path.'],
+  ['Other tabs', 'Classes, Assignments (kind placement = a placement test), Skill_Summary: filled by the app (teacher page).'],
   ['Dictionary', 'Every column of every tab explained.']
 ];
 
@@ -57,6 +73,8 @@ var DICT_ = {
   Levels: { level: 'E / M / H — which difficulty mix the next practice set of this skill gets.', recent_pct: 'Weighted accuracy of the latest 10 first tries in the skill (0–1).', good_streak: 'Good practice sets in a row (≥ good_set_pct).', history: 'Level changes, e.g. "M→H 14 Nov".' },
   Review: { reason: 'wrong / blank / slow (first try).', status: 'open / cleared.', n_served: 'Times served in a Review set.', cleared_by: 'pass (one clean try) / teacher.' },
   Tries: { try_no: '1 = the submitted answer; 2, 3 … = fixes.', correct: '1 right / 0 wrong.', time_sec: 'Seconds for this try.' },
+  Placement_Forms: { form: 'A (first placement) or B (retake).', domain: 'ALG Algebra · ADV Advanced Math · PSD Problem-Solving and Data · GEO Geometry and Trig.', slot: 'E1–E3 Easy, M1–M4 Medium, H1–H4 Hard (H4: Advanced Math only).', code: 'Short code of the question (the app finds the qid).', qid: 'Library qid (used when it exists).' },
+  Placements: { alg: 'Algebra result: H Strong · M Medium · E Weak · <E below Easy.', skill_levels: 'Level per tested skill (written to Levels).', teach_first: 'The 3 tested skills to teach first.', path: 'Every item in order: domain, slot, F right in time / S slow right / W wrong.', prev_set_id: 'The placement before this one (retake comparison).' },
   Batches: { live: 'Yes = served to students.', n_live: 'Questions with status live.', file_id: 'Drive file id of the batch JSON.' }
 };
 function syncSheetTexts_() {
