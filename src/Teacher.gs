@@ -96,8 +96,16 @@ function lastActivity_(sets) {
   return ms;
 }
 function teacherHome(code) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
-  try { syncStudents_(); syncTaggedReview_(); } catch (e) { console.warn('teacherHome sync: ' + e); }
+  // Students / codes / tags typed in the Sheet: synced only after a hand edit (onEdit flag) or once an hour (#42)
+  var cc = CacheService.getScriptCache();
+  if (cc.get('sml_dirty_sync') || !cc.get('sml_synced')) {
+    _readMode = 'fresh'; _tables = {};
+    try { syncStudents_(); syncTaggedReview_(); } catch (e) { console.warn('teacherHome sync: ' + e); }
+    try { cc.put('sml_synced', '1', 3600); cc.remove('sml_dirty_sync'); } catch (e) {}
+    _readMode = 'cached';
+  }
   var students = readTable_('Students').rows.filter(function (r) { return normCode_(r.student_code); });
   var sets = readTable_('Sets').rows.filter(function (s) { return !isHidden_(s); });
   var resp = readTable_('Responses').rows, rev = readTable_('Review').rows, asg = readTable_('Assignments').rows;
@@ -159,6 +167,7 @@ function priorityOrder_(rows, single) {
 }
 
 function classView(code, target, scope) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var T = resolveTarget_(target), mem = {}, names = {};
   T.members.forEach(function (c) { mem[c] = 1; });
@@ -245,6 +254,7 @@ function fmtDay_(v) {
 
 /** The question as students saw it + the key (teacher only) + the CB rationale when there is one. */
 function questionPanel(code, qid) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   qid = String(qid || '').trim();
   if (/^[EMH]\d+(B\d*)?$/i.test(qid)) {                            // a short code (E326) typed in the search box
@@ -316,6 +326,7 @@ function resolveAsk(code, setId, qid, reopen) {
   return { ok: true };
 }
 function asksInbox(code) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var names = {}; readTable_('Students').rows.forEach(function (r) { names[normCode_(r.student_code)] = String(r.name || r.student_code); });
   var sets = {}; readTable_('Sets').rows.forEach(function (s) { sets[String(s.set_id)] = s; });
@@ -330,6 +341,7 @@ function asksInbox(code) {
 
 /* ============================== student profile ============================== */
 function studentProfile(code, sc) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var st = findStudent_(sc); if (!st) throw new Error('FORM: Student not found.');
   var c = normCode_(st.student_code), S = getSettings_(), tries = firstTries_(c);
@@ -375,6 +387,7 @@ function studentProfile(code, sc) {
 /* ============================== assignments (§7) ============================== */
 /** Tree domain → skill → sub-skill with live items per E/M/H, and how many are fresh for every target student. */
 function assignmentTree(code, target) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var mem = target ? resolveTarget_(target).members : [], done = {};
   if (mem.length) readTable_('Responses').rows.forEach(function (r) { if (mem.indexOf(normCode_(r.student_code)) >= 0) done[String(r.qid)] = 1; });
@@ -402,6 +415,7 @@ function spread_(n, diffs) {
 }
 /** Picks the questions of an assignment (§7.4). spec = {target, topics: [{code, n, diffs: 'E,M'}]} → per topic: picked + queue (for Swap). */
 function pickAssignment(code, spec) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var T = resolveTarget_(spec && spec.target), mem = T.members, names = {};
   readTable_('Students').rows.forEach(function (r) { names[normCode_(r.student_code)] = String(r.name || r.student_code).split(/\s+/)[0]; });

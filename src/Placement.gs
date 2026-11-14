@@ -120,8 +120,8 @@ function plForms_() {
   if (_plForms) return _plForms;
   var out = {}, byCode = {}, known = {};
   questionRows_().forEach(function (r) { known[String(r.qid)] = 1; var c = clean_(r.code).toUpperCase(); if (c) byCode[c] = String(r.qid); });
-  var sh = ss_().getSheetByName(PL_FORMS_TAB);
-  if (sh && sh.getLastRow() > 1) readTable_(PL_FORMS_TAB).rows.forEach(function (r) {
+  var rows = []; try { rows = readTable_(PL_FORMS_TAB).rows; } catch (e) {}
+  rows.forEach(function (r) {
     var f = clean_(r.form).toUpperCase(), d = clean_(r.domain).toUpperCase(), s = clean_(r.slot).toUpperCase();
     var q = clean_(r.qid), c = clean_(r.code).toUpperCase();
     var qid = known[q] ? q : byCode[c] || '';
@@ -138,9 +138,8 @@ function plSlotsText_(items) { return items.map(function (it) { return it.dom + 
 
 /** Finished placements of a student, newest first (Placements tab rows). */
 function plHistory_(codeN) {
-  var sh = ss_().getSheetByName(PL_TAB);
-  if (!sh || sh.getLastRow() < 2) return [];
-  return readTable_(PL_TAB).rows.filter(function (r) { return normCode_(r.student_code) === codeN; })
+  var rows = []; try { rows = readTable_(PL_TAB).rows; } catch (e) {}
+  return rows.filter(function (r) { return normCode_(r.student_code) === codeN; })
     .sort(function (a, b) { return toMs_(b.finished_at) - toMs_(a.finished_at) || b._row - a._row; });
 }
 var _plLatest = {};
@@ -246,7 +245,7 @@ function plTeachFirst_(skills, results) {
 }
 
 function ensurePlTab_() {
-  if (!ss_().getSheetByName(PL_TAB)) ensureTabs_();
+  if (!hasTab_(PL_TAB)) ensureTabs_();
 }
 /** Last item answered: domain results, skill levels → Levels, Placements row, set submitted. Returns the student view. */
 function finishPlacement_(s, stt) {
@@ -287,13 +286,14 @@ function placementStudentView_(s, rec) {
            domains: doms, time_min: rec ? Number(rec.time_min) || 0 : 0 };
 }
 function plRecord_(setId) {
-  var sh = ss_().getSheetByName(PL_TAB); if (!sh || sh.getLastRow() < 2) return null;
-  return readTable_(PL_TAB).rows.filter(function (r) { return String(r.set_id) === String(setId); })[0] || null;
+  var rows = []; try { rows = readTable_(PL_TAB).rows; } catch (e) {}
+  return rows.filter(function (r) { return String(r.set_id) === String(setId); })[0] || null;
 }
 
 /* ---------------- teacher side ---------------- */
 /** Placement report: domain levels, skills tested, every item + time band, teach first, comparison with the previous one. */
 function placementReport(code, setId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var s = findSet_(setId);
   if (!s || String(s.kind) !== 'placement') throw new Error('SESSION: Placement test not found.');

@@ -57,8 +57,83 @@ function sheet_(name) {
   return sh;
 }
 
-/** Read a whole tab → {sh, headers, idx (name→0-based col), rows: [{_row, col: value…}]} */
+/* ---- speed (#42): every tab is read at most once per call (memo), and read-only calls (cachedReads_()) take a snapshot from
+   CacheService instead of opening the Sheet (~1.3 s). Each tab has a version token; every write through appendObjects_ /
+   updateRow_ (and onEdit for hand edits, the update after a deploy for everything) sets a new token, so a snapshot is used
+   only while nothing changed. Snapshots expire after TAB_CACHE_SEC anyway (edits made by other tools). Calls that write
+   always read the Sheet itself (row numbers must be exact). ---- */
+var _tables = {}, _readMode = 'fresh', TAB_CACHE_SEC = 1800, TAB_CHUNK = 90000;
+var _forceFresh = false, _perfAllowInactive = false;                                            // the speed check measures the old way too
+function cachedReads_() { if (!_forceFresh) _readMode = 'cached'; }
+/** Simple trigger: a hand edit in the Sheet → that tab's snapshot is out of date; Students / Classes / Responses → sync on the next teacher page. */
+function onEdit(e) {
+  try {
+    var n = e.range.getSheet().getName(); tabChanged_(n);
+    if (/^(Students|Classes|Responses)$/.test(n)) CacheService.getScriptCache().put('sml_dirty_sync', '1', 21600);
+  } catch (x) {}
+}
+function tabVerKey_(name) { return 'smlv_' + name; }
+function tabChanged_(name) {
+  delete _tables[name];
+  try { CacheService.getScriptCache().put(tabVerKey_(name), String(Date.now()) + Math.random().toString(36).slice(2, 6), 21600); } catch (e) {}
+}
+function flushTabCache_() {
+  _tables = {};
+  var names = []; try { names = ss_().getSheets().map(function (s) { return s.getName(); }); } catch (e) {}
+  names.forEach(tabChanged_);
+  return 'cache: ' + names.length + ' tabs';
+}
+function tabFromCache_(name) {
+  try {
+    var c = CacheService.getScriptCache(), v = c.get(tabVerKey_(name));
+    if (!v) return null;
+    var base = 'smlt_' + name + '_' + v, n = Number(c.get(base + '_n'));
+    if (!n) return null;
+    var keys = []; for (var i = 0; i < n; i++) keys.push(base + '_' + i);
+    var got = c.getAll(keys), parts = [];
+    for (var j = 0; j < n; j++) { if (got[keys[j]] === undefined || got[keys[j]] === null) return null; parts.push(got[keys[j]]); }
+    var o = JSON.parse(parts.join(''), function (k, val) { return val && typeof val === 'object' && '$d' in val ? new Date(val.$d) : val; });
+    return tableObj_(name, o.headers, o.rows);
+  } catch (e) { return null; }
+}
+function tabToCache_(name, t, ver) {
+  try {
+    var c = CacheService.getScriptCache(), v = ver;
+    if (!v) { v = String(Date.now()) + Math.random().toString(36).slice(2, 6); c.put(tabVerKey_(name), v, 21600); }
+    var rows = t.rows.map(function (r) { var o = {}; Object.keys(r).forEach(function (k) { var x = r[k]; o[k] = x instanceof Date ? { $d: x.getTime() } : x; }); return o; });
+    var s = JSON.stringify({ headers: t.headers, rows: rows }), put = {}, base = 'smlt_' + name + '_' + v, n = Math.ceil(s.length / TAB_CHUNK) || 1;
+    if (n > 60) return;                                               // too big for the cache: read the Sheet
+    for (var i = 0; i < n; i++) put[base + '_' + i] = s.slice(i * TAB_CHUNK, (i + 1) * TAB_CHUNK);
+    put[base + '_n'] = String(n);
+    c.putAll(put, TAB_CACHE_SEC);
+  } catch (e) {}
+}
+function tableObj_(name, headers, rows) {
+  var idx = {}; headers.forEach(function (h, i) { if (h && !(h in idx)) idx[h] = i; });
+  var t = { headers: headers, idx: idx, rows: rows };
+  Object.defineProperty(t, 'sh', { get: function () { return sheet_(name); } });
+  return t;
+}
+/** Read a whole tab → {sh, headers, idx (name→0-based col), rows: [{_row, col: value…}]} (memo + snapshot, see above). */
 function readTable_(name) {
+  if (_tables[name]) return _tables[name];
+  var t = null, ver = null;
+  if (_readMode === 'cached') {
+    t = tabFromCache_(name);
+    if (t) return (_tables[name] = t);
+  }
+  try { ver = CacheService.getScriptCache().get(tabVerKey_(name)); } catch (e) {}
+  t = readTableSheet_(name);
+  tabToCache_(name, t, ver);
+  return (_tables[name] = t);
+}
+/** Does the tab exist? (from the snapshot when there is one) */
+function hasTab_(name) {
+  if (_tables[name]) return true;
+  if (_readMode === 'cached' && tabFromCache_(name)) return true;
+  return !!ss_().getSheetByName(name);
+}
+function readTableSheet_(name) {
   var sh = sheet_(name);
   var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
   if (lastCol < 1) return { sh: sh, headers: [], idx: {}, rows: [] };
@@ -112,6 +187,7 @@ function appendObjects_(name, objs) {
   try {
     ensureGrid_(sh, start + data.length - 1, headers.length);
     sh.getRange(start, 1, data.length, headers.length).setValues(data);
+    tabChanged_(name);
   } catch (e) {
     console.error('WRITE FAILED appendObjects_(' + name + ', ' + data.length + ' rows at row ' + start + '): ' + e);
     throw e;
@@ -129,7 +205,7 @@ function updateRow_(name, rowNum, fields) {
     if (h in fields && fields[h] !== undefined) { cur[i] = fields[h] === null ? '' : fields[h]; changed = true; }
   });
   try {
-    if (changed) sh.getRange(rowNum, 1, 1, headers.length).setValues([cur]);
+    if (changed) { sh.getRange(rowNum, 1, 1, headers.length).setValues([cur]); tabChanged_(name); }
   } catch (e) {
     console.error('WRITE FAILED updateRow_(' + name + ', row ' + rowNum + '): ' + e);
     throw e;
@@ -215,7 +291,7 @@ function requireStudent_(code) {
   if (!st && loginLockedAll_()) throw new Error('LOGIN: ' + LOCK_ALL_MSG);
   if (loginLocked_(keys)) throw new Error('LOGIN: ' + LOCK_MSG);
   if (!st) loginFailed_(keys);
-  if (!st || !isYes_(st.active)) throw new Error('LOGIN: This code is not valid or is locked. Ask your teacher.');
+  if (!st || (!isYes_(st.active) && !(_perfAllowInactive && /^TEST-/.test(normCode_(st.student_code))))) throw new Error('LOGIN: This code is not valid or is locked. Ask your teacher.');
   return st;
 }
 
@@ -250,6 +326,7 @@ function loginFailed_(keys) {
 }
 
 function login(code, deviceId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var keys = loginKeys_(code, deviceId);
   if (loginLockedAll_()) return { ok: false, locked: true, msg: LOCK_ALL_MSG };
   if (loginLocked_(keys)) return { ok: false, locked: true, msg: LOCK_MSG };
@@ -403,6 +480,7 @@ function getSet(code, setId, opts) {
 
 /** The rest of a set's figures (background load after the set opens). Only figures of questions of this student's set. */
 function getFigures(code, setId, fids) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = requireSet_(code, setId);
   var byQ = {}; setQuestions_(s).forEach(function (q) { byQ[q.qid] = q; });
   var out = {};
@@ -761,6 +839,7 @@ function responsesOf_(setId) { return readTable_('Responses').rows.filter(functi
 
 /** "My Sets" → open a past result. */
 function getResult(code, setId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) return { ok: false, msg: 'This set has not been submitted yet.' };
   if (String(s.kind) === 'placement') return placementStudentView_(s);
@@ -788,6 +867,7 @@ function reviewData_(s, rows, asTeacher) {
            questions: qs, settings: { desmos_api_key: desmosKey_() } };
 }
 function getReview(code, setId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
   if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no question review. Your teacher goes over it with you.');
@@ -813,6 +893,7 @@ function fixState_(q, r, tries) {
 
 /** The questions of a submitted set that were not right on try 1 — to fix them (never the key). */
 function getFix(code, setId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
   if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no fixes.');
@@ -900,6 +981,7 @@ function requireTeacher_(code) { if (!isTeacherCode_(code)) throw new Error('LOG
 function isHidden_(s) { return isYes_(s && s.hidden); }
 
 function teacherOverview(code) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var sets = readTable_('Sets').rows.filter(function (s) { return isFinished_(s) && !isHidden_(s); });
   var out = readTable_('Students').rows.map(function (st) {
@@ -920,16 +1002,19 @@ function teacherSet_(code, setId) {
   return s;
 }
 function teacherResult(code, setId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = teacherSet_(code, setId);
   return String(s.kind) === 'placement' ? placementReport_(s) : resultView_(s, responsesOf_(setId), true);
 }
 function teacherReview(code, setId) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = teacherSet_(code, setId), r = reviewData_(s, responsesOf_(setId), true), st = findStudent_(s.student_code);
   r.student = st ? String(st.name || '') : String(s.student_code);
   return r;
 }
 /** The key of ONE question of this set — only when the teacher presses "Show answer". */
 function teacherAnswer(code, setId, qid) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = teacherSet_(code, setId);
   var q = setQuestions_(s).filter(function (x) { return x.qid === String(qid); })[0];
   if (!q) throw new Error('SESSION: Question not found.');

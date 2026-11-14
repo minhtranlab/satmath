@@ -467,6 +467,7 @@ function startReview(code) {
 
 /** Everything the home needs in one call: assignments (B6), open sets, skills (with "n new" + progress dot), Review, history. */
 function homeData(code) {
+  cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
   var pool = livePool_(), tries = firstTries_(codeN), hist = historyOf_(codeN, tries);
   var acc = {};

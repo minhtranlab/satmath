@@ -44,7 +44,7 @@ function currentStamp_() {
 function doUpdate_() {
   var steps = [['tabs', ensureTabs_], ['settings', ensureSettingsRows_], ['texts', syncSheetTexts_], ['time norms', ensureTimeNorms_],
                ['skills', syncSkills_], ['skill profile', ensureSkillProfile_], ['library', syncLibrary_], ['students', syncStudents_], ['tags', syncTaggedReview_],
-               ['dropdown', ensureMistakeDropdown_], ['check', checkSheet_]];
+               ['dropdown', ensureMistakeDropdown_], ['check', checkSheet_], ['cache', flushTabCache_]];
   var notes = [], failed = 0, log = [];
   steps.forEach(function (s) {
     try { var msg = String(s[1]() || ''); log.push('[' + s[0] + '] ' + msg); notes.push(msg); }

@@ -23,7 +23,7 @@ function ensureTimeNorms_() {
 function timeNorms_() {
   if (_timeNorms) return _timeNorms;
   var rows = null;
-  try { var sh = ss_().getSheetByName(TIME_NORMS_TAB); if (sh && sh.getLastRow() > 1) rows = readTable_(TIME_NORMS_TAB).rows; } catch (e) { rows = null; }
+  try { rows = readTable_(TIME_NORMS_TAB).rows; if (!rows.length) rows = null; } catch (e) { rows = null; }
   if (!rows) {
     var h = TIME_NORMS_DEFAULT_[0];
     rows = TIME_NORMS_DEFAULT_.slice(1).map(function (r) { var o = {}; h.forEach(function (k, i) { o[k] = r[i]; }); return o; });

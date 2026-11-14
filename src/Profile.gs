@@ -33,8 +33,8 @@ function skillProfiles_() {
   if (_skProf) return _skProf;
   var out = {};
   SKILL_PROFILE_DEFAULTS_.forEach(function (d) { out[d[0]] = profRow_(d[0], d[1], d[2], d[3], d[4]); });
-  var sh = null; try { sh = ss_().getSheetByName(SKILL_PROFILE_TAB); } catch (e) {}
-  if (sh && sh.getLastRow() > 1) readTable_(SKILL_PROFILE_TAB).rows.forEach(function (r) {
+  var rows = []; try { rows = readTable_(SKILL_PROFILE_TAB).rows; } catch (e) {}
+  rows.forEach(function (r) {
     var k = clean_(r.skill); if (!k) return;
     out[k] = profRow_(k, r.allowed, r.weight === '' ? (out[k] || {}).weight : r.weight, r.max_set, r.note);
   });
