@@ -29,6 +29,12 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.perf === '1') {
     return ContentService.createTextOutput(perfRun_()).setMimeType(ContentService.MimeType.JSON);
   }
+  // After editing the Sheet with another tool (no onEdit): ?flush=1 drops every snapshot. Returns one status line, no data.
+  if (e && e.parameter && e.parameter.flush === '1') {
+    var fc = CacheService.getScriptCache(), msg = 'wait 10 s';
+    if (!fc.get('sml_flush')) { fc.put('sml_flush', '1', 10); msg = flushTabCache_(); }
+    return ContentService.createTextOutput('SAT Math Lib ' + msg).setMimeType(ContentService.MimeType.TEXT);
+  }
   var t = HtmlService.createTemplateFromFile('Index');
   return t.evaluate()
     .setTitle(getSettings_().app_name || 'SAT Math Lib')
@@ -60,9 +66,10 @@ function sheet_(name) {
 /* ---- speed (#42): every tab is read at most once per call (memo), and read-only calls (cachedReads_()) take a snapshot from
    CacheService instead of opening the Sheet (~1.3 s). Each tab has a version token; every write through appendObjects_ /
    updateRow_ (and onEdit for hand edits, the update after a deploy for everything) sets a new token, so a snapshot is used
-   only while nothing changed. Snapshots expire after TAB_CACHE_SEC anyway (edits made by other tools). Calls that write
-   always read the Sheet itself (row numbers must be exact). ---- */
-var _tables = {}, _readMode = 'fresh', TAB_CACHE_SEC = 1800, TAB_CHUNK = 90000;
+   only while nothing changed. Edits made by other tools (Sheets API, scripts) fire no onEdit: they show after ?flush=1 (drops
+   every snapshot: new epoch) or when snapshots expire (TAB_CACHE_SEC). Calls that write always read the Sheet itself (row
+   numbers must be exact). ---- */
+var _tables = {}, _readMode = 'fresh', TAB_CACHE_SEC = 900, TAB_CHUNK = 90000, EPOCH_KEY_ = 'smlv__epoch';
 var _forceFresh = false, _perfAllowInactive = false;                                            // the speed check measures the old way too
 // one CacheService round trip costs ~50 ms: a read-only call fetches the version + first chunk of every usual tab at once
 var PRELOAD_TABS_ = ['Settings', 'Students', 'Classes', 'Assignments', 'Sets', 'Responses', 'Tries', 'Levels', 'Review', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placements', 'Placement_Forms'];
@@ -70,7 +77,7 @@ var _pre = null;
 function cachedReads_() { if (_forceFresh) return; _readMode = 'cached'; preloadTabs_(); }
 function preloadTabs_() {
   _pre = null;
-  try { var keys = []; PRELOAD_TABS_.forEach(function (n) { keys.push(tabVerKey_(n), tabHeadKey_(n)); }); _pre = CacheService.getScriptCache().getAll(keys) || {}; } catch (e) { _pre = null; }
+  try { var keys = [EPOCH_KEY_]; PRELOAD_TABS_.forEach(function (n) { keys.push(tabVerKey_(n), tabHeadKey_(n)); }); _pre = CacheService.getScriptCache().getAll(keys) || {}; } catch (e) { _pre = null; }
 }
 /** Simple trigger: a hand edit in the Sheet → that tab's snapshot is out of date; Students / Classes / Responses → sync on the next teacher page. */
 function onEdit(e) {
@@ -83,21 +90,32 @@ function tabVerKey_(name) { return 'smlv_' + name; }
 function tabHeadKey_(name) { return 'smlh_' + name; }
 function tabChanged_(name) {
   delete _tables[name]; _pre = null;
-  try { CacheService.getScriptCache().put(tabVerKey_(name), String(Date.now()) + Math.random().toString(36).slice(2, 6), 21600); } catch (e) {}
+  try { CacheService.getScriptCache().put(tabVerKey_(name), newToken_(), 21600); } catch (e) {}
 }
+/** Drop every snapshot at once (new epoch): after a deploy, and ?flush=1 after edits made with other tools. */
 function flushTabCache_() {
-  _tables = {};
-  var names = []; try { names = ss_().getSheets().map(function (s) { return s.getName(); }); } catch (e) {}
-  names.forEach(tabChanged_);
-  return 'cache: ' + names.length + ' tabs';
+  _tables = {}; _pre = null;
+  try { var c = CacheService.getScriptCache(); c.put(EPOCH_KEY_, newToken_(), 21600); c.put('sml_dirty_sync', '1', 21600); } catch (e) {}
+  return 'cache: flushed';
 }
-/** Snapshot layout: smlv_<tab> = version; smlh_<tab> = '{"v":version,"n":chunks}' + newline + chunk 0; smlt_<tab>_<version>_<i> = chunk i ≥ 1.
- *  A snapshot counts only when its v equals the current version (a read that raced a write stored the old v → ignored). */
+function newToken_() { return String(Date.now()) + Math.random().toString(36).slice(2, 6); }
+/** The token a snapshot of this tab must carry now: tab version @ epoch (made when missing, if make). */
+function tabToken_(name, got, c, make) {
+  var v = got[tabVerKey_(name)], e = got[EPOCH_KEY_];
+  if (make && (!v || !e)) {
+    var put = {}; if (!v) put[tabVerKey_(name)] = v = newToken_(); if (!e) put[EPOCH_KEY_] = e = newToken_();
+    c.putAll(put, 21600);
+  }
+  return v && e ? v + '@' + e : null;
+}
+/** Snapshot layout: smlv_<tab> = version, smlv__epoch = epoch; smlh_<tab> = '{"v":version@epoch,"n":chunks}' + newline + chunk 0;
+ *  smlt_<tab>_<version@epoch>_<i> = chunk i ≥ 1. A snapshot counts only when its v is the current version@epoch (a read that
+ *  raced a write stored the old one → ignored). */
 function tabFromCache_(name) {
   try {
-    var c = CacheService.getScriptCache(), vk = tabVerKey_(name), hk = tabHeadKey_(name), v, head;
-    if (_pre && PRELOAD_TABS_.indexOf(name) >= 0) { v = _pre[vk]; head = _pre[hk]; }
-    else { var g = c.getAll([vk, hk]) || {}; v = g[vk]; head = g[hk]; }
+    var c = CacheService.getScriptCache(), hk = tabHeadKey_(name);
+    var g = _pre && PRELOAD_TABS_.indexOf(name) >= 0 ? _pre : (c.getAll([tabVerKey_(name), hk, EPOCH_KEY_]) || {});
+    var v = tabToken_(name, g, c, false), head = g[hk];
     if (!v || !head) return null;
     var nl = head.indexOf('\n'), meta = JSON.parse(head.slice(0, nl));
     if (meta.v !== v || !(meta.n >= 1)) return null;
@@ -138,10 +156,7 @@ function readTable_(name) {
     if (t) return (_tables[name] = t);
   }
   // the version is taken (or made) BEFORE reading: a write during the read changes it, so this snapshot is never used
-  try {
-    var c = CacheService.getScriptCache(); ver = c.get(tabVerKey_(name));
-    if (!ver) { ver = String(Date.now()) + Math.random().toString(36).slice(2, 6); c.put(tabVerKey_(name), ver, 21600); }
-  } catch (e) {}
+  try { var c = CacheService.getScriptCache(); ver = tabToken_(name, c.getAll([tabVerKey_(name), EPOCH_KEY_]) || {}, c, true); } catch (e) {}
   t = readTableSheet_(name);
   tabToCache_(name, t, ver);
   return (_tables[name] = t);

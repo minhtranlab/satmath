@@ -34,8 +34,14 @@ console.log('[server: tab snapshots]');
   C.tabToCache_('Students', oldT, verBefore);                       // the slow reader stores what it read, under the OLD version
   const h3 = run('teacherHome', ['TEACH-FX-9']);
   check(h3.students.some(s => s.name === 'After race (test)'), 'a read that raced a write: its snapshot is ignored (old version)');
+  // ?flush=1 (edits made with other tools fire no onEdit) → every snapshot dropped
+  G.sheets.Students.rows.forEach(r => { if (r[0] === 'FX-T03') r[1] = 'API edit (test)'; });
+  const f1 = run('teacherHome', ['TEACH-FX-9']);
+  const fl = C.doGet({ parameter: { flush: '1' } }).getContent();
+  const f2 = run('teacherHome', ['TEACH-FX-9']);
+  check(!f1.students.some(s => s.name === 'API edit (test)') && f2.students.some(s => s.name === 'API edit (test)') && /flushed/.test(fl), 'edit by another tool: shows after ?flush=1 (' + fl + ')');
   // dates survive the snapshot; row numbers + column index kept
-  const ver = 'v-test-1'; C.CacheService.getScriptCache().put('smlv_Fake', ver, 600);
+  const cc = C.CacheService.getScriptCache(); const ver = C.tabToken_('Fake', {}, cc, true);
   const fake = { headers: ['a', 'b'], rows: [{ _row: 2, a: new Date(Date.UTC(2026, 10, 14, 7, 30)), b: 'x' }] };
   C.tabToCache_('Fake', fake, ver);
   const back = C.tabFromCache_('Fake');

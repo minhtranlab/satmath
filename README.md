@@ -55,8 +55,9 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 - Mixed Practice: skills with unfixed wrong answers first, then by weight: the 4 areas 35/35/15/15 in every set, skills inside an area by D'Hondt over their weights (a rare skill waits its turn) (`src/Profile.gs`). Review + Placement unchanged.
 
 ## Speed (v0.6, 14 Nov 2026)
-- Reads come from per-tab snapshots in CacheService (`smlv_<tab>` version + `smlt_<tab>_<ver>_i` chunks, 30 min). Every write through `appendObjects_` / `updateRow_` changes the tab's version; a hand edit in the Sheet does too (`onEdit`). A deploy flushes all (`cache` update step). Writes still read the Sheet for exact row numbers.
+- Reads come from per-tab snapshots in CacheService (`smlv_<tab>` version + `smlv__epoch`, head `smlh_<tab>` + chunks `smlt_<tab>_<token>_i`, 15 min; all usual tabs fetched in one cache round trip). Every write through `appendObjects_` / `updateRow_` changes the tab's version; a hand edit in the Sheet does too (`onEdit`). A deploy flushes all (`cache` update step). Writes still read the Sheet for exact row numbers.
 - `?perf=1` on the exec URL: timings only (no data), at most once per 20 s.
+- Edited the Sheet with another tool (Sheets API, a script)? Those fire no `onEdit`: open `<exec URL>?flush=1` (drops every snapshot) or wait ≤ 15 min.
 - Browser: teacher screens are cached and refreshed quietly; class screens and the profiles of an open class are fetched ahead; changes show at once and are saved by a queue (in order, one retry, put back + message if refused, warns before closing the tab).
 - Classes: Archive (active = No, its open assignments closed) / Show archived / Restore. Inactive students hidden unless "Show inactive".
 
