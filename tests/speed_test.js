@@ -126,6 +126,8 @@ console.log('[server: tab snapshots]');
     await page.waitForSelector('#modal-root.on');
     const msg = await page.$eval('#modal-root', e => e.innerText);
     check(/Not saved/.test(msg) && /Student not found/.test(msg) && await page.$eval('#t-p-act', e => e.textContent) === label0, 'refused → the button is back as before + "Not saved: … Student not found"');
+    await sleep(300);
+    check(await page.$eval('#wq-dot', e => /fail/.test(e.className) && /Not saved/.test(e.textContent)) && !(await page.$eval('#toast', e => e.classList.contains('on'))), 'the corner says "Not saved" (not "Saved ✓"), the "Turned on" note is gone');
     await H.shot(page, 'speed_rollback');
     await page.click('#modal-root .btns button'); await page.unroute('**/rpc');
     // nothing lost while moving around; closing the tab while saving asks first

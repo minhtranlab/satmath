@@ -47,13 +47,13 @@
     try { if (job.apply) job.apply(); } catch (e) { try { console.warn('apply failed', e); } catch (x) {} }
     var p = new Promise(function (ok, no) { job.ok = ok; job.no = no; });
     p.catch(function () {});
-    WQ.list.push(job); saveDot('busy'); pump();
+    WQ.list.push(job); WQ.failed = false; saveDot('busy'); pump();
     return p;
   }
   function pump() {
     if (WQ.busy) return;
     var job = WQ.list[0];
-    if (!job) { saveDot('ok'); var f = WQ.idle; WQ.idle = []; f.forEach(function (fn) { try { fn(); } catch (e) {} }); return; }
+    if (!job) { if (!WQ.failed) saveDot('ok'); var f = WQ.idle; WQ.idle = []; f.forEach(function (fn) { try { fn(); } catch (e) {} }); return; }
     WQ.busy = true;
     var attempt = function (n) {
       call.apply(null, [job.fn].concat(job.args)).then(function (r) {
@@ -65,7 +65,7 @@
         if (n < 1 && !appMsg) { setTimeout(function () { attempt(n + 1); }, 1500); return; }   // retry once (network)
         WQ.list.shift(); WQ.busy = false;
         try { if (job.undo) job.undo(); } catch (x) {}
-        saveDot('fail', 'Not saved');
+        WQ.failed = true; saveDot('fail', 'Not saved'); $('#toast').classList.remove('on');
         modal('Not saved', esc((job.label ? job.label + ': ' : '') + errMsg(e)) + '<br><br>The screen shows it as it was before. Try again.', [{ label: 'OK', value: 1 }]);
         job.no(e); pump();
       });
