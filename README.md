@@ -35,6 +35,10 @@ If the secret is missing or expired the Action only runs the tests; then a chat 
 To switch auto-deploy on: Minh (Mac, Node installed) runs `npx -y @google/clasp@3.4.1 login`, then `pbcopy < ~/.clasprc.json`, and pastes it as repo
 secret `CLASPRC_JSON` (Settings → Secrets and variables → Actions). Chats cannot set Actions secrets (blocked through the proxy).
 
+## Library state (14 Nov 2026)
+Live: College Board 1,921 version-A items (ALG, ADV, PSD, GEO × E/M/H) + Hard Math HM1 100 · HM2 64 · HM3 57 version-A items = 2,142.
+Version B items (HM twins / variants, E413) stay `candidate` — never in practice sets or assignments (Review will use them later).
+
 ## Add a batch of questions (no code change)
 ```
 python3 tools/build_library.py "<project folder>/data/library" HM3          # 0 errors needed
