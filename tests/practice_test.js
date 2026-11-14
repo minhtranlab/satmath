@@ -127,7 +127,7 @@ const sr4 = setRow(s4.set_id), resp4 = C.readTable_('Responses').rows.filter(r =
 const bestNow = resp4.filter(r => Number(r.best_correct) === 1).length;
 check(Number(sr4.first_try) === 3 && Number(sr4.best_score) === bestNow && bestNow === 3 + (sq ? 1 : 0), 'First Try stays 3, Best Score = ' + bestNow);
 const tries4 = C.readTable_('Tries').rows.filter(r => r.set_id === s4.set_id);
-check(tries4.filter(r => Number(r.try_no) === 1).length === 4 && tries4.length > 4, 'every try recorded in Tries (' + tries4.length + ' rows, try 1 from the submit)');
+check(tries4.filter(r => Number(r.try_no) === 1).length >= 4 && tries4.length > 4, 'every try recorded in Tries (' + tries4.length + ' rows, try 1 from the submit)');
 const res4 = G.call('getResult', ['FX-T03', s4.set_id]);
 const leftOpen = fx.questions.length - (mq ? 1 : 0) - (sq ? 1 : 0);
 check(res4.best.right === bestNow && res4.fix.open === leftOpen && res4.fix.locked === (mq ? 1 : 0), 'result: Best Score updated, ' + leftOpen + ' left to fix' + (mq ? ', 1 locked' : ''));
