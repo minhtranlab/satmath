@@ -302,7 +302,11 @@
   function startAsg(a, b) {
     if (a.set_id) { openTest(a.set_id, {}); return; }
     var undo = busyBtn(b, 'Opening…');
-    call('startAssignment', A.code, a.assignment_id, { device: deviceStr() }).then(function (r) { a.set_id = r.set_id; a.answered = a.answered || 0; openTest(r.set_id, {}, r.set); })
+    call('startAssignment', A.code, a.assignment_id, { device: deviceStr() }).then(function (r) {
+      // the cached home (whatever copy is current) knows at once that this assignment is started
+      [a].concat(((A.home || {}).assignments || []).filter(function (x) { return x.assignment_id === a.assignment_id; })).forEach(function (x) { x.set_id = r.set_id; x.answered = x.answered || 0; });
+      openTest(r.set_id, {}, r.set);
+    })
       .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
   }
   function renderHome(r) {

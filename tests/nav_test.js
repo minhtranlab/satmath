@@ -158,6 +158,11 @@ console.log('[server: one key at a time]');
     await pp.waitForFunction(() => /Placement test/.test(document.querySelector('#placement-card').innerText));
     check(await pp.$eval('#placement-card .hz-ring', e => /15–24/.test(e.innerText)) && !/Desmos/.test(await pp.$eval('#placement-card', e => e.innerText)), 'Assigned focus card: Placement test, ring "15–24 questions", no Desmos line');
     await shot(pp, 'nav_home_focus');
+    // a practice set left with Exit first: its save refreshes the home quietly with the same data (the cards stay on screen)
+    await pp.click('#picker [data-k="H.B"]'); await pp.click('#picker [data-n="5"]'); await pp.click('#btn-start'); await pp.waitForSelector('#btn-begin');
+    E.st.latency = 1200;                                              // the home refresh after that save arrives while the placement test is starting
+    await pp.click('#btn-exit'); await pp.waitForSelector('#modal-root.on'); await pp.click('#modal-root .btns button:last-child');
+    await pp.waitForSelector('#placement-card'); await pp.waitForSelector('#wq-dot.ok', { timeout: 15000 }); await sleep(200);
     await pp.click('#placement-card .hz-btn.big'); await pp.waitForSelector('#btn-begin'); await pp.click('#btn-begin');
     await pp.waitForSelector('#qwrap .q.on'); await waitMath(pp);
     E.st.latency = 1500;
@@ -196,9 +201,11 @@ console.log('[server: one key at a time]');
     E.st.gas.fresh();
     check(E.st.gas.table('Responses').some(r => r.qid === offQ), 'back online: the answer arrived (Responses)');
     // Exit in the placement test → home → Continue resumes
+    E.st.latency = 3000;
     await pp.click('#btn-exit'); await pp.waitForSelector('#modal-root.on'); await pp.click('#modal-root .btns button:last-child');
-    await pp.waitForSelector('#placement-card'); await pp.waitForSelector('#wq-dot.ok', { timeout: 20000 }).catch(() => {});
-    check(/Continue/.test(await pp.$eval('#placement-card .hz-btn', e => e.textContent)), 'Exit in the placement test → home, card says Continue');
+    await pp.waitForSelector('#placement-card'); await sleep(300);
+    check(/Continue/.test(await pp.$eval('#placement-card .hz-btn', e => e.textContent)), 'Exit in the placement test → home at once, card says Continue (before the server answers)');
+    await pp.waitForSelector('#wq-dot.ok', { timeout: 30000 }).catch(() => {}); E.st.latency = 0;
     await pp.click('#placement-card .hz-btn'); await pp.waitForSelector('#v-directions.on, #v-question.on');
     if (await pp.$('#v-directions.on')) await pp.click('#v-directions.on #btn-begin');
     await pp.waitForSelector('#qwrap .q.on');
