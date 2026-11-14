@@ -1464,7 +1464,7 @@
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing');
     var wasFix = VW && VW.fix, sid = VW && VW.sid;
     A.view = null; A.st = null; A.test = null; A.profile = null; built = null;
-    if (wasFix) { VW = null; openResult(sid); return; }           // Best Score changed: show the result again
+    if (wasFix) { VW = null; if (A.resC) delete A.resC[sid]; openResult(sid); return; }           // Best Score changed: show the result again
     show('scr-result');
     var sc = A.resScroll || [0, 0];
     $('#scr-result').scrollTop = sc[0]; if (sc[1]) window.scrollTo(0, sc[1]);
