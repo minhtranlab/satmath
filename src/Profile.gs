@@ -13,15 +13,16 @@
  */
 var SKILL_PROFILE_TAB = 'Skill_Profile';
 // weight = real-test share: Algebra 35 %, Advanced Math 35 %, PSDA 15 %, Geometry 15 %, split over the skills by the size of the
-// College Board bank (1,921 items); Q.F and Q.G fixed at 2.5 % each (about 1 in 20 Mixed items together).
+// College Board bank (1,921 items); Q.F and Q.G fixed at 1.0 % each (Brain, 14 Nov: rare — after the other PSDA skills), the other
+// 13 % of PSDA over Q.A–Q.E by bank size.
 var SKILL_PROFILE_DEFAULTS_ = [
   ['H.A', 'E,M,H', 6.3, '', ''], ['H.B', 'E,M,H', 9.7, '', ''], ['H.C', 'E,M,H', 7.4, '', ''], ['H.D', 'E,M,H', 7.2, '', ''], ['H.E', 'E,M,H', 4.4, '', ''],
   ['P.A', 'E,M,H', 7.6, '', ''], ['P.B', 'E,M,H', 10.7, '', ''], ['P.C', 'E,M,H', 16.7, '', ''],
-  ['Q.A', 'E,M,H', 2.4, '', ''], ['Q.B', 'E,M,H', 2.2, '', ''], ['Q.C', 'E,M,H', 2.2, '', ''],
-  ['Q.D', 'E,M', 1.9, '', 'No real Hard on the SAT: Hard = hardest Medium (+ the few Hard items)'],
-  ['Q.E', 'E,M', 1.3, '', 'No real Hard on the SAT: Hard = hardest Medium (+ the few Hard items)'],
-  ['Q.F', 'E,M,H', 2.5, 5, 'Rare on the test (about 1 per test): Mixed rarely, practice 5 only'],
-  ['Q.G', 'E,M,H', 2.5, 5, 'Rare on the test (about 1 per test): Mixed rarely, practice 5 only'],
+  ['Q.A', 'E,M,H', 3.1, '', ''], ['Q.B', 'E,M,H', 2.9, '', ''], ['Q.C', 'E,M,H', 2.9, '', ''],
+  ['Q.D', 'E,M', 2.4, '', 'No real Hard on the SAT: Hard = hardest Medium (+ the few Hard items)'],
+  ['Q.E', 'E,M', 1.7, '', 'No real Hard on the SAT: Hard = hardest Medium (+ the few Hard items)'],
+  ['Q.F', 'E,M,H', 1.0, 5, 'Rare on the test: Mixed rarely (after the other PSDA skills), practice 5 only'],
+  ['Q.G', 'E,M,H', 1.0, 5, 'Rare on the test: Mixed rarely (after the other PSDA skills), practice 5 only'],
   ['S.A', 'E,M,H', 4.7, '', ''], ['S.B', 'E,M,H', 4.4, '', ''],
   ['S.C', 'M,H', 3.0, '', 'No real Easy on the SAT: Easy = Medium level 1'],
   ['S.D', 'M,H', 2.9, '', 'No real Easy on the SAT: Easy = Medium level 1']

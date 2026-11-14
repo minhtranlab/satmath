@@ -749,8 +749,16 @@
   }
   /** Punctuation or a word piece right after inline math ("\\(x\\)?", "\\(10\\)-inch,") stays on the same line as the math. */
   function noWrapMath(html) {
-    return String(html || '').replace(/([(\[$]?)(\\\((?:(?!\\\)).)*?\\\))([^\s<\\]*)/g, function (m, pre, math, post) {
+    return tableTitles(html).replace(/([(\[$]?)(\\\((?:(?!\\\)).)*?\\\))([^\s<\\]*)/g, function (m, pre, math, post) {
       return pre || post ? '<span class="nw">' + pre + math + post + '</span>' : m;
+    });
+  }
+  /** Table titles centred (QQ #36): a short line right before a table with no full stop / colon at its end ("Data Set Q",
+   *  "<strong>Population of Greenleaf, Idaho</strong>") gets class tcap, like the titles marked tcap in the batch files. */
+  function tableTitles(html) {
+    return String(html || '').replace(/<p>((?:(?!<\/?p[ >]).){1,240}?)<\/p>(\s*<table)/g, function (m, inner, tb) {
+      var t = inner.replace(/<[^>]+>/g, '').replace(/\\\(|\\\)/g, '').trim();
+      return t && t.length <= 100 && !/[.:?!]$/.test(t) ? '<p class="tcap">' + inner + '</p>' + tb : m;
     });
   }
   function bindDivider(box) {

@@ -19,7 +19,9 @@ const w = tab.reduce((a, r) => a + Number(r.weight), 0);
 check(tab.length === 19 && Math.abs(w - 100) < 0.2, 'Skill_Profile: 19 skills, weights sum to ' + w.toFixed(1) + ' %');
 const row = k => tab.find(r => String(r.skill).replace(/^'/, '') === k);
 check(row('S.D').allowed === 'M,H' && row('S.C').allowed === 'M,H' && row('Q.E').allowed === 'E,M' && row('Q.D').allowed === 'E,M', 'Circles, Right triangles: M,H · Probability, Two-variable data: E,M');
-check(Number(row('Q.G').max_set) === 5 && Number(row('Q.F').max_set) === 5 && Number(row('Q.G').weight) === 2.5, 'Q.F, Q.G: weight 2.5 %, practice sets of 5');
+check(Number(row('Q.G').max_set) === 5 && Number(row('Q.F').max_set) === 5 && Number(row('Q.G').weight) === 1 && Number(row('Q.F').weight) === 1, 'Q.F, Q.G: weight 1.0 %, practice sets of 5');
+const psd = ['Q.A', 'Q.B', 'Q.C', 'Q.D', 'Q.E'].map(k => Number(row(k).weight));
+check(Math.min(...psd) > 1, 'every other PSDA skill weighs more than Q.F / Q.G (' + psd.join(' · ') + ')');
 const dom = { H: 0, P: 0, Q: 0, S: 0 }; tab.forEach(r => { dom[String(r.skill).replace(/^'/, '')[0]] += Number(r.weight); });
 check(Math.abs(dom.H - 35) < .2 && Math.abs(dom.P - 35) < .2 && Math.abs(dom.Q - 15) < .2 && Math.abs(dom.S - 15) < .2, 'domain shares 35 / 35 / 15 / 15 %');
 
@@ -66,7 +68,12 @@ for (let s = 0; s < 100; s++) C.mixedPlan_(skills, W, Object.assign({}, past), 1
 let worst = 0, worstK = '';
 skills.forEach(k => { const e = Math.abs((past[k] || 0) / 1000 - W[k]) * 100; if (e > worst) { worst = e; worstK = k; } });
 check(worst <= 3, '1,000 simulated items (100 sets of 10): every skill within ' + worst.toFixed(2) + ' points of its weight (target ±3; worst ' + worstK + ')');
-check((past['Q.G'] || 0) + (past['Q.F'] || 0) >= 45 && (past['Q.G'] || 0) + (past['Q.F'] || 0) <= 55, 'Q.G + Q.F: ' + ((past['Q.G'] || 0) + (past['Q.F'] || 0)) + ' of 1,000 items (≈ 1 in 20)');
+check(Math.abs((past['Q.G'] || 0) - 10) <= 1 && Math.abs((past['Q.F'] || 0) - 10) <= 1, 'Q.G ' + (past['Q.G'] || 0) + ' + Q.F ' + (past['Q.F'] || 0) + ' of 1,000 items (1 % each)');
+console.log('     PSDA split of 1,000 items: ' + ['Q.A', 'Q.B', 'Q.C', 'Q.D', 'Q.E', 'Q.F', 'Q.G'].map(k => k + ' ' + (past[k] || 0)).join(' · '));
+{ const p1 = {}, firstAt = {}; let no = 0;
+  for (let s = 0; s < 20; s++) C.mixedPlan_(skills, W, Object.assign({}, p1), 10, 4, [], null).forEach(k => { no++; p1[k] = (p1[k] || 0) + 1; if (!firstAt[k]) firstAt[k] = no; });
+  const others = ['Q.A', 'Q.B', 'Q.C', 'Q.D', 'Q.E'].map(k => firstAt[k]);
+  check(Math.max(...others) < Math.min(firstAt['Q.F'] || 999, firstAt['Q.G'] || 999), 'a new student meets every other PSDA skill before Q.F / Q.G (first Q.F at item ' + firstAt['Q.F'] + ', Q.G at ' + firstAt['Q.G'] + ')'); }
 // the same through the app: real Mixed sets on the fixtures (all made-up batches live, no 7-day block)
 ['FX2', 'FX3', 'FX4'].forEach(live); setRow('block_days', 0);
 G.fresh(); const Q2 = {}; G.table('Questions').forEach(r => { Q2[r.qid] = r; });
