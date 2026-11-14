@@ -390,7 +390,7 @@ function assignmentTree(code, target) {
   SKILLS_.forEach(function (r) {
     if (!di[r.domain]) { di[r.domain] = { domain: r.domain, name: r.domain_name, skills: [], _s: {} }; doms.push(di[r.domain]); }
     var d = di[r.domain];
-    if (!d._s[r.skill]) { d._s[r.skill] = { code: r.skill, name: r.skill_name, count: cnt[r.skill] || null, subs: [] }; d.skills.push(d._s[r.skill]); }
+    if (!d._s[r.skill]) { var pf = skillProfile_(r.skill); d._s[r.skill] = { code: r.skill, name: r.skill_name, count: cnt[r.skill] || null, subs: [], profile: pf.label, allowed: ['E', 'M', 'H'].filter(function (x) { return pf.allowed[x]; }).join(',') }; d.skills.push(d._s[r.skill]); }
     if (r.subskill) d._s[r.skill].subs.push({ code: r.subskill, name: r.subskill_name, count: cnt[r.subskill] || null });
   });
   doms.forEach(function (d) { delete d._s; });
@@ -419,12 +419,15 @@ function pickAssignment(code, spec) {
     var isSub = /\.\d+$/.test(tc), skill = isSub ? (SKILLS_.filter(function (x) { return x.subskill === tc; })[0] || {}).skill : tc;
     var inTopic = pool.filter(function (r) { return isSub ? clean_(r.subskill) === tc : clean_(r.skill) === tc; });
     // Teacher's ticks = real difficulties: NO Hard stand-ins here (bug #28: Q.G with E+M ticked got Hard items).
-    var match = function (r, d) { return String(r.difficulty).toUpperCase() === d; };
+    // Skill_Profile: a difficulty the skill does not have on the SAT counts as 0 items (Circles: no Easy) → neighbour fill + note
+    var prof = skillProfile_(skill);
+    var match = function (r, d) { return String(r.difficulty).toUpperCase() === d && !!prof.allowed[d]; };
     var rnd = {}; shuffle_(inTopic.slice(), seed).forEach(function (r, i) { rnd[String(r.qid)] = i; });
+    var lvPref = 0;                                                  // filling for a missing Easy: Medium level 1 first (+1); for Hard: hardest first (−1)
     var queueFor = function (d) {
       return inTopic.filter(function (r) { return match(r, d); }).sort(function (a, b) {
         var la = last[String(a.qid)], lb = last[String(b.qid)];
-        return (la ? 1 : 0) - (lb ? 1 : 0) || (la ? la.ms : 0) - (lb ? lb.ms : 0) || rnd[String(a.qid)] - rnd[String(b.qid)];
+        return (la ? 1 : 0) - (lb ? 1 : 0) || lvPref * ((Number(a.level) || 1) - (Number(b.level) || 1)) || (la ? la.ms : 0) - (lb ? lb.ms : 0) || rnd[String(a.qid)] - rnd[String(b.qid)];
       });
     };
     var picked = [], extra = {}, subsUsed = {};                       // sub-skills already in this topic (spread across difficulties too)
@@ -448,9 +451,12 @@ function pickAssignment(code, spec) {
     var NB = { E: ['M', 'H'], M: ['E', 'H'], H: ['M', 'E'] }, NAME = { E: 'Easy', M: 'Medium', H: 'Hard' };
     diffs.forEach(function (d) {
       var miss = want[d] - got[d]; if (miss <= 0) return;
-      var adds = [];
+      var adds = [], none = !prof.allowed[d];
+      lvPref = d === 'E' ? 1 : d === 'H' ? -1 : 0;
       NB[d].forEach(function (nd) { if (miss <= 0) return; var k = takeFrom(nd, miss); if (k) { adds.push(k + ' ' + NAME[nd]); extra[nd] = (extra[nd] || 0) + k; miss -= k; } });
-      notes.push('only ' + got[d] + ' ' + NAME[d] + ' available' + (adds.length ? ' — ' + adds.join(' + ') + ' added' : '') + (miss > 0 ? ' — ' + miss + ' missing' : ''));
+      lvPref = 0;
+      notes.push((none ? skillName_(skill) + ' has no ' + NAME[d] + ' on the SAT' : 'only ' + got[d] + ' ' + NAME[d] + ' available') +
+                 (adds.length ? ' — ' + adds.join(' + ') + ' added' + (none && d === 'E' ? ' (easiest first)' : none && d === 'H' ? ' (hardest first)' : '') : '') + (miss > 0 ? ' — ' + miss + ' missing' : ''));
     });
     var queue = [];
     diffs.concat(['E', 'M', 'H'].filter(function (d) { return diffs.indexOf(d) < 0; })).forEach(function (d) { queueFor(d).forEach(function (r) { if (!used[String(r.qid)]) queue.push(r); }); });

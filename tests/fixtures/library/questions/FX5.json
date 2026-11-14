@@ -1,0 +1,2017 @@
+{
+ "batch": "FX5",
+ "title": "Fixture 5 (made-up, skill profiles)",
+ "source_type": "fixture",
+ "schema": 1,
+ "questions": [
+  {
+   "qid": "FX5-001",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 1
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 1 (S.D E1). What is \\(4 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(11\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9701"
+  },
+  {
+   "qid": "FX5-002",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 2
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 2 (S.D E1). What is \\(5 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(20\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(21\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(19\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9702"
+  },
+  {
+   "qid": "FX5-003",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 3
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 3 (S.D E1). What is \\(6 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(30\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(31\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(29\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9703"
+  },
+  {
+   "qid": "FX5-004",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 4
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 4 (S.D M1). What is \\(7 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(42\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(43\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(41\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9704"
+  },
+  {
+   "qid": "FX5-005",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 5
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 5 (S.D M1). What is \\(8 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(15\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9705"
+  },
+  {
+   "qid": "FX5-006",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 6
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 6 (S.D M1). What is \\(9 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(27\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(28\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(26\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9706"
+  },
+  {
+   "qid": "FX5-007",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 7
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 7 (S.D M1). What is \\(10 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(40\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(41\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(39\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9707"
+  },
+  {
+   "qid": "FX5-008",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 8
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 8 (S.D M1). What is \\(3 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9708"
+  },
+  {
+   "qid": "FX5-009",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 9
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 9 (S.D M1). What is \\(4 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(24\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(25\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(23\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9709"
+  },
+  {
+   "qid": "FX5-010",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 10
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 10 (S.D M2). What is \\(5 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(9\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9710"
+  },
+  {
+   "qid": "FX5-011",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 11
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 11 (S.D M2). What is \\(6 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(19\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(17\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9711"
+  },
+  {
+   "qid": "FX5-012",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 12
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 12 (S.D M2). What is \\(7 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(28\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(29\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(27\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9712"
+  },
+  {
+   "qid": "FX5-013",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 13
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 13 (S.D M2). What is \\(8 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(40\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(41\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(39\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9713"
+  },
+  {
+   "qid": "FX5-014",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 14
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 14 (S.D H2). What is \\(9 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(54\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(55\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(53\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9714"
+  },
+  {
+   "qid": "FX5-015",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 15
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 15 (S.D H2). What is \\(10 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(20\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(21\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(19\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9715"
+  },
+  {
+   "qid": "FX5-016",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 16
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 16 (S.D H2). What is \\(3 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(8\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9716"
+  },
+  {
+   "qid": "FX5-017",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 17
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 17 (S.D H2). What is \\(4 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(17\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(15\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "S",
+    "skill": "S.D",
+    "subskill": "S.D.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9717"
+  },
+  {
+   "qid": "FX5-018",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 18
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 18 (Q.E E1). What is \\(5 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(25\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(26\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(24\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9718"
+  },
+  {
+   "qid": "FX5-019",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 19
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 19 (Q.E E1). What is \\(6 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(36\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(37\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(35\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9719"
+  },
+  {
+   "qid": "FX5-020",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 20
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 20 (Q.E E1). What is \\(7 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(13\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9720"
+  },
+  {
+   "qid": "FX5-021",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 21
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 21 (Q.E E1). What is \\(8 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(24\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(25\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(23\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9721"
+  },
+  {
+   "qid": "FX5-022",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 22
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 22 (Q.E E1). What is \\(9 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(36\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(37\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(35\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9722"
+  },
+  {
+   "qid": "FX5-023",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 23
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 23 (Q.E M1). What is \\(10 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(50\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(51\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(49\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9723"
+  },
+  {
+   "qid": "FX5-024",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 24
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 24 (Q.E M1). What is \\(3 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(19\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(17\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9724"
+  },
+  {
+   "qid": "FX5-025",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 25
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 25 (Q.E M1). What is \\(4 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(7\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9725"
+  },
+  {
+   "qid": "FX5-026",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 26
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 26 (Q.E M2). What is \\(5 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(15\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(14\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9726"
+  },
+  {
+   "qid": "FX5-027",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 27
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 27 (Q.E M2). What is \\(6 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(24\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(25\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(23\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9727"
+  },
+  {
+   "qid": "FX5-028",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 28
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 28 (Q.E M2). What is \\(7 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(35\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(36\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(34\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9728"
+  },
+  {
+   "qid": "FX5-029",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 29
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 29 (Q.E M2). What is \\(8 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(48\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(49\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(47\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9729"
+  },
+  {
+   "qid": "FX5-030",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 30
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 30 (Q.E M2). What is \\(9 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(18\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(19\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(17\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9730"
+  },
+  {
+   "qid": "FX5-031",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 31
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 31 (Q.E H2). What is \\(10 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(30\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(31\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(29\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9731"
+  },
+  {
+   "qid": "FX5-032",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 32
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 32 (Q.E H2). What is \\(3 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(11\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.E",
+    "subskill": "Q.E.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9732"
+  },
+  {
+   "qid": "FX5-033",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 33
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 33 (Q.G E1). What is \\(4 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(20\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(21\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(9\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(19\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9733"
+  },
+  {
+   "qid": "FX5-034",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 34
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 34 (Q.G E1). What is \\(5 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(30\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(31\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(11\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(29\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.2",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9734"
+  },
+  {
+   "qid": "FX5-035",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 35
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 35 (Q.G E1). What is \\(6 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(8\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(11\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.1",
+    "subskill2": "",
+    "difficulty": "E",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "E9735"
+  },
+  {
+   "qid": "FX5-036",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 36
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 36 (Q.G M1). What is \\(7 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(21\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(22\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(10\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(20\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9736"
+  },
+  {
+   "qid": "FX5-037",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 37
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 37 (Q.G M1). What is \\(8 \\times 4\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(32\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(33\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(31\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.2",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9737"
+  },
+  {
+   "qid": "FX5-038",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 38
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 38 (Q.G M1). What is \\(9 \\times 5\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(45\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(46\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(14\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(44\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.1",
+    "subskill2": "",
+    "difficulty": "M",
+    "level": 1,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "M9738"
+  },
+  {
+   "qid": "FX5-039",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 39
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 39 (Q.G H2). What is \\(10 \\times 6\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(60\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(61\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(16\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(59\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9739"
+  },
+  {
+   "qid": "FX5-040",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 40
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 40 (Q.G H2). What is \\(3 \\times 2\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(6\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(5\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(5\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.2",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9740"
+  },
+  {
+   "qid": "FX5-041",
+   "batch": "FX5",
+   "source": {
+    "set": "FX5",
+    "page": 41
+   },
+   "type": "mcq",
+   "stem_html": "<p>Made-up profile item 41 (Q.G H2). What is \\(4 \\times 3\\)?</p>",
+   "passage_html": "",
+   "figures": [],
+   "choices": [
+    {
+     "label": "A",
+     "html": "\\(12\\)"
+    },
+    {
+     "label": "B",
+     "html": "\\(13\\)"
+    },
+    {
+     "label": "C",
+     "html": "\\(7\\)"
+    },
+    {
+     "label": "D",
+     "html": "\\(11\\)"
+    }
+   ],
+   "key_source": "A",
+   "key": "A",
+   "accepted": [],
+   "tags": {
+    "domain": "Q",
+    "skill": "Q.G",
+    "subskill": "Q.G.1",
+    "subskill2": "",
+    "difficulty": "H",
+    "level": 2,
+    "tag_status": "est"
+   },
+   "twin_group": null,
+   "flags": [],
+   "status": "keep",
+   "version": "A",
+   "version_of": null,
+   "transcription_notes": "made-up fixture",
+   "code": "H9741"
+  }
+ ]
+}

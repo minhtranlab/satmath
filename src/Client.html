@@ -236,20 +236,22 @@
       var withQ = d.skills.filter(function (k) { return k.live > 0; });
       var k = d.skills.filter(function (x) { return x.skill === st.k; })[0] || withQ[0] || d.skills[0];
       st.k = k.skill;
+      var sz = k.max_n ? sizes.filter(function (n) { return n <= k.max_n; }) : sizes; if (!sz.length) sz = [k.max_n];
+      var nOn = sz.indexOf(st.n) >= 0 ? st.n : sz[sz.length - 1];         // a rare skill offers 5 only (Skill_Profile)
       box.innerHTML = '<div class="sm-col sm-c1"><p class="sm-colh">Area</p>' + r.domains.map(function (x, i) {
           return '<button type="button" class="sm-it' + (x === d ? ' cur' : '') + '" data-d="' + i + '"><span class="n">' + esc(x.name) + '</span><span class="cnt">' + x.fresh + ' new</span></button>'; }).join('') + '</div>' +
         '<div class="sm-col sm-c2"><p class="sm-colh">Skill</p>' + d.skills.map(function (x) {
           return '<button type="button" class="sm-it sk' + (x === k ? ' cur' : '') + (x.live ? '' : ' off') + '" data-k="' + esc(x.skill) + '">' + dot(x.dot) + '<span>' + esc(x.name) + '</span><span class="cnt">' + (x.live ? x.fresh + ' new' : 'none yet') + '</span></button>'; }).join('') + '</div>' +
         '<div class="sm-col sm-c3"><div class="sm-pan"><h3>' + esc(k.name) + '</h3><div class="sm-subl">' + k.subs.map(function (x) {
           return '<div>' + dot(x.dot) + '<span>' + esc(x.name) + '</span><span class="cnt">' + x.fresh + ' new</span></div>'; }).join('') + '</div>' +
-        '<div class="sm-start"><div class="sm-seg" role="group" aria-label="Number of questions">' + sizes.map(function (n) { return '<button type="button" data-n="' + n + '"' + (n === st.n ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>' +
-        '<button type="button" class="hz-btn" id="btn-start"' + (k.live ? '' : ' disabled') + '>' + (k.live ? 'Start ' + st.n + ' questions' : 'No questions yet') + '</button></div>' +
-        '<p class="sm-note">No timer. The app picks the questions for you.</p></div></div>';
+        '<div class="sm-start"><div class="sm-seg" role="group" aria-label="Number of questions">' + sz.map(function (n) { return '<button type="button" data-n="' + n + '"' + (n === nOn ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>' +
+        '<button type="button" class="hz-btn" id="btn-start"' + (k.live ? '' : ' disabled') + '>' + (k.live ? 'Start ' + nOn + ' questions' : 'No questions yet') + '</button></div>' +
+        '<p class="sm-note">' + (k.note ? esc(k.note) + '. ' : '') + 'No timer. The app picks the questions for you.</p></div></div>';
       $$('[data-d]', box).forEach(function (b) { b.onclick = function () { st.d = +b.getAttribute('data-d'); st.k = null; draw(); }; });
       $$('[data-k]', box).forEach(function (b) { b.onclick = function () { st.k = b.getAttribute('data-k'); draw(); }; });
       $$('[data-n]', box).forEach(function (b) { b.onclick = function () { st.n = +b.getAttribute('data-n'); draw(); }; });
       var sb = $('#btn-start', box);
-      if (sb) sb.onclick = function () { startPractice(k.skill, st.n, sb); };
+      if (sb) sb.onclick = function () { startPractice(k.skill, nOn, sb); };
     }
     draw();
     return box;

@@ -21,6 +21,7 @@ var TABS_ = [
   ['Levels', ['student_code', 'skill', 'level', 'recent_pct', 'good_streak', 'n_items', 'last_set_id', 'updated_at', 'history']],
   ['Assignments', ['assignment_id', 'title', 'target_type', 'target_id', 'topics', 'qids', 'available_from', 'due', 'status',
                    'created_at', 'created_in', 'note', 'kind', 'form']],
+  ['Skill_Profile', ['skill', 'name', 'allowed', 'weight', 'max_set', 'note']],
   ['Placement_Forms', ['form', 'domain', 'slot', 'level', 'skill', 'code', 'qid', 'note']],
   ['Placements', ['set_id', 'student_code', 'form', 'assignment_id', 'finished_at', 'n_items', 'n_right', 'time_min', 'alg', 'adv', 'psd', 'geo',
                   'skill_levels', 'teach_first', 'path', 'prev_set_id']],

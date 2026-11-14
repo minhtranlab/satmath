@@ -387,14 +387,14 @@
     call('assignmentTree', A.code, target).then(function (r) {
       T.tree = r;
       var cnt = function (c, d) { return c ? '<span class="muted">' + c['f' + d] + ' new / ' + c[d] + '</span>' : '<span class="muted">0</span>'; };
-      var topic = function (code, name, c, sub) {
-        return '<div class="b-topic' + (sub ? ' sub' : '') + '" data-code="' + esc(code) + '"><label class="b-tick"><input type="checkbox" class="b-on"' + (c ? '' : ' disabled') + '> ' + esc(name) + '</label>' +
+      var topic = function (code, name, c, sub, prof) {
+        return '<div class="b-topic' + (sub ? ' sub' : '') + '" data-code="' + esc(code) + '"><label class="b-tick"><input type="checkbox" class="b-on"' + (c ? '' : ' disabled') + '> ' + esc(name) + (prof ? ' <span class="b-prof">' + esc(prof) + '</span>' : '') + '</label>' +
           '<span class="b-set"><input type="number" class="field b-n" min="1" max="40" value="3" aria-label="Number of questions">' +
           ['E', 'M', 'H'].map(function (d) { return '<label class="b-d"><input type="checkbox" class="b-diff" value="' + d + '"' + (d === 'M' ? ' checked' : '') + (c && c[d] ? '' : ' disabled') + '> ' + diffName(d) + ' ' + cnt(c, d) + '</label>'; }).join('') + '</span></div>';
       };
       box.innerHTML = '<h2 class="t-h2">Topics</h2>' + r.domains.map(function (d) {
         return '<details class="b-dom" open><summary>' + esc(d.name) + '</summary>' + d.skills.map(function (k) {
-          return '<div class="b-skill">' + topic(k.code, k.name, k.count, false) + '<details class="b-subs"><summary class="muted">Sub-skills</summary>' + k.subs.map(function (x) { return topic(x.code, x.name, x.count, true); }).join('') + '</details></div>';
+          return '<div class="b-skill">' + topic(k.code, k.name, k.count, false, k.profile) + '<details class="b-subs"><summary class="muted">Sub-skills</summary>' + k.subs.map(function (x) { return topic(x.code, x.name, x.count, true); }).join('') + '</details></div>';
         }).join('') + '</details>';
       }).join('') + '<p><button type="button" class="btn-blue" id="b-pickbtn">Pick questions</button></p>';
       $$('.b-on', box).forEach(function (c) { c.onchange = function () { c.closest('.b-topic').classList.toggle('on', c.checked); }; });

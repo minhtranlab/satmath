@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.5 (2026-11-14, Placement test)';
+var APP_VERSION = 'v0.5.1 (2026-11-14, Skill profiles)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -336,6 +336,7 @@ function startPractice(code, skill, n) {
   if (sizes.indexOf(n) < 0) throw new Error('FORM: Choose ' + sizes.join(', ') + ' questions.');
   skill = String(skill || '').trim();
   if (!skillName_(skill)) throw new Error('FORM: This skill is not in the library.');
+  var mx = skillProfile_(skill).max_set; if (mx && n > mx) n = mx;      // rare skills (Skill_Profile max_set): 5 questions only
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {

@@ -104,6 +104,23 @@ FX4Q, FX4_FORMS = fx4()
 json.dump({'batch': 'FX4', 'title': 'Fixture 4 (made-up, placement)', 'source_type': 'fixture', 'schema': 1, 'questions': FX4Q},
           open(os.path.join(LIB, 'questions', 'FX4.json'), 'w'), indent=1, ensure_ascii=False)
 json.dump(FX4_FORMS, open(os.path.join(HERE, 'fixtures', 'placement_forms_fx4.json'), 'w'))
+
+# FX5: made-up items for the Skill_Profile checks (#35): Circles (no Easy on the SAT), Probability (no Hard), Evaluating claims (rare).
+def fx5():
+    out, n = [], 0
+    plan = [('S.D', 'E', 1, 3), ('S.D', 'M', 1, 6), ('S.D', 'M', 2, 4), ('S.D', 'H', 2, 4),
+            ('Q.E', 'E', 1, 5), ('Q.E', 'M', 1, 3), ('Q.E', 'M', 2, 5), ('Q.E', 'H', 2, 2),
+            ('Q.G', 'E', 1, 3), ('Q.G', 'M', 1, 3), ('Q.G', 'H', 2, 3)]
+    for sk, diff, lvl, k in plan:
+        for j in range(k):
+            n += 1; a, b = 3 + n % 8, 2 + n % 5
+            stem = '<p>Made-up profile item %d (%s %s%d). What is \\(%d \\times %d\\)?</p>' % (n, sk, diff, lvl, a, b)
+            q = mcq(n, sk, sk + '.%d' % (1 + j % 2), diff, lvl, stem, ['\\(%d\\)' % (a * b), '\\(%d\\)' % (a * b + 1), '\\(%d\\)' % (a + b), '\\(%d\\)' % (a * b - 1)], 'A')
+            q['qid'] = 'FX5-%03d' % n; q['batch'] = 'FX5'; q['source'] = {'set': 'FX5', 'page': n}; q['code'] = '%s%d' % (diff, 9700 + n)
+            out.append(q)
+    return out
+json.dump({'batch': 'FX5', 'title': 'Fixture 5 (made-up, skill profiles)', 'source_type': 'fixture', 'schema': 1, 'questions': fx5()},
+          open(os.path.join(LIB, 'questions', 'FX5.json'), 'w'), indent=1, ensure_ascii=False)
 fig_line(os.path.join(LIB, 'figures', 'FX1', 'FX1-003_f1.png'))
 json.dump({'batch': 'FX1', 'title': 'Fixture (made-up)', 'source_type': 'fixture', 'schema': 1, 'questions': Q},
           open(os.path.join(LIB, 'questions', 'FX1.json'), 'w'), indent=1, ensure_ascii=False)

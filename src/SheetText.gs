@@ -59,6 +59,7 @@ var README_ROWS_ = [
   ['Levels', 'One row per student × College Board skill: the practice level (E / M / H, start M), recent accuracy, good sets in a row. 2 good sets → up, 1 weak set → down. Students never see it.'],
   ['Review', 'One row per question in a student\'s Review list (wrong / blank / slow on the first try). It leaves after one clean try in Review (status cleared).'],
   ['Tries', 'Every answer check: try 1 at submit, then each "Fix wrong answers" check (multiple choice: 3 tries in total, then locked; grid-in: no limit).'],
+  ['Skill_Profile', 'One row per skill: which difficulties exist on the real SAT (allowed), how often it comes up (weight = % of Mixed Practice items), max_set (practice by skill offers only this many). Edit freely; the app reads it at once.'],
   ['Placement_Forms', 'The placement test: one row per form (A first time, B retake) × domain × slot (E1–E3, M1–M4, H1–H4) with the question code. Edit a code here to swap an item.'],
   ['Placements', 'One row per finished placement test: level per domain (H Strong, M Medium, E Weak, <E below Easy), level per tested skill, "teach first" skills, the path.'],
   ['Other tabs', 'Classes, Assignments (kind placement = a placement test), Skill_Summary: filled by the app (teacher page).'],
@@ -73,6 +74,7 @@ var DICT_ = {
   Levels: { level: 'E / M / H — which difficulty mix the next practice set of this skill gets.', recent_pct: 'Weighted accuracy of the latest 10 first tries in the skill (0–1).', good_streak: 'Good practice sets in a row (≥ good_set_pct).', history: 'Level changes, e.g. "M→H 14 Nov".' },
   Review: { reason: 'wrong / blank / slow (first try).', status: 'open / cleared.', n_served: 'Times served in a Review set.', cleared_by: 'pass (one clean try) / teacher.' },
   Tries: { try_no: '1 = the submitted answer; 2, 3 … = fixes.', correct: '1 right / 0 wrong.', time_sec: 'Seconds for this try.' },
+  Skill_Profile: { allowed: 'Difficulties that exist on the SAT for this skill (E,M,H). No E: an Easy slot gets Medium level 1. No H: a Hard slot gets the hardest Medium (+ the few Hard items).', weight: 'Share of Mixed Practice items (%, the app scales the column to 100).', max_set: 'Practice by skill offers only this many questions (empty = 5/10/20).' },
   Placement_Forms: { form: 'A (first placement) or B (retake).', domain: 'ALG Algebra · ADV Advanced Math · PSD Problem-Solving and Data · GEO Geometry and Trig.', slot: 'E1–E3 Easy, M1–M4 Medium, H1–H4 Hard (H4: Advanced Math only).', code: 'Short code of the question (the app finds the qid).', qid: 'Library qid (used when it exists).' },
   Placements: { alg: 'Algebra result: H Strong · M Medium · E Weak · <E below Easy.', skill_levels: 'Level per tested skill (written to Levels).', teach_first: 'The 3 tested skills to teach first.', path: 'Every item in order: domain, slot, F right in time / S slow right / W wrong.', prev_set_id: 'The placement before this one (retake comparison).' },
   Batches: { live: 'Yes = served to students.', n_live: 'Questions with status live.', file_id: 'Drive file id of the batch JSON.' }

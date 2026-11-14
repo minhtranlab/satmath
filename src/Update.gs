@@ -43,7 +43,7 @@ function currentStamp_() {
 
 function doUpdate_() {
   var steps = [['tabs', ensureTabs_], ['settings', ensureSettingsRows_], ['texts', syncSheetTexts_], ['time norms', ensureTimeNorms_],
-               ['skills', syncSkills_], ['library', syncLibrary_], ['students', syncStudents_], ['tags', syncTaggedReview_],
+               ['skills', syncSkills_], ['skill profile', ensureSkillProfile_], ['library', syncLibrary_], ['students', syncStudents_], ['tags', syncTaggedReview_],
                ['dropdown', ensureMistakeDropdown_], ['check', checkSheet_]];
   var notes = [], failed = 0, log = [];
   steps.forEach(function (s) {

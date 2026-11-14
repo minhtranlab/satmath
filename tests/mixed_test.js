@@ -45,7 +45,8 @@ check(q.length === 10 && Object.values(per2).every(n => n <= 4) && Object.keys(p
 const wrongSkills = skills.filter(k => k !== firstSkill);
 check(wrongSkills.every(k => per2[k]), 'skills with unfixed wrong answers come first: ' + wrongSkills.join(' ') + ' all in the set');
 const eSkillItems = q.filter(id => wrongSkills.includes(sk(id)));
-check(eSkillItems.filter(id => Q[id].difficulty === 'E').length >= wrongSkills.length, 'items at the student\'s level for that skill (level E → Easy first)');
+const easiest = id => Q[id].difficulty === 'E' || (!C.skillProfile_(sk(id)).allowed.E && Q[id].difficulty === 'M' && Number(Q[id].level) === 1);
+check(eSkillItems.filter(easiest).length >= wrongSkills.length, 'items at the student\'s level for that skill (level E → Easy first; Circles: no Easy → Medium level 1)');
 check(!q.some(id => C.readTable_('Responses').rows.some(r => r.student_code === 'FX-T03' && r.qid === id)), 'no question answered in the last 7 days');
 
 console.log('New students start Easy (practice by skill)');

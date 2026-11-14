@@ -45,6 +45,11 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 - Results: tab `Placements` (one row per finished test) + the tested skills' rows in `Levels`; untested skills start at the domain level.
 - Tests: `tests/placement_test.js` replays all 718 paths of `placement_paths.csv` and simulates whole tests (min 8 · max 24).
 
+## Skill profiles (v0.5.1, 14 Nov 2026)
+- Sheet tab `Skill_Profile` (one row per CB skill; Minh edits it): `allowed` difficulties, `weight` (% of Mixed Practice items), `max_set`.
+- No Easy (S.C, S.D): an Easy slot gets Medium level 1. No Hard (Q.D, Q.E): a Hard slot gets the hardest Medium or a real Hard item.
+- Mixed Practice: skills with unfixed wrong answers first, then Sainte-Laguë over the weights (`src/Profile.gs`). Review + Placement unchanged.
+
 ## Add a batch of questions (no code change)
 ```
 python3 tools/build_library.py "<project folder>/data/library" HM3          # 0 errors needed

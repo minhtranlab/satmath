@@ -11,6 +11,7 @@ run node practice_test.js     # adaptive selection + Levels, fix tries, Review, 
 run node teacher_test.js      # teacher page: students + codes, classes, assignments, What to go over order, tags → Review, asks, profile
 run node mixed_test.js        # Mixed Practice, new students start Easy, codes teacher-only
 run node placement_test.js    # placement: routing = routing.py (718 paths), schedule sim (8–24), Settings, server flow, retake B
+run node profile_test.js      # Skill_Profile: no-Easy / no-Hard skills, rare skills (5 only), Mixed weights over 1,000 items, builder notes
 run node sync_test.js         # a rebuilt batch reaches the Sheet (fixed key, version B, dropped item); Minh's own edits stay
 run node e2e_test.js          # browser: sign in → home → start 5 → answer → submit → result → review; wrong code; no key in payloads
 run node e2e_teacher_test.js  # browser: teacher page from sign-in to profile
