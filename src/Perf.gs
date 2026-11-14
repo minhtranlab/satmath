@@ -21,16 +21,21 @@ function perfRun_() {
   cache.put('sml_perf', '1', 20);
   var steps = [], t0 = Date.now();
   // each call twice: 'sheet' = as a fresh execution reading the Sheet; 'snap' = the same call from the tab snapshots (#42)
+  // where the time goes: tab snapshots, Sheet reads, library files (per tab / file name: ms)
+  var acc = null, wrap = function (fn, kind) { return function (n) { var a = Date.now(); try { return fn.apply(this, arguments); } finally { if (acc) { var k = kind + ':' + n; acc[k] = (acc[k] || 0) + Date.now() - a; } } }; };
+  var o1 = tabFromCache_, o2 = readTableSheet_, o3 = libBatch_;
+  tabFromCache_ = wrap(o1, 'snap'); readTableSheet_ = wrap(o2, 'sheet'); libBatch_ = wrap(o3, 'lib');
+  var top = function (a) { return Object.keys(a).sort(function (x, y) { return a[y] - a[x]; }).slice(0, 5).map(function (k) { return k + ' ' + a[k]; }).join(', '); };
   var time = function (name, fn) {
     var one = function (fresh) {
-      resetMemo_(); _ss = null; _forceFresh = fresh; _readMode = 'fresh';
+      resetMemo_(); _ss = null; _forceFresh = fresh; _readMode = 'fresh'; acc = {};
       var a = Date.now(), extra = '';
       try { var r = fn(); if (typeof r === 'number') extra = r; } catch (e) { extra = 'error: ' + String(e.message || e).slice(0, 60); }
       _forceFresh = false;
-      return { ms: Date.now() - a, info: extra };
+      var out = { ms: Date.now() - a, info: extra, where: top(acc) }; acc = null; return out;
     };
     var f = one(true), c = one(false);
-    steps.push({ name: name, ms: f.ms, snap_ms: c.ms, info: f.info || c.info });
+    steps.push({ name: name, ms: f.ms, snap_ms: c.ms, info: f.info || c.info, snap_where: c.where });
   };
   _perfAllowInactive = true;
   var raw = function (name, fn) { resetMemo_(); var a = Date.now(), x = ''; try { x = fn(); } catch (e) { x = 'error'; } steps.push({ name: name, ms: Date.now() - a, info: x }); };
@@ -64,6 +69,7 @@ function perfRun_() {
     if (done) time('student: open a set (getSet)', function () { getSet(sc, String(done.set_id), {}); return ''; });
   }
   _perfAllowInactive = false;
+  tabFromCache_ = o1; readTableSheet_ = o2; libBatch_ = o3;
   return JSON.stringify({ ok: true, version: APP_VERSION, at: nowIso_(), teacher: !!tc, total_ms: Date.now() - t0, steps: steps });
 }
 /** readTable_ without the memo or the snapshot (perf counts real reads). */
