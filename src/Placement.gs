@@ -203,6 +203,7 @@ function startPlacement_(a, c) {
  *  a repeat for a question already answered returns the question that is current now. */
 function placementNext(code, setId, payload) {
   payload = payload || {};
+  var t0 = Date.now();
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -243,8 +244,9 @@ function placementNext(code, setId, payload) {
     if (!q) throw new Error('FORM: A placement question is missing from the library. Ask your teacher.');
     q.part = SET_PART; q.display_no = qids.length;
     s.qids = f.qids; s.slots = f.slots; delete _setQ[String(s.set_id)];
-    return { ok: true, done: false, question: clientQuestion_(q, true), n: qids.length, pl: plPack_(s, q, items, form, forms, P, S),
-             match: !payload.next_qid || String(payload.next_qid) === nq };
+    var t1 = Date.now(), pk = plPack_(s, q, items, form, forms, P, S);
+    return { ok: true, done: false, question: clientQuestion_(q, true), n: qids.length, pl: pk,
+             match: !payload.next_qid || String(payload.next_qid) === nq, ms: { grade: t1 - t0, pack: Date.now() - t1 } };
   } finally { lock.releaseLock(); }
 }
 

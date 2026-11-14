@@ -45,7 +45,7 @@ function requireEditor_() {
   if (e && a.toLowerCase() !== e.toLowerCase()) throw new Error('Run this function from the Apps Script editor.');
 }
 function checkSheet() { requireEditor_(); console.log(checkSheet_()); }
-function syncLibrary() { requireEditor_(); console.log(syncLibrary_()); }
+function syncLibrary() { requireEditor_(); _forceFresh = true; console.log(syncLibrary_()); }
 
 /** Create missing tabs (with header row), append missing columns. A new, empty spreadsheet's "Sheet1" becomes README. */
 function ensureTabs_() {

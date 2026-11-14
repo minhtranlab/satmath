@@ -267,6 +267,7 @@
     if (skipFetch === true) return;
     var nav = A.homeNav = (A.homeNav || 0) + 1;
     call('homeData', A.code).then(function (r) {
+      if (nav !== A.homeNav) return;                                  // a set was opened meanwhile: this page is already old
       r._code = A.code; A.homeAt = Date.now();
       var same = have && JSON.stringify(have) === JSON.stringify(r);
       A.home = r; LS.set('sml_home', { code: A.code, name: A.student.name, home: r });
@@ -446,7 +447,7 @@
     $('#fb-name').textContent = A.student.name;
     opts = opts || {}; opts.device = deviceStr();
     var t0 = Date.now();
-    A.homeAt = 0;                                                      // home changes once a set is opened: shown, then refreshed
+    A.homeAt = 0; A.homeNav = (A.homeNav || 0) + 1;                    // home changes once a set is opened: shown, then refreshed (older fetches dropped)
     (pre && pre.ok ? Promise.resolve(pre) : call('getSet', A.code, setId, opts)).then(function (res) {
       var rtt = Date.now() - t0;
       A.offset = res.server_now + rtt / 2 - Date.now();
@@ -1222,6 +1223,7 @@
   function plSend(qid, guess, nextQid) {
     var sid = A.st.session_id, code = A.code;
     var pl = JSON.parse(JSON.stringify(payload())); pl.qid = qid; pl.guess = guess; pl.next_qid = nextQid;   // up to this answer
+    if (A.evBase === 0) { pl.events = JSON.parse(JSON.stringify(A.events)); pl.ev_from = 0; }       // all of them: the server needs not read the Events tab
     var sent = A.evBase + A.events.length;
     A.plPend = (A.plPend || 0) + 1;
     enqueue({ label: 'Your answer', run: function () {
@@ -1238,6 +1240,7 @@
     }, done: function (r) { A.plPend = Math.max(0, (A.plPend || 1) - 1); if (r && A.st && A.st.session_id === sid) plAfter(qid, r); } });
   }
   function plAfter(qid, r) {
+    try { (window.__plms = window.__plms || []).push(r.ms || null); } catch (e) {}
     if (r.other_copy) { onOtherCopy(); return; }
     if (!r.ok) { toast(r.msg || 'Could not save. Try again.', 3000); return; }
     A.acked = Math.max(A.acked, r._sent || 0);

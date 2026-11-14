@@ -74,6 +74,7 @@ var _forceFresh = false, _perfAllowInactive = false;                            
 // one CacheService round trip costs ~50 ms: a read-only call fetches the version + first chunk of every usual tab at once
 var PRELOAD_TABS_ = ['Settings', 'Students', 'Classes', 'Assignments', 'Sets', 'Responses', 'Tries', 'Levels', 'Review', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placements', 'Placement_Forms'];
 var _pre = null;
+var REF_TABS_ = ['Settings', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placement_Forms'];
 function cachedReads_() { if (_forceFresh) return; _readMode = 'cached'; preloadTabs_(); }
 function preloadTabs_() {
   _pre = null;
@@ -151,7 +152,8 @@ function tableObj_(name, headers, rows) {
 function readTable_(name) {
   if (_tables[name]) return _tables[name];
   var t = null, ver = null;
-  if (_readMode === 'cached') {
+  // #43: reference tabs (never updated by row number in a student's write call) come from the snapshot in write calls too
+  if (_readMode === 'cached' || (!_forceFresh && REF_TABS_.indexOf(name) >= 0)) {
     t = tabFromCache_(name);
     if (t) return (_tables[name] = t);
   }

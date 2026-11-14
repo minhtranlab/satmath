@@ -46,10 +46,12 @@ function doUpdate_() {
                ['skills', syncSkills_], ['skill profile', ensureSkillProfile_], ['library', syncLibrary_], ['students', syncStudents_], ['tags', syncTaggedReview_],
                ['dropdown', ensureMistakeDropdown_], ['check', checkSheet_], ['cache', flushTabCache_]];
   var notes = [], failed = 0, log = [];
+  _forceFresh = true; _readMode = 'fresh'; _tables = {};               // the update reads and writes the Sheet itself (row numbers)
   steps.forEach(function (s) {
     try { var msg = String(s[1]() || ''); log.push('[' + s[0] + '] ' + msg); notes.push(msg); }
     catch (err) { failed++; notes.push(s[0] + ' FAILED'); log.push('[' + s[0] + '] FAILED: ' + (err && err.stack || err)); }
   });
+  _forceFresh = false;
   console.log('UPDATE ' + stamp_() + '\n' + log.join('\n'));
   var line = nowIso_() + ' · ' + notes.join(' · ');
   if (!failed) writeStamp_(line);   // a failed step leaves the old stamp → the next ping / editor run tries again
