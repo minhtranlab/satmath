@@ -250,6 +250,36 @@ function placementNext(code, setId, payload) {
   } finally { lock.releaseLock(); }
 }
 
+/** #43 Read-only, no writing, from the snapshots (~1–2 s instead of the 4–6 s of placementNext): while the answer is still
+ *  being saved, the browser asks for the key of the item it already shows. The server grades the answer itself (same as
+ *  placementNext); only when its own decision gives exactly that item does it send that item's key + next items. So no
+ *  key of any other item ever goes out; placementNext stays the truth and does the writing. */
+function placementPeek(code, setId, payload) {
+  cachedReads_();
+  payload = payload || {};
+  var s = requireSet_(code, setId);
+  if (String(s.kind) !== 'placement' || isFinished_(s)) return { ok: false };
+  var qs = setQuestions_(s), cur = qs[qs.length - 1], items = plParseSlots_(s), want = String(payload.next_qid || '');
+  if (!want) return { ok: false };
+  if (cur.qid === want) return { ok: true, pl: plPackFor_(s) };                         // the answer is saved already
+  if (String(payload.qid || '') !== cur.qid) return { ok: false };
+  var S = getSettings_(), P = plParams_(), forms = plForms_(), form = String(s.level_at_start || 'A');
+  cleanEvents_(qs, payload.events);
+  var state = mergeState_(parseState_(s), payload.state, toMs_(s.created_at) - 3600000, Date.now());
+  cleanAnswers_(qs, state);
+  var g = gradeSet_(s, state, fullEvents_(s, payload)), row = g.rows[g.rows.length - 1], it = items[items.length - 1];
+  var level = String(it.slot || 'E').charAt(0), right = Number(row.try1_correct) === 1;
+  it.a = !right ? 'W' : (level !== 'H' && plBand_(level, cur.type, Number(row.time_try1_sec) || 0, S) === 'slow') ? 'S' : 'F';
+  var stt = plState_(items, P, function (d, sl) { return !!forms[form + '|' + d + '|' + sl]; });
+  if (!stt.next) return { ok: true, done: true };
+  var nq = forms[form + '|' + stt.next.dom + '|' + stt.next.slot];
+  if (nq !== want) return { ok: true, match: false };
+  items.push({ dom: stt.next.dom, slot: stt.next.slot, a: '?' });
+  var q = JSON.parse(JSON.stringify(libQuestions_([nq])[0] || null)); if (!q) return { ok: false };
+  var qids = setQids_(s).concat([nq]); q.part = SET_PART; q.display_no = qids.length;
+  return { ok: true, pl: plPack_({ set_id: s.set_id, qids: qids.join(',') }, q, items, form, forms, P, S) };
+}
+
 /** Per tested skill: the domain level, one step down when an item of the skill was missed at or below it, one step up when
  *  one was right above it (both → the domain level). Below Easy → Easy (flag). */
 function plSkillLevels_(rows, results) {

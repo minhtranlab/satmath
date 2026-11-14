@@ -41,6 +41,12 @@ console.log('[server: one key at a time]');
   const wrongA = Q[q2.qid].type === 'spr' ? '999' : ['A', 'B', 'C', 'D'].find(l => l !== String(Q[q2.qid].key).replace(/^'/, ''));
   const r2 = G.call('placementNext', ['FX-T01', st.set_id, { qid: q2.qid, state: { parts: { P1: { ans: { [cur.qid]: ans, [q2.qid]: wrongA }, cur: 1 } }, seq: 9 }, events: ev2, ev_from: 0, copy: set.copy, guess: 'F', next_qid: 'NOT-THIS' }]);
   check(r2.ok && !r2.done && r2.match === false && r1.pl.next.W && r2.question.qid === r1.pl.next.W.qid, 'the browser showed another item than the server decides → match: false + the server\'s item (the "wrong" branch)');
+  // peek (read-only): only the item the server itself decides
+  const pe = G.call('placementPeek', ['FX-T01', st.set_id, { qid: r2.question.qid, state: { parts: { P1: { ans: {}, cur: 2 } } }, events: [], ev_from: 0, copy: set.copy, next_qid: 'SOMETHING-ELSE' }]);
+  check(pe.ok && pe.match === false && !pe.pl, 'placementPeek: no key when the browser asks for an item the server does not choose');
+  const r2pl = r2.pl, Wq = r2pl.next.W && r2pl.next.W.qid;
+  const pe2 = G.call('placementPeek', ['FX-T01', st.set_id, { qid: r2.question.qid, state: { parts: { P1: { ans: {}, cur: 2 } } }, events: [], ev_from: 0, copy: set.copy, next_qid: Wq }]);
+  check(pe2.ok && pe2.pl && pe2.pl.qid === Wq && Array.isArray(dec(pe2.pl.k, st.set_id + '|' + Wq)), 'placementPeek: blank answer → the server decides "wrong" → the key of exactly that item');
   // Fix: key of the open question only
   const sp = G.call('startPractice', ['FX-T03', 'H.B', 5]);
   const s2 = G.call('getSet', ['FX-T03', sp.set_id, {}]);

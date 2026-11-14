@@ -1215,8 +1215,8 @@
       var a = !right ? 'W' : pk.level === 'H' ? 'F' : (timeOn(q.qid) <= (Number(pk.band && pk.band.max) || 1e9) ? 'F' : 'S');
       var ref = pk.next ? pk.next[a] : null;
       var nq = ref ? (pk.items || []).filter(function (x) { return x.qid === ref.qid; })[0] : null;
-      plSend(q.qid, a, nq ? nq.qid : '');
-      if (nq) plShow(nq); else plFinishing();
+      var sentPl = plSend(q.qid, a, nq ? nq.qid : '');
+      if (nq) { plShow(nq); plPeek(sentPl, nq.qid); } else plFinishing();
     };
     if (!pst().ans[q.qid]) {
       modal('Go on without an answer?', 'You cannot come back to this question. A question without an answer counts as not known.',
@@ -1242,6 +1242,17 @@
         attempt();
       });
     }, done: function (r) { A.plPend = Math.max(0, (A.plPend || 1) - 1); if (r && A.st && A.st.session_id === sid) plAfter(qid, r); } });
+    return pl;
+  }
+  /** While that answer is being saved: ask (read-only, faster) for the key of the item now on screen — the server grades the
+   *  answer itself and sends it only if its decision gives this very item. */
+  function plPeek(pl, qid) {
+    var sid = A.st.session_id;
+    call('placementPeek', A.code, sid, pl).then(function (r) {
+      if (!r || !r.ok || !r.pl || r.pl.qid !== qid || !A.st || A.st.session_id !== sid) return;
+      if (!A.plk[qid]) A.plk[qid] = r.pl;
+      if (A.plWait && curQ() && A.plk[curQ().qid]) { var f = A.plWait; A.plWait = null; plNextBtn(false); f(); }
+    }).catch(function () {});
   }
   function plAfter(qid, r) {
     try { (window.__plms = window.__plms || []).push(r.ms || null); } catch (e) {}
