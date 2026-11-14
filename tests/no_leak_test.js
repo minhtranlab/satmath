@@ -31,6 +31,12 @@ for (const f of files) {
   }
   // watermarks / source names of the real material
   if (/dsatuz|stewiesat|flashsat|@DSAT/i.test(s) && !['tests/no_leak_test.js', 'tools/build_library.py'].includes(f)) bad(f, 'source / watermark name');
+  // 2b. the GitHub Pages wrapper (#39): only index.html + icons; it loads the app, it never carries data
+  if (f.startsWith('site/')) {
+    if (!/^site\/(index\.html|icon\.svg)$/.test(f)) bad(f, 'site/ holds only index.html + icons');
+    if (/stem_html|passage_html|"key"\s*:|data:image\/|TEST-[A-Z0-9]{6}/.test(s)) bad(f, 'question data / key / figure / student code on the Pages site');
+    if ((s.match(/https?:\/\/[^\s"'<>)]+/g) || []).some(u => !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$|^http:\/\/www\.w3\.org\//.test(u))) bad(f, 'the Pages site loads something other than the app link');
+  }
   // 3. source shipped to Apps Script: no embedded form data
   if (f.startsWith('src/')) {
     if (/\\?"key\\?"\s*:\s*\\?["\[]/.test(s)) bad(f, 'answer key field ("key": …) in shipped source');

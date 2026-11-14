@@ -16,5 +16,6 @@ run node sync_test.js         # a rebuilt batch reaches the Sheet (fixed key, ve
 run node e2e_test.js          # browser: sign in → home → start 5 → answer → submit → result → review; wrong code; no key in payloads
 run node e2e_teacher_test.js  # browser: teacher page from sign-in to profile
 run node e2e_placement_test.js # browser: assign placement → one question at a time → result → teacher report
+run node site_test.js         # GitHub Pages wrapper: only the app link, noindex; laptop + phone student and teacher sign-in
 run node calc_test.js         # browser: calculator panel on laptop + phone (drag, resize, expand, close, window resize)
 echo "ALL SUITES PASSED"

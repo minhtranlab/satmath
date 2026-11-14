@@ -9,6 +9,10 @@ Spec: `02_SPEC.md` v1.1 in the project folder (not in this repo). Engine and loo
 **This repo is PUBLIC: code only.** Question text, figures, answer keys, rationales, student data, codes and tokens never
 go in here (CI `tests/no_leak_test.js` checks every file). Tests use the made-up fixture batch `FX1` only.
 
+## Link for students and the teacher
+**https://minhtranlab.github.io/satmath/** — the same app as the script.google.com link (that one keeps working). Students type their code; the teacher types the teacher code on the same screen.
+- `site/` = the GitHub Pages page (Test Zone way): it only shows the Apps Script web app full screen (iframe); no question data, keys or codes; `noindex, nofollow`. Published to the `gh-pages` branch by `bash tools/publish_site.sh` after `site/` changes. Checked by `tests/site_test.js` + `no_leak_test.js`.
+
 ## Where things are
 | What | Where |
 |---|---|
