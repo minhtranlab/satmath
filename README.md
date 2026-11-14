@@ -54,6 +54,13 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 - No Easy (S.C, S.D): an Easy slot gets Medium level 1. No Hard (Q.D, Q.E): a Hard slot gets the hardest Medium or a real Hard item.
 - Mixed Practice: skills with unfixed wrong answers first, then by weight: the 4 areas 35/35/15/15 in every set, skills inside an area by D'Hondt over their weights (a rare skill waits its turn) (`src/Profile.gs`). Review + Placement unchanged.
 
+## Navigation, home, instant next (v0.7, 14 Nov 2026)
+- Every screen is a `#hash` entry (home · set · result · view · t-<teacher screen>). Browser Back / the phone back gesture goes up one level and never leaves the app; inside a set, a test or Fix it asks "Save and leave?". Backspace outside a text box does nothing. Exit (top left in every set) = save + home at once.
+- Student home: Assigned focus card (mockup B) with Pick up beside it → Practise by skill → Mixed Practice → Review → History.
+- Placement test (option B): `getSet` / `placementNext` send `pl` = the current item's key ONLY (`encKey_`: JSON → XOR set|qid → hex) + the items each outcome leads to (F / S / W, content + figures, no keys). The browser decides and shows the next item at once; `placementNext` re-grades (truth) and returns `match: false` + its item when it decides another way (the browser swaps it). Answers go through the write queue and are retried until they arrive.
+- Fix: `getFix` sends the key of the first open question, `fixKey` the key of the question opened next (one at a time); Check shows right / wrong at once, `checkTry` records it (truth).
+- Teacher profile: Recommended assignment (3 weakest skills × 4: Weak → Easy + Medium, Medium → Medium + Hard; + their Review list) → one click (`publishAssignment` with `auto_pick`); per skill "Assign"; tick skills → one assignment; builder "Also add their Review list".
+
 ## Speed (v0.6, 14 Nov 2026)
 - Reads come from per-tab snapshots in CacheService (`smlv_<tab>` version + `smlv__epoch`, head `smlh_<tab>` + chunks `smlt_<tab>_<token>_i`, 15 min; all usual tabs fetched in one cache round trip). Every write through `appendObjects_` / `updateRow_` changes the tab's version; a hand edit in the Sheet does too (`onEdit`). A deploy flushes all (`cache` update step). Writes still read the Sheet for exact row numbers.
 - `?perf=1` on the exec URL: timings only (no data), at most once per 20 s.

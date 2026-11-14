@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.6 (2026-11-14, speed: instant clicks, saved in the background, archive classes)';
+var APP_VERSION = 'v0.7 (2026-11-14, Back/Exit, new home, instant next question, assign from profile)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -508,8 +508,9 @@ function getSet(code, setId, opts) {
       'depends on your answer. You cannot go back to a question. There is no timer, but the time on each question is recorded, so take your time ' +
       'and work carefully. You may use the Desmos calculator and the reference sheet. You can stop and continue later from your home page.</p>';
   }
+  var plk = null; if (pl) try { plk = plPackFor_(s); } catch (e) { plk = null; }                    // #43: key of the current item only
   return {
-    ok: true,
+    ok: true, pl: plk,
     session: { session_id: String(s.set_id), form_id: String(s.set_id), attempt_no: 1, student_name: String(st.name || ''),
                events_saved: Number(s.events_saved) || 0 },
     resumed: !!parseState_(s), state: parseState_(s), copy: copy, server_now: Date.now(),
@@ -678,6 +679,15 @@ function autosave(code, setId, payload) {
                                  current_q: (Number(ps.cur) || 0) + 1, progress: progressText_(qs, state) });
     return { ok: true, server_now: nowMs, events_saved: evSaved, part_starts: state.part_starts, ended: state.ended, status: 'in_progress' };
   } finally { lock.releaseLock(); }
+}
+
+/** #43: a key list for the browser, never plain: JSON, XOR with the set + question, hex. Only ever for ONE item the student
+ *  is on (placement item, Fix question) — see plPack_ and fixKey. */
+function encKey_(keys, salt) {
+  var t = unescape(encodeURIComponent(JSON.stringify(keys))), out = '';                            // UTF-8 bytes
+  salt = String(salt || 'sml');
+  for (var i = 0; i < t.length; i++) { var c = (t.charCodeAt(i) ^ salt.charCodeAt(i % salt.length) ^ (37 + i * 11) % 251) & 255; out += (c < 16 ? '0' : '') + c.toString(16); }
+  return out;
 }
 
 /* ============================== grading ============================== */
@@ -952,6 +962,10 @@ function getFix(code, setId) {
   d.max_tries = mcqMax_();
   d.best = { right: rows.filter(function (r) { return Number(r.best_correct) === 1; }).length, n: rows.length };
   d.ask_note_max = Number(getSettings_().ask_note_max) || 200;
+  // #43: the key of the first open question (the one Fix opens on), so its first Check is instant too — one question only
+  var fo = d.questions.filter(function (o) { return o.status === 'open'; })[0];
+  var fq = fo ? setQuestions_(s).filter(function (x) { return x.qid === fo.qid; })[0] : null;
+  if (fq) d.fk = { ok: true, qid: fq.qid, k: encKey_(keyList_(fq), String(setId) + '|' + fq.qid), max: mcqMax_(), letters: choiceLetters_(fq) };
   return d;
 }
 
@@ -993,6 +1007,21 @@ function checkTry(code, setId, qid, answer, timeSec) {
     return out({ correct: corr, status: corr ? 'fixed' : locked ? 'locked' : 'open', n_tries: n,
                  tries_left: (q.type || 'mcq') === 'mcq' ? Math.max(0, mcqMax_() - n) : null, tried: tried });
   } finally { lock.releaseLock(); }
+}
+
+/** #43 Fix feels instant: the key of the ONE Fix question the student has open (encoded), fetched while they think. The
+ *  browser shows right / wrong at once; checkTry still records every try and is the truth. Not for a question already
+ *  right, fixed or locked. */
+function fixKey(code, setId, qid) {
+  cachedReads_();
+  var s = requireSet_(code, setId);
+  if (!isFinished_(s) || String(s.kind) === 'placement') return { ok: false };
+  var q = setQuestions_(s).filter(function (x) { return x.qid === String(qid); })[0];
+  var r = responsesOf_(setId).filter(function (x) { return String(x.qid) === String(qid); })[0];
+  if (!q || !r) return { ok: false };
+  var fx = fixState_(q, r, triesOf_(setId, qid));
+  if (fx.status !== 'open') return { ok: false };
+  return { ok: true, qid: q.qid, k: encKey_(keyList_(q), String(setId) + '|' + q.qid), max: mcqMax_(), letters: choiceLetters_(q) };
 }
 
 /** Ask teacher on a question of a submitted set (during a set the ask rides on the autosaved state). */

@@ -54,9 +54,11 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     console.log('student home: Assigned by your teacher');
     const sp = (await E.newPage('phone')).page;
     await login(sp, E.url, 'FX-T01');
-    await sp.waitForSelector('#assigned .hz-resume button');
-    check(/Homework/.test(await sp.$eval('#assigned', e => e.innerText)) && /3 questions/.test(await sp.$eval('#assigned', e => e.innerText)), 'student (phone): card "Homework – …", 3 questions, from today');
-    await sp.click('#assigned .hz-resume button');
+    await sp.waitForSelector('#assigned .hz-btn.big');
+    const card = await sp.$eval('#assigned', e => e.innerText);
+    check(/Assigned by your teacher/i.test(card) && /Homework/.test(card) && /3\s*questions/.test(card) && !/Desmos/.test(card) && await sp.$eval('#assigned .hz-ring', e => /3/.test(e.innerText)), 'student (phone): focus card "Assigned by your teacher" · Homework – … · ring 3 questions · no Desmos line');
+    await shot(sp, 'e2e_t_student_focus');
+    await sp.click('#assigned .hz-btn.big');
     await sp.waitForSelector('#btn-begin');
     check(/Homework/.test(await sp.$eval('#tb-title', e => e.textContent)), 'Start → the assignment set opens (no timer)');
     await shot(sp, 'e2e_t_student_card');

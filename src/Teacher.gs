@@ -385,8 +385,22 @@ function studentProfile(code, sc) {
   var review = readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === c && String(r.status) === 'open'; }).length;
   return { ok: true, student: { code: c, name: String(st.name || ''), active: isYes_(st.active), classes: String(st.classes || '') },
            skills: skills, sets: sets, placements: placements, profiles: prof, mistakes: types, asks_open: asks, review_open: review,
+           recommend: recommendFor_(skills, review),
            totals: { answers: resp.length, first_try_right: resp.filter(function (r) { return Number(r.try1_correct) === 1; }).length,
                      best_right: resp.filter(function (r) { return Number(r.best_correct) === 1; }).length, tries: nTries, time_min: round_(time / 60, 1) } };
+}
+
+/** #43 Difficulties to assign for a student's level in a skill (Minh 14 Nov): Weak (Easy level) → Easy + Medium · Medium →
+ *  Medium + Hard · Strong → Hard · no level yet → Easy + Medium. */
+function diffsForLevel_(level) { return { E: 'E,M', M: 'M,H', H: 'H' }[String(level || '').toUpperCase()] || 'E,M'; }
+/** Recommended assignment: the 3 weakest skills with answers or a level (Easy level first, then Medium; lower first-try
+ *  share first; never Strong) × 4 questions at the right difficulties, + the student's Review questions. */
+function recommendFor_(skills, reviewOpen) {
+  var rank = { E: 0, M: 1, '': 1.5, H: 3 };
+  var cand = skills.filter(function (k) { return (k.level || k.n) && String(k.level) !== 'H'; }).sort(function (a, b) {
+    return rank[String(a.level)] - rank[String(b.level)] || (a.n ? a.right / a.n : 0.5) - (b.n ? b.right / b.n : 0.5) || b.n - a.n;
+  }).slice(0, 3);
+  return { topics: cand.map(function (k) { return { code: k.skill, name: k.name, level: String(k.level || ''), n: 4, diffs: diffsForLevel_(k.level) }; }), review: reviewOpen || 0 };
 }
 
 /* ============================== assignments (§7) ============================== */
@@ -490,6 +504,15 @@ function pickAssignment(code, spec) {
              picked: picked.map(function (r) { var o = item(r); o.extra = diffs.indexOf(String(r.difficulty).toUpperCase()) < 0; return o; }),
              queue: queue.slice(0, 30).map(item) };
   });
+  // #43: + the questions of the student's Review list (one student only), not already picked above
+  if (spec.review && T.kind === 'student' && mem.length === 1) {
+    var byQ = {}; questionRows_().forEach(function (r) { byQ[String(r.qid)] = r; });
+    var live = {}; pool.forEach(function (r) { live[String(r.qid)] = 1; });
+    var rv = readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === mem[0] && String(r.status) === 'open' && live[String(r.qid)] && !used[String(r.qid)]; }).slice(0, 10);
+    if (rv.length) topics.push({ code: 'REVIEW', name: 'From their Review list', n: rv.length, diffs: '', available: rv.length, short: '', notes: [], review: true, queue: [],
+      picked: rv.map(function (x) { var r = byQ[String(x.qid)] || {}; used[String(x.qid)] = 1;
+        return { qid: String(x.qid), code: clean_(r.code), difficulty: String(r.difficulty || ''), level: r.level || '', subskill: clean_(r.subskill), subskill_name: subskillName_(clean_(r.subskill)), status: 'in their Review list' }; }) });
+  }
   return { ok: true, target: { kind: T.kind, id: T.id, title: T.title, members: mem.length }, topics: topics };
 }
 /** Publish (or save as draft) an assignment with the frozen list of questions. */
@@ -503,6 +526,11 @@ function publishAssignment(code, a) {
     var fm = plForms_(), slots = Object.keys(fm).filter(function (k) { return form === 'AUTO' || k.indexOf(form + '|') === 0; });
     if (!slots.length) throw new Error('FORM: The placement forms are not in the Sheet yet (tab Placement_Forms).');
   } else {
+    if (a.auto_pick && !(a.qids || []).length) {                    // #43 Recommended assignment: pick + publish in one click
+      var pk = pickAssignment(code, { target: a.target, topics: (a.topics || []).filter(function (t) { return t.code !== 'REVIEW'; }), review: !!a.review });
+      a.qids = []; pk.topics.forEach(function (t) { t.picked.forEach(function (x) { a.qids.push(x.qid); }); });
+      _readMode = 'fresh'; _tables = {};                             // the write below reads the Sheet itself
+    }
     var known = {}; livePool_().forEach(function (r) { known[String(r.qid)] = 1; });
     qids = (a.qids || []).map(String).filter(function (q, i, arr) { return known[q] && arr.indexOf(q) === i; });
     if (!qids.length) throw new Error('FORM: Pick the questions first.');
@@ -538,9 +566,14 @@ function assignmentsFor_(c, sets) {
     if (s && isFinished_(s)) return null;
     var stt = s ? parseState_(s) || {} : {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length, n = setQids_(a).length;
     var due = fmtDay_(a.due), when = 'from ' + dayStr_(fmtDay_(a.available_from)) + (due ? ' · due ' + dayStr_(due, true) : '');
-    if (String(a.kind) === 'placement') return { assignment_id: String(a.assignment_id), title: String(a.title), placement: true, n: 0, when: when,
+    if (String(a.kind) === 'placement') return { assignment_id: String(a.assignment_id), title: String(a.title), placement: true, n: 0, when: when, due: due ? dayStr_(due, true) : '',
       set_id: s ? String(s.set_id) : '', answered: s ? Math.max(0, (Number(s.n) || 1) - 1) : 0 };
-    return { assignment_id: String(a.assignment_id), title: String(a.title), n: n, when: when, set_id: s ? String(s.set_id) : '', answered: nAns };
+    // #43 focus card: the skills and difficulties of the assignment (from its topics) + the due day
+    var tp = []; try { tp = JSON.parse(String(a.topics || '[]')) || []; } catch (e) {}
+    var sk = [], df = {};
+    tp.forEach(function (t) { var nm = skillName_(t.code); if (nm && sk.indexOf(nm) < 0) sk.push(nm); String(t.diffs || '').toUpperCase().split(/[^EMH]+/).forEach(function (d) { if (d) df[d] = 1; }); });
+    return { assignment_id: String(a.assignment_id), title: String(a.title), n: n, when: when, set_id: s ? String(s.set_id) : '', answered: nAns,
+             due: due ? dayStr_(due, true) : '', skills: sk.slice(0, 3), more_skills: Math.max(0, sk.length - 3), diffs: ['E', 'M', 'H'].filter(function (d) { return df[d]; }).join(',') };
   }).filter(Boolean);
 }
 function dayStr_(ymd, withDay) {

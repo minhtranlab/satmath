@@ -158,6 +158,34 @@ function plFormFor_(form, codeN) {
   return h.length && clean_(h[0].form).toUpperCase() === 'A' ? 'B' : 'A';
 }
 
+/* ---------------- #43 seamless placement (Minh chose option B, 14 Nov 21:04) ----------------
+   With the current item the browser gets ONLY that item's key (encoded, encKey_) + its time band, and the items each outcome
+   leads to — F right in time · S right but slow (not at Hard) · W wrong — as content + figures, without keys. The browser
+   decides and shows the next item at once; placementNext still grades every answer and is the truth (if it decides another
+   way, the browser swaps the item it showed). Keys of other items or of the form never leave the server. */
+function plPack_(s, cur, items, form, forms, P, S) {
+  var it = items[items.length - 1]; if (!it || !cur) return null;
+  var level = String(it.slot || 'E').charAt(0), nm = { E: 'easy', M: 'medium', H: 'hard' }[level] || 'medium';
+  var extra = String(cur.type) === 'spr' ? Number(S.pl_spr_extra_sec) || 0 : 0;
+  var has = function (d, sl) { return !!forms[form + '|' + d + '|' + sl]; };
+  var next = {}, need = [];
+  (level === 'H' ? ['F', 'W'] : ['F', 'S', 'W']).forEach(function (a) {
+    var copy = items.map(function (x) { return { dom: x.dom, slot: x.slot, a: x.a }; }); copy[copy.length - 1].a = a;
+    var st = plState_(copy, P, has), q = st.next ? forms[form + '|' + st.next.dom + '|' + st.next.slot] : '';
+    next[a] = q ? { qid: q } : null;
+    if (q && need.indexOf(q) < 0) need.push(q);
+  });
+  if (level === 'H') next.S = next.F;
+  var n = setQids_(s).length;
+  var qs = libQuestions_(need).map(function (q) { var o = JSON.parse(JSON.stringify(q)); o.part = SET_PART; o.display_no = n + 1; return clientQuestion_(o, true); });
+  return { qid: String(cur.qid), k: encKey_(keyList_(cur), String(s.set_id) + '|' + cur.qid), level: level,
+           band: { max: (Number(S['pl_' + nm + '_max_sec']) || 0) + extra }, next: next, items: qs };
+}
+function plPackFor_(s) {
+  var qs = setQuestions_(s), items = plParseSlots_(s);
+  return plPack_(s, qs[qs.length - 1], items, String(s.level_at_start || 'A'), plForms_(), plParams_(), getSettings_());
+}
+
 /* ---------------- student side ---------------- */
 /** Called by startAssignment for an assignment of kind placement: makes the set with its first question. */
 function startPlacement_(a, c) {
@@ -183,7 +211,7 @@ function placementNext(code, setId, payload) {
     if (isFinished_(s)) return { ok: true, done: true, result: placementStudentView_(s) };
     if (staleCopy_(s, payload)) return otherCopy_();
     var qs = setQuestions_(s), cur = qs[qs.length - 1], items = plParseSlots_(s);
-    if (String(payload.qid || '') !== cur.qid) return { ok: true, done: false, question: clientQuestion_(cur, true), n: qs.length, repeat: true };
+    if (String(payload.qid || '') !== cur.qid) return { ok: true, done: false, question: clientQuestion_(cur, true), n: qs.length, repeat: true, pl: plPackFor_(s) };
     var S = getSettings_(), P = plParams_(), forms = plForms_(), form = String(s.level_at_start || 'A');
     cleanEvents_(qs, payload.events);
     var state = mergeState_(parseState_(s), payload.state, toMs_(s.created_at) - 3600000, Date.now());
@@ -214,7 +242,9 @@ function placementNext(code, setId, payload) {
     var q = JSON.parse(JSON.stringify(libQuestions_([nq])[0] || null));
     if (!q) throw new Error('FORM: A placement question is missing from the library. Ask your teacher.');
     q.part = SET_PART; q.display_no = qids.length;
-    return { ok: true, done: false, question: clientQuestion_(q, true), n: qids.length };
+    s.qids = f.qids; s.slots = f.slots; delete _setQ[String(s.set_id)];
+    return { ok: true, done: false, question: clientQuestion_(q, true), n: qids.length, pl: plPack_(s, q, items, form, forms, P, S),
+             match: !payload.next_qid || String(payload.next_qid) === nq };
   } finally { lock.releaseLock(); }
 }
 

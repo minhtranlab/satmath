@@ -93,7 +93,7 @@
 
   /* ================= classes (start screen) ================= */
   function showHome() {
-    T.view = 'home'; closePanel();
+    T.view = 'home'; X.nav('t-home'); closePanel(); T.backing = false; T.hist = [{ go: showHome }];
     return load('home', 'teacherHome', [], renderHome, 'Loading your classes…');
   }
   function renderHome(r) {
@@ -185,7 +185,8 @@
 
   /* ================= class screen ================= */
   function openClass(target, scope, quiet) {
-    T.view = 'class'; T.target = target; T.scopeArg = scope || ''; if (!quiet) closePanel();
+    if (!quiet) track(function () { openClass(target, scope); }, '', 'cl|' + target + '|' + (scope || ''));
+    T.view = 'class'; X.nav('t-class'); T.target = target; T.scopeArg = scope || ''; if (!quiet) closePanel();
     var key = 'cv|' + target + '|' + (scope || '');
     return load(key, 'classView', [target, scope || ''], function (r) {
       T.cv = r; renderClass();
@@ -366,7 +367,8 @@
 
   /* ================= Asked inbox ================= */
   function showAsks() {
-    T.view = 'asks'; closePanel();
+    track(showAsks, '', 'asks');
+    T.view = 'asks'; X.nav('t-asks'); closePanel();
     return load('asks', 'asksInbox', [], renderAsks, 'Loading the questions students asked…');
   }
   function renderAsks(r) {
@@ -391,7 +393,8 @@
 
   /* ================= student profile ================= */
   function openProfile(sc) {
-    T.view = 'profile'; T.pcode = sc; closePanel();
+    track(function () { openProfile(sc); }, '', 'p|' + sc);
+    T.view = 'profile'; X.nav('t-profile'); T.pcode = sc; closePanel();
     return load('prof|' + sc, 'studentProfile', [sc], renderProfile, 'Loading the student…');
   }
   function renderProfile(r) {
@@ -401,6 +404,7 @@
         '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-ren">Rename</button><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button></div></div>';
       h += '<div class="t-stats"><div><b>' + t.answers + '</b>answers</div><div><b>' + pct(t.first_try_right, t.answers) + '</b>first try</div><div><b>' + pct(t.best_right, t.answers) + '</b>best</div>' +
         '<div><b>' + t.tries + '</b>tries</div><div><b>' + t.time_min + '</b>minutes</div><div><b>' + r.review_open + '</b>in Review</div><div><b>' + r.asks_open + '</b>asked</div></div>';
+      h += recBox(s.code, r.recommend);
       var pf = r.profiles, mk = r.mistakes;
       h += '<p class="t-line">Timing: ' + [['FAST_WRONG', 'Rushed and wrong'], ['SLOW_WRONG', "Didn't know (slow, wrong)"], ['WRONG', 'Wrong'], ['SLOW_RIGHT', 'Slow but right'], ['RIGHT', 'Right'], ['BLANK', 'Blank']]
         .map(function (x) { return x[1] + ' <b>' + (pf[x[0]] || 0) + '</b>'; }).join(' · ') + '</p>';
@@ -412,12 +416,13 @@
               '<td><button type="button" class="hz-link" data-plrep="' + esc(p.set_id) + '">Report</button></td></tr>';
           }).join('') + '</table>';
       }
-      h += '<h2 class="t-h2">Level per skill</h2><table class="t-table t-lv"><tr><th>Skill</th><th>Level</th><th>Recent</th><th>Good sets in a row</th><th>First try</th></tr>' + r.skills.map(function (k, i) {
-        return '<tr class="' + (k.n ? '' : 'off') + '"><td>' + (k.subs.length ? '<button type="button" class="hz-link" data-sub="' + i + '">' + esc(k.name) + '</button>' : esc(k.name)) + '<div class="muted t-dom">' + esc(k.domain) + '</div></td>' +
+      h += '<div class="t-h2row"><h2 class="t-h2">Level per skill</h2><span class="t-multi"><span class="muted" id="t-lv-cnt">Tick skills to give them in one assignment.</span><button type="button" class="btn-outline" id="t-lv-asg" disabled>Assign ticked skills</button></span></div>' +
+        '<div class="t-tw"><table class="t-table t-lv"><tr><th class="t-ck"></th><th>Skill</th><th>Level</th><th>Recent</th><th>Good sets in a row</th><th>First try</th><th></th></tr>' + r.skills.map(function (k, i) {
+        return '<tr class="' + (k.n ? '' : 'off') + '"><td class="t-ck"><input type="checkbox" class="t-lv-ck" data-k="' + i + '" aria-label="Tick ' + esc(k.name) + '"></td><td>' + (k.subs.length ? '<button type="button" class="hz-link" data-sub="' + i + '">' + esc(k.name) + '</button>' : esc(k.name)) + '<div class="muted t-dom">' + esc(k.domain) + '</div></td>' +
           '<td>' + (k.level ? '<span class="t-lvl ' + k.level + '">' + diffName(k.level) + '</span>' : '<span class="muted">—</span>') + '</td><td>' + (k.recent === null ? '' : Math.round(k.recent * 100) + '%') + '</td><td>' + (k.level ? k.streak : '') + '</td>' +
-          '<td>' + (k.n ? dotHtml(k.dot) + k.right + '/' + k.n : '') + '</td></tr>' +
-          (k.subs.length ? '<tr class="t-subs" id="t-sub-' + i + '" hidden><td colspan="5">' + k.subs.map(function (x) { return '<span>' + dotHtml(x.dot) + esc(x.name) + ' ' + x.right + '/' + x.n + '</span>'; }).join('') + '</td></tr>' : '');
-      }).join('') + '</table>';
+          '<td>' + (k.n ? dotHtml(k.dot) + k.right + '/' + k.n : '') + '</td><td><button type="button" class="hz-link t-lv-one" data-k="' + i + '" title="' + esc(diffsFor(k.level).split(',').map(diffName).join(' + ')) + '">Assign</button></td></tr>' +
+          (k.subs.length ? '<tr class="t-subs" id="t-sub-' + i + '" hidden><td colspan="7">' + k.subs.map(function (x) { return '<span>' + dotHtml(x.dot) + esc(x.name) + ' ' + x.right + '/' + x.n + '</span>'; }).join('') + '</td></tr>' : '');
+      }).join('') + '</table></div>';
       h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<table class="t-table"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th></th></tr>' + r.sets.map(function (x, i) {
         return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td><td>' + (x.time_min ? x.time_min + ' min' : '') + '</td>' +
           '<td>' + (x.done && x.kind === 'placement' ? '<button type="button" class="hz-link" data-plrep="' + esc(x.set_id) + '">Report</button>'
@@ -434,6 +439,13 @@
           function (m) { var i = $('[name=name]', m); if (i) i.select(); }).then(function (x) { if (x.v) setStudent(r, { name: String(x.vals.name).trim() }); });
       };
       $$('[data-sub]', body()).forEach(function (b) { b.onclick = function () { var tr = $('#t-sub-' + b.getAttribute('data-sub')); tr.hidden = !tr.hidden; }; });
+      recBind(s.code, r.recommend || {});
+      var topicOf = function (k) { return { code: k.skill, n: 4, diffs: diffsFor(k.level) }; };
+      $$('.t-lv-one', body()).forEach(function (b) { b.onclick = function () { openBuilder('st:' + s.code, { topics: [topicOf(r.skills[+b.getAttribute('data-k')])] }); }; });
+      var cks = $$('.t-lv-ck', body()), multi = $('#t-lv-asg');
+      var upd = function () { var n = cks.filter(function (c) { return c.checked; }).length; multi.disabled = !n; multi.textContent = n ? 'Assign ' + n + (n === 1 ? ' skill' : ' skills') : 'Assign ticked skills'; };
+      cks.forEach(function (c) { c.onchange = upd; });
+      multi.onclick = function () { var t = cks.filter(function (c) { return c.checked; }).map(function (c) { return topicOf(r.skills[+c.getAttribute('data-k')]); }); if (t.length) openBuilder('st:' + s.code, { topics: t }); };
       $$('[data-plrep]', body()).forEach(function (b) { b.onclick = function () { openPlacement(b.getAttribute('data-plrep')); }; });
       $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
         var x = r.sets[+b.getAttribute('data-res')];
@@ -453,9 +465,66 @@
       done: function () { stale(/^(home|cv\||tree\|)/); } });
   }
 
+
+  /** #43 browser Back on the teacher page = the screen before (a list of the screens opened, not the "← Classes" link). */
+  function track(go, tag, key) {
+    if (T.backing) { T.backing = false; return; }
+    T.hist = T.hist || []; var top = T.hist[T.hist.length - 1];
+    if (top && key && top.key === key) { top.go = go; return; }                // the same screen again (a refresh)
+    T.hist.push({ go: go, tag: tag || '', key: key || '' }); if (T.hist.length > 40) T.hist.shift();
+  }
+
+  /* ================= #43 assign from the student summary ================= */
+  function diffsFor(l) { return { E: 'E,M', '<E': 'E,M', M: 'M,H', H: 'H' }[String(l || '')] || 'E,M'; }
+  function hwTitle() { return 'Homework – ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); }
+  function todayStr() { return new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10); }
+  /** "Recommended assignment": editable rows (skill · n · difficulties), the Review list, one click Assign. */
+  function recBox(code, rec) {
+    var t = (rec && rec.topics) || [], rv = (rec && rec.review) || 0;
+    if (!t.length && !rv) return '<section class="t-rec" id="t-rec"><div class="t-rec-h"><h2>Recommended assignment</h2></div><p class="muted">Not enough answers yet to recommend skills. Give a Placement test first, or build one with New assignment.</p></section>';
+    return '<section class="t-rec" id="t-rec" data-code="' + esc(code) + '"><div class="t-rec-h"><h2>Recommended assignment</h2><span class="muted">' +
+      (t.length ? 'The ' + (t.length === 1 ? 'weakest skill' : t.length + ' weakest skills') + ' at the right level' : '') + (rv ? (t.length ? ', plus ' : '') + 'their Review list' : '') + '. Change anything, then Assign.</span></div>' +
+      '<div class="t-rec-rows">' + t.map(function (k, i) {
+        var ds = String(k.diffs || '').split(',');
+        return '<div class="t-rec-row" data-ri="' + i + '" data-code="' + esc(k.code) + '"><label class="b-tick"><input type="checkbox" class="r-on" checked> <b>' + esc(k.name) + '</b></label>' +
+          (k.level ? '<span class="t-lvl ' + esc(k.level === '<E' ? 'E' : k.level) + '">' + diffName(k.level === '<E' ? 'E' : k.level) + '</span>' : '<span class="muted">no level yet</span>') +
+          '<span class="b-set"><input type="number" class="field b-n" min="1" max="20" value="' + (k.n || 4) + '" aria-label="Number of questions">' +
+          ['E', 'M', 'H'].map(function (d) { return '<label class="b-d"><input type="checkbox" class="r-d" value="' + d + '"' + (ds.indexOf(d) >= 0 ? ' checked' : '') + '> ' + diffName(d) + '</label>'; }).join('') + '</span></div>';
+      }).join('') +
+      (rv ? '<div class="t-rec-row rv"><label class="b-tick"><input type="checkbox" id="t-rec-rv" checked> <b>Their Review list</b></label><span class="muted">' + rv + (rv === 1 ? ' question' : ' questions') + ' (up to 10)</span></div>' : '') +
+      '</div><div class="t-rec-go"><button type="button" class="btn-blue" id="t-rec-asg">Assign</button><button type="button" class="hz-link" id="t-rec-edit">Change the questions in the builder</button></div></section>';
+  }
+  function recRead() {
+    var topics = $$('#t-rec .t-rec-row[data-code]').filter(function (r) { return $('.r-on', r).checked; }).map(function (r) {
+      return { code: r.getAttribute('data-code'), n: Math.max(1, Math.min(20, +$('.b-n', r).value || 4)), diffs: $$('.r-d', r).filter(function (x) { return x.checked; }).map(function (x) { return x.value; }).join(',') };
+    });
+    var rvb = $('#t-rec-rv');
+    return { topics: topics, review: !!(rvb && rvb.checked) };
+  }
+  function recBind(code, rec) {
+    var go = $('#t-rec-asg'); if (!go) return;
+    var label = function () {
+      var x = recRead(), n = x.topics.reduce(function (a, t) { return a + t.n; }, 0) + (x.review ? Math.min(10, rec.review || 0) : 0);
+      go.textContent = n ? 'Assign ' + n + ' questions' : 'Assign'; go.disabled = !n;
+    };
+    $$('#t-rec input').forEach(function (i) { i.addEventListener('change', label); i.addEventListener('input', label); });
+    label();
+    go.onclick = function () {
+      var x = recRead();
+      var bad = x.topics.filter(function (t) { return !t.diffs; })[0];
+      if (bad) { toast('Tick Easy, Medium or Hard for every skill.', 2500); return; }
+      if (!x.topics.length && !x.review) return;
+      var n = x.topics.reduce(function (a, t) { return a + t.n; }, 0) + (x.review ? Math.min(10, rec.review || 0) : 0);
+      publishNow({ target: 'st:' + code, title: hwTitle(), available_from: todayStr(), due: '', topics: x.topics, review: x.review, auto_pick: true, n_hint: n }, n + ' questions');
+    };
+    $('#t-rec-edit').onclick = function () { var x = recRead(); openBuilder('st:' + code, x); };
+  }
+
   /* ================= assignment builder (§7) ================= */
-  function openBuilder(target) {
-    T.view = 'build'; closePanel(); ++NAV; if (!T.home) spin('Loading…');
+  function openBuilder(target, preset) {
+    track(function () { openBuilder(target, preset); }, 'build', 'b|' + target);
+    T.view = 'build'; X.nav('t-build'); closePanel(); ++NAV; if (!T.home) spin('Loading…');
+    T.preset = preset || null;
     var go = function () {
       var h = T.home;
       var opts = '<option value="">— choose a student or a class —</option><optgroup label="Classes">' + h.classes.filter(function (c) { return c.active; }).map(function (c) { return '<option value="' + esc(c.class_id) + '">' + esc(c.name) + '</option>'; }).join('') + '</optgroup>' +
@@ -515,8 +584,26 @@
         return '<details class="b-dom" open><summary>' + esc(d.name) + '</summary>' + d.skills.map(function (k) {
           return '<div class="b-skill">' + topic(k.code, k.name, k.count, false, k.profile) + '<details class="b-subs"><summary class="muted">Sub-skills</summary>' + k.subs.map(function (x) { return topic(x.code, x.name, x.count, true); }).join('') + '</details></div>';
         }).join('') + '</details>';
-      }).join('') + '<p><button type="button" class="btn-blue" id="b-pickbtn">Pick questions</button></p>';
+      }).join('') + (/^st:/.test(target) ? '<p><label class="b-rv"><input type="checkbox" id="b-review"> Also add the questions from their Review list</label></p>' : '') +
+        '<p><button type="button" class="btn-blue" id="b-pickbtn">Pick questions</button></p>';
       $$('.b-on', box).forEach(function (c) { c.onchange = function () { c.closest('.b-topic').classList.toggle('on', c.checked); }; });
+      // #43 pre-filled from the student summary: the skills ticked, n and difficulties set
+      var pre = T.preset; T.preset = null;
+      if (pre) {
+        var none = [];
+        (pre.topics || []).forEach(function (t, i) {
+          var tp = $('.b-skill > .b-topic[data-code="' + t.code + '"]', box); if (!tp) return;
+          var on = $('.b-on', tp); if (on.disabled) { none.push(tp.textContent.trim().split('\n')[0]); return; }
+          on.checked = true; tp.classList.add('on'); $('.b-n', tp).value = t.n || 4;
+          var ds = String(t.diffs || '').split(',');
+          $$('.b-diff', tp).forEach(function (d) { d.checked = ds.indexOf(d.value) >= 0 && !d.disabled; });
+          if (!$$('.b-diff', tp).some(function (d) { return d.checked; })) { var m = $$('.b-diff', tp).filter(function (d) { return !d.disabled; })[0]; if (m) m.checked = true; }
+          var dom = tp.closest('details.b-dom'); if (dom) dom.open = true;
+          if (i === 0) setTimeout(function () { try { tp.scrollIntoView({ block: 'center' }); } catch (e) {} }, 50);
+        });
+        if (pre.review && $('#b-review')) $('#b-review').checked = true;
+        if (none.length) toast('No questions in the library yet for: ' + none.join(', '), 4000);
+      }
       $('#b-pickbtn').onclick = function () { pick(target); };
     }).catch(function (e) { box.innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; });
   }
@@ -528,14 +615,15 @@
     var bad = topics.filter(function (t) { return !t.diffs; })[0];
     if (bad) { toast('Tick Easy, Medium or Hard for every topic.', 2500); return; }
     var box = $('#b-pick'); box.innerHTML = '<div class="spinner"></div><p class="muted t-wait">Picking the questions…</p>';
-    call('pickAssignment', A.code, { target: target, topics: topics }).then(function (r) {
+    var rvb = $('#b-review');
+    call('pickAssignment', A.code, { target: target, topics: topics, review: !!(rvb && rvb.checked) }).then(function (r) {
       T.pick = r; T.pickTopics = topics; renderPick();
     }).catch(function (e) { box.innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; });
   }
   function renderPick() {
     var r = T.pick, box = $('#b-pick'), total = r.topics.reduce(function (a, t) { return a + t.picked.length; }, 0);
     box.innerHTML = '<h2 class="t-h2">Questions (' + total + ') for ' + esc(r.target.title) + '</h2>' + r.topics.map(function (t, ti) {
-      return '<div class="b-ptopic"><h3>' + esc(t.name) + ' <span class="muted">' + t.n + ' · ' + t.diffs.split(',').map(diffName).join(' + ') + '</span>' + (t.short ? ' <span class="t-red">' + esc(t.short) + '</span>' : '') + '</h3>' +
+      return '<div class="b-ptopic"><h3>' + esc(t.name) + ' <span class="muted">' + t.n + (t.diffs ? ' · ' + t.diffs.split(',').map(diffName).join(' + ') : '') + '</span>' + (t.short ? ' <span class="t-red">' + esc(t.short) + '</span>' : '') + '</h3>' +
         (t.notes && t.notes.length ? '<p class="b-note">' + t.notes.map(esc).join('<br>') + '</p>' : '') +
         t.picked.map(function (x, i) {
           return '<div class="b-item">' + codeHtml(x.code) + '<span>' + esc(x.subskill_name) + ' · ' + (x.extra ? '<b class="b-extra">' + diffName(x.difficulty) + ' (added)</b>' : diffName(x.difficulty)) + '</span><span class="' + (x.status === 'new for all' ? 'muted' : 't-red') + '">' + esc(x.status) + '</span>' +
@@ -550,20 +638,20 @@
     }; });
     $('#b-publish').onclick = function () {
       var qids = []; r.topics.forEach(function (t) { t.picked.forEach(function (x) { qids.push(x.qid); }); });
-      publishNow({ target: $('#b-to').value, title: $('#b-title').value, available_from: $('#b-from').value, due: $('#b-due').value, qids: qids, topics: T.pickTopics }, qids.length + ' questions');
+      publishNow({ target: $('#b-to').value, title: $('#b-title').value, available_from: $('#b-from').value, due: $('#b-due').value, qids: qids, topics: T.pickTopics.concat(r.topics.some(function (t) { return t.review; }) ? [{ code: 'REVIEW', n: r.topics.filter(function (t) { return t.review; })[0].picked.length, diffs: '' }] : []) }, qids.length + ' questions');
     };
   }
 
   /** Publish: the class screen opens at once on Assignments with the new one marked "Publishing…"; saved in the background. */
   function publishNow(a, what) {
     var key = 'cv|' + a.target + '|', tmp = { assignment_id: 'tmp-' + Date.now(), title: a.title || 'New assignment', kind: a.kind === 'placement' ? 'placement' : 'questions', form: a.form || '',
-      n: (a.qids || []).length, available_from: a.available_from || '', due: a.due || '', status: 'publishing…', students: [] };
+      n: (a.qids || []).length || a.n_hint || 0, available_from: a.available_from || '', due: a.due || '', status: 'publishing…', students: [] };
     var h = T.home || { classes: [], students: [] }, names = {}; h.students.forEach(function (x) { names[x.code] = x.name; });
     var cls = h.classes.filter(function (c) { return c.class_id === a.target; })[0];
     var codes = /^st:/.test(a.target) ? [a.target.slice(3)] : cls ? cls.members.map(function (m) { return m.code; }) : [];
     tmp.students = codes.map(function (c) { return { code: c, name: names[c] || c, state: 'not started', n: 0, first_try: null, best: null, set_id: '' }; });
     save({ fn: 'publishAssignment', args: [a], label: 'Publishing "' + tmp.title + '"',
-      apply: function () { if (C[key]) C[key].d.assignments.push(tmp); T.tab = 'asg'; openClass(a.target); },
+      apply: function () { if (C[key]) C[key].d.assignments.push(tmp); T.tab = 'asg'; var top = T.hist && T.hist[T.hist.length - 1]; if (top && top.tag === 'build') T.hist.pop(); openClass(a.target); },
       undo: function () { if (C[key]) C[key].d.assignments = C[key].d.assignments.filter(function (x) { return x !== tmp; }); if (T.view === 'class' && T.cv) renderClass(); },
       done: function () { tmp.status = 'published'; toast('Published: ' + what + '.', 2500); refreshLater(/^(home|cv\|)/); } });
   }
@@ -577,7 +665,8 @@
   }
   function openPlacement(setId) {
     var back = T.view === 'profile' && T.pcode ? T.pcode : null, prevView = T.view;
-    T.view = 'placement'; closePanel();
+    track(function () { openPlacement(setId); }, '', 'pl|' + setId);
+    T.view = 'placement'; X.nav('t-placement'); closePanel();
     load('pl|' + setId, 'placementReport', [setId], function (r) { renderPlacementReport(r, back); }, 'Loading the report…');
   }
   function renderPlacementReport(r, back) {
@@ -593,6 +682,7 @@
       }).join('') + '</div>';
       h += '<h2 class="t-h2">Teach first</h2>' + (r.teach_first.length ? '<ol class="pl-teach" id="pl-teach">' + r.teach_first.map(function (k) { return '<li><b>' + esc(k.name) + '</b> <span class="muted">' + esc(PL_SHORT[k.dom]) + ' · ' + k.right + '/' + k.n + ' right</span> ' + plLvl(k.level) + '</li>'; }).join('') + '</ol>'
         : '<p class="muted">Nothing below Strong among the skills tested.</p>');
+      if (r.done) h += recBox(r.student_code, { topics: r.teach_first.map(function (k) { return { code: k.skill, name: k.name, level: k.level, n: 4, diffs: diffsFor(k.level) }; }), review: 0 });
       h += '<h2 class="t-h2">Skills tested</h2><table class="t-table"><tr><th>Skill</th><th>Area</th><th>Right</th><th>Level now</th>' + (r.previous ? '<th>Before</th>' : '') + '</tr>' + r.skills.map(function (k) {
         return '<tr><td>' + esc(k.name) + '</td><td class="muted">' + esc(PL_SHORT[k.dom]) + '</td><td>' + k.right + '/' + k.n + '</td><td>' + plLvl(k.level) + '</td>' + (r.previous ? '<td>' + plLvl(r.previous.skills[k.skill] || '') + '</td>' : '') + '</tr>';
       }).join('') + '</table>';
@@ -607,6 +697,7 @@
       body().innerHTML = h; bindCopies(body());
       $('#t-back').onclick = function () { if (back) openProfile(back); else showHome(); };
       $('#pl-prof').onclick = function () { openProfile(r.student_code); };
+      recBind(r.student_code, { review: 0 });
       $$('#pl-items tr[data-q]').forEach(function (tr) { tr.onclick = function () { T.cv = null; openPanel(tr.getAttribute('data-q')); }; });
     }
   }
@@ -617,7 +708,7 @@
     $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openBuilder(''); }; });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
   }
-  window.SMLT = { init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
+  window.SMLT = { back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
   if (window.SMLX) init();
 })();
 </script>

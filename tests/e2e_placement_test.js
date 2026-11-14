@@ -76,7 +76,8 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     const cur = await page.$eval('#qwrap .q.on', e => e.getAttribute('data-qid'));
     await page.click('#tool-more'); await page.waitForSelector('#mm-save', { state: 'visible' });
     await page.click('#mm-save'); await page.waitForSelector('#placement-card');
-    check(/3 answered/.test(await page.$eval('#placement-card', e => e.innerText)), 'More → Save and continue later → home: "Continue · 3 answered"');
+    await page.waitForFunction(() => /3\s*answered/i.test(document.querySelector('#placement-card').innerText), null, { timeout: 10000 }).catch(() => {});
+    check(/3\s*answered/i.test(await page.$eval('#placement-card', e => e.innerText)) && /Continue/.test(await page.$eval('#placement-card .hz-btn', e => e.textContent)), 'More → Save and continue later → home: focus card "Continue", ring "3 answered"');
     await page.click('#placement-card .hz-btn');
     await page.waitForSelector('#v-directions.on, #v-question.on');
     if (await page.$('#v-directions.on')) { check(true, 'continue → directions again (Begin)'); await page.click('#v-directions.on #btn-begin'); }

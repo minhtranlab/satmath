@@ -122,7 +122,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     check(Number(bs2.split('/')[0]) === Number(ft.split('/')[0]) + 1, 'Best Score after the fix: ' + bs2 + ' (First Try still ' + await page.$eval('#score-first .v', e => e.textContent) + ')');
     await page.click('#res-home');
     await page.waitForSelector('#history');
-    check(await page.$eval('#assigned', e => /Nothing from your teacher/.test(e.innerText)), 'home: "Assigned by your teacher" (empty for now)');
+    check(await page.$eval('#assigned', e => /Assigned by your teacher/i.test(e.innerText) && /No assignment right now/.test(e.innerText)), 'home: "Assigned by your teacher" — "No assignment right now"');
     check(/Mixed Practice/.test(await page.$eval('#mixed-card', e => e.innerText)) && (await page.$$('#mixed-card [data-mn]')).length === 3, 'home: "Mixed Practice" card with 5 / 10 / 20');
     check(/\d+ questions? to review/.test(await page.$eval('#review-card', e => e.innerText)), 'home: Review card "n questions to review"');
     await shot(page, 'e2e_home2');

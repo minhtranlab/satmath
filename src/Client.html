@@ -56,7 +56,7 @@
     if (!job) { if (!WQ.failed) saveDot('ok'); var f = WQ.idle; WQ.idle = []; f.forEach(function (fn) { try { fn(); } catch (e) {} }); return; }
     WQ.busy = true;
     var attempt = function (n) {
-      call.apply(null, [job.fn].concat(job.args)).then(function (r) {
+      (job.run ? job.run() : call.apply(null, [job.fn].concat(job.args))).then(function (r) {
         WQ.list.shift(); WQ.busy = false;
         try { if (job.done) job.done(r); } catch (e) {}
         job.ok(r); pump();
@@ -110,7 +110,57 @@
   function untimed() { var d = A.parts && A.parts[curPart()]; return !!(A.profile && A.profile.untimed) || !!(d && !Number(d.time_limit_sec)); }
 
   /* ---------------- screens ---------------- */
-  function show(id) { $$('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); }); }
+  function show(id) {
+    $$('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
+    if (id === 'scr-home') navSet('home'); else if (id === 'scr-result') navSet('result');
+    else if (id === 'scr-test') navSet($('#scr-test').classList.contains('viewing') ? 'view' : 'set');
+  }
+
+  /* ---------------- #43 browser Back / phone back gesture / Backspace ----------------
+     Every app screen is one #hash entry (home · set · result · view · t-<teacher screen>). Back (button, gesture, Alt+←)
+     never leaves the app: it goes up one level — a question viewer → its result → home; inside a set or test it asks first
+     ("Save and leave?"); on the home page it stays. Backspace only deletes text in a text box. */
+  var NAV = { cur: '', busy: false };
+  function navSet(h) {
+    if (!h || NAV.cur === h) return;
+    NAV.cur = h;
+    try { if (location.hash.slice(1) !== h) location.hash = h; } catch (e) {}
+  }
+  function navAgain() { var h = NAV.cur; NAV.cur = ''; navSet(h); }          // undo a Back: the same screen stays
+  function onHash() {
+    var h = location.hash.slice(1);
+    if (h === NAV.cur || !NAV.cur) return;                              // our own change (or signed out)
+    navUp();
+  }
+  function navUp() {
+    var on = ($$('.screen.on')[0] || {}).id;
+    if ($('#modal-root').classList.contains('on') || NAV.busy) { navAgain(); return; }
+    if (on === 'scr-test' && A.view) { exitViewer(); return; }
+    if (on === 'scr-test') { navAgain(); askExit(); return; }
+    if (on === 'scr-result') { var b = $('#res-home'); if (b) { NAV.cur = ''; b.click(); } else navAgain(); return; }
+    if (on === 'scr-teacher') { if (window.SMLT && window.SMLT.back && window.SMLT.back()) return; navAgain(); return; }
+    navAgain();                                                          // home / sign-in: stay in the app
+  }
+  function isTyping(t) { return t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable); }
+  function initNav() {
+    window.addEventListener('hashchange', onHash);
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'Backspace' || e.keyCode === 8) && !isTyping(e.target)) e.preventDefault();   // never "go back a page"
+    }, true);
+  }
+  /** Exit / Home inside a set, a test or Fix: always asks first; the work is saved (it is anyway) and home opens at once. */
+  function askExit() {
+    if (NAV.busy) return;
+    NAV.busy = true;
+    var inSet = !A.view && A.st && A.st.phase !== 'submitting';
+    modal(inSet ? 'Save and leave?' : 'Leave?', inSet ? 'You can continue later from your home page. Everything you did is saved.' : 'Your fixes are saved. You can come back to them from your home page.',
+      [{ label: 'Keep working', value: false, cls: 'btn-outline' }, { label: inSet ? 'Save and leave' : 'Leave', value: true }]).then(function (ok) {
+      NAV.busy = false;
+      if (!ok) return;
+      if (A.view) { exitViewerHome(); return; }
+      saveLater();
+    });
+  }
   function view(id) {
     $$('#tmain .view').forEach(function (v) { v.classList.toggle('on', v.id === id); });
     var inQ = id === 'v-question', inR = id === 'v-review', inTest = inQ || inR;
@@ -229,32 +279,52 @@
     var a = document.activeElement; if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return;
     var y = window.scrollY; renderHome(r); window.scrollTo(0, y);
   }
+  /** Assigned focus card (mockup B approved by Minh 14 Nov 21:09, without the "Desmos + reference sheet" line). */
+  function focusCard(a) {
+    var c = el('article', { class: 'hz-focus', id: a.placement ? 'placement-card' : 'assigned' });
+    var diffs = (a.diffs || '').split(',').filter(String).map(function (d) { return { E: 'Easy', M: 'Medium', H: 'Hard' }[d]; });
+    var facts = a.placement ? ['<b>One</b> question at a time', 'No timer', 'Take your time']
+      : [(diffs.length ? '<b>' + diffs.join(' + ') + '</b> questions' : '<b>' + a.n + '</b> questions'), 'No timer pressure'];
+    var sub = a.placement ? 'About 15–24 questions, one at a time · no timer' : ((a.skills || []).join(' · ') + (a.more_skills ? ' + ' + a.more_skills + ' more' : ''));
+    var due = a.due ? 'due ' + esc(a.due) : '';
+    var ring = a.placement ? (a.set_id ? '<div>' + (a.answered || 0) + '<small>answered</small></div>' : '<div>15–24<small>questions</small></div>')
+      : (a.set_id && a.answered ? '<div>' + a.answered + '/' + a.n + '<small>done</small></div>' : '<div>' + a.n + '<small>questions</small></div>');
+    c.innerHTML = '<div><p class="hz-eyebrow">Assigned by your teacher</p><h1>' + esc(a.title) + '</h1>' +
+      '<p class="hz-of">' + esc(sub) + (sub && due ? ' · ' : '') + due + '</p>' +
+      '<ul class="hz-facts">' + facts.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="hz-ring' + (a.set_id ? ' prog' : '') + '"' + (a.set_id && a.n ? ' style="--p:' + Math.round(100 * (a.answered || 0) / a.n) + '"' : '') + '>' + ring + '</div>';
+    var b = el('button', { class: 'hz-btn big', type: 'button' }, a.set_id ? 'Continue' : 'Start');
+    b.onclick = function () { startAsg(a, b); };
+    c.appendChild(b);
+    return c;
+  }
+  function startAsg(a, b) {
+    if (a.set_id) { openTest(a.set_id, {}); return; }
+    var undo = busyBtn(b, 'Opening…');
+    call('startAssignment', A.code, a.assignment_id, { device: deviceStr() }).then(function (r) { a.set_id = r.set_id; a.answered = a.answered || 0; openTest(r.set_id, {}, r.set); })
+      .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+  }
   function renderHome(r) {
     {
       var box = $('#home-list'); box.innerHTML = '';
-      $('#home-hello').textContent = 'Hi ' + (r.first_name || A.student.name || '') + '. What do you want to practise?';
-      // ① assigned by your teacher (assignments come with the teacher page; empty until then)
-      var asg = el('section', { class: 'sm-asg', id: 'assigned' }, '<p class="hz-label">Assigned by your teacher</p>');
-      if (r.assignments && r.assignments.length) {
-        r.assignments.forEach(function (a) {
-          var row = el('div', { class: 'hz-resume' });
-          row.innerHTML = a.placement
-            ? '<div><b>' + esc(a.title) + '</b><span>About 15–24 questions, one at a time · no timer · ' + esc(a.when || '') + (a.set_id ? ' · ' + a.answered + ' answered' : '') + '</span></div>'
-            : '<div><b>' + esc(a.title) + '</b><span>' + a.n + ' questions · ' + esc(a.when || '') + (a.set_id ? ' · ' + a.answered + '/' + a.n + ' answered' : '') + '</span></div>';
-          if (a.placement) row.id = 'placement-card';
-          var b = el('button', { class: 'hz-btn', type: 'button' }, a.set_id ? 'Continue' : 'Start');
-          b.onclick = function () {
-            if (a.set_id) { openTest(a.set_id, {}); return; }
-            var undo = busyBtn(b, 'Opening…');
-            call('startAssignment', A.code, a.assignment_id, { device: deviceStr() }).then(function (r) { openTest(r.set_id, {}, r.set); })
-              .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
-          };
-          row.appendChild(b); asg.appendChild(row);
+      $('#home-hello').textContent = 'Hi ' + (r.first_name || A.student.name || '') + '. ' + ((r.assignments || []).length ? 'Here is your homework.' : 'What do you want to practise?');
+      // #43 order (Minh 14 Nov): ① Assigned (focus card of mockup B, Pick up beside it) ② Practise by skill ③ Mixed Practice
+      // ④ Review ⑤ History
+      var asgs = r.assignments || [], top = el('section', { class: 'hz-next', id: 'assigned-row' });
+      if (asgs.length) top.appendChild(focusCard(asgs[0]));
+      else top.appendChild(el('article', { class: 'hz-focus none', id: 'assigned' }, '<div><p class="hz-eyebrow">Assigned by your teacher</p><p class="sm-empty">No assignment right now.</p></div>'));
+      var side = el('div', { class: 'hz-side', id: 'pickup' });
+      if (asgs.length > 1) {
+        side.appendChild(el('p', { class: 'hz-label' }, 'Also assigned'));
+        asgs.slice(1).forEach(function (a) {
+          var row = el('div', { class: 'hz-resume sm-asg2' });
+          row.innerHTML = '<div><b>' + esc(a.title) + '</b><span>' + (a.placement ? 'Placement test · one at a time' : a.n + ' questions') + (a.due ? ' · due ' + esc(a.due) : '') + '</span></div>';
+          var b2 = el('button', { class: 'hz-btn ghost', type: 'button' }, a.set_id ? 'Continue' : 'Start'); b2.onclick = function () { startAsg(a, b2); };
+          row.appendChild(b2); side.appendChild(row);
         });
-      } else asg.appendChild(el('p', { class: 'sm-empty' }, 'Nothing from your teacher right now.'));
-      box.appendChild(asg);
+      }
       if (r.open && r.open.length) {
-        var pk = el('section', { class: 'sm-pick', id: 'pickup' }, '<p class="hz-label">Pick up where you stopped</p>');
+        side.appendChild(el('p', { class: 'hz-label' + (asgs.length > 1 ? ' sp' : '') }, 'Pick up where you stopped'));
         r.open.forEach(function (o) {
           var row = el('div', { class: 'hz-resume' });
           row.innerHTML = '<div><b>' + esc(o.title) + '</b><span>Started ' + esc(o.started) + '</span></div>';
@@ -262,13 +332,14 @@
           row.appendChild(b);
           row.appendChild(el('div', { class: 'hz-prog' }, '<i style="width:' + (o.n ? Math.round(100 * o.answered / o.n) : 0) + '%"></i>'));
           row.appendChild(el('span', { class: 'w' }, o.answered + '/' + o.n + ' answered'));
-          pk.appendChild(row);
+          side.appendChild(row);
         });
-        box.appendChild(pk);
       }
-      box.appendChild(mixedCard(r));
+      if (side.firstChild) top.appendChild(side); else top.classList.add('solo');
+      box.appendChild(top);
       box.appendChild(el('h2', { class: 'hz-h2' }, 'Practise by skill'));
       box.appendChild(skillPicker(r));
+      box.appendChild(mixedCard(r));
       // ④ Review: questions missed or slow, until one clean try
       var rv = el('section', { class: 'sm-revcard', id: 'review-card' });
       var nr = (r.review && r.review.open) || 0;
@@ -414,7 +485,8 @@
   }
   function setupTest0(res) {
     A.test = res; A.profile = res.profile; A.parts = {}; A.qs = {}; A.ending = false;
-    A.pl = !!res.profile.placement;                                 // placement test: one question at a time, no going back
+    A.pl = !!res.profile.placement; A.plk = {}; A.plWait = null; A.plFin = false; A.plPend = 0;
+    if (res.pl && res.pl.qid) A.plk[res.pl.qid] = res.pl;                                 // placement test: one question at a time, no going back
     $('#scr-test').classList.toggle('placement', A.pl); $('#mm-save').hidden = !A.pl;
     A.copy = res.copy || ''; A.dead = false; // N1: this window's copy token (the server keeps only the newest)
     setSaveDot('');                          // N3: no "Saved hh:mm" left over from another attempt
@@ -1040,13 +1112,19 @@
     if (A.st.phase === 'test') { var q = curQ(); if (q) log('q_leave', q.qid, 'save_exit'); }
     log('save_exit', null, null);
     persist();
-    A.saving = false;
-    autosave({ pause: true }).then(function (r) {
-      stopLoops();
-      LS.del('tz_active');
-      toast(r && r.ok ? 'Saved. Continue it from your home page.' : 'Saved on this device. Open the app again when you are online to sync.', 3000);
-      showHome();
-    });
+    stopLoops();
+    LS.del('tz_active');
+    // #43: home opens at once; the save runs behind it (after any answer still being sent) and the home refreshes when done.
+    // The answers are also kept on this device (opening the set again sends anything the server missed).
+    // the home from this device shows the right card at once ("Continue", how many answered)
+    try {
+      var sid0 = A.st.session_id, nAns = A.pl ? Math.max(0, qlist().length - 1) : Object.keys(pst().ans || {}).filter(function (k) { return pst().ans[k] !== ''; }).length;
+      if (A.home) (A.home.assignments || []).concat(A.home.open || []).forEach(function (x) { if (x.set_id === sid0) x.answered = nAns; });
+    } catch (e) {}
+    var pl = payload(); pl.pause = true;
+    enqueue({ label: 'Save', fn: 'autosave', args: [A.code, A.st.session_id, pl], done: function () { A.homeAt = 0; if ($('#scr-home').classList.contains('on')) showHome(); } });
+    toast('Saved. Continue it from your home page.', 2500);
+    showHome(true);
   }
   function onNext() {
     if (A.view) { viewNext(1); return; }
@@ -1069,46 +1147,149 @@
     var i = pst().cur; if (i > 0) goTo(i - 1);
   }
 
-  /* ================= placement test: the server picks the next question ================= */
+  /* ================= placement test (#43 seamless, Minh's option B) =================
+     With each item the browser has ONLY that item's key (encoded) + the items each outcome leads to (no keys). Next decides
+     right / wrong + time band here and shows the next item at once (0 s); the answer + time go to the server behind it, in
+     order, retried until they arrive. The server grades again and is the truth: if it decides another way, the item shown
+     next is swapped (at most one item is ever ahead of the server). */
+  function decKey(hex, salt) {
+    try {
+      var t = '', i; salt = String(salt || 'sml');
+      for (i = 0; i < hex.length / 2; i++) t += String.fromCharCode((parseInt(hex.substr(2 * i, 2), 16) ^ salt.charCodeAt(i % salt.length) ^ (37 + i * 11) % 251) & 255);
+      return JSON.parse(decodeURIComponent(escape(t)));
+    } catch (e) { return null; }
+  }
+  // SPR rules = server sprCorrect_ (SAT: 5 characters, 6 with "-"; equal values count; a decimal that does not fit may be cut / rounded)
+  function sprParseC(x) {
+    var m = String(x).match(/^(-?)(\d+)\/(\d+)$/);
+    if (m) { var d = Number(m[3]); return d ? { n: (m[1] ? -1 : 1) * Number(m[2]), d: d, dec: null } : null; }
+    m = String(x).match(/^(-?)(\d*)(?:\.(\d*))?$/);
+    if (!m || !(m[2] + (m[3] || '')).length) return null;
+    var frac = m[3] || '';
+    return { n: (m[1] ? -1 : 1) * Number((m[2] || '0') + frac), d: Math.pow(10, frac.length), dec: frac.length };
+  }
+  function sprRightC(answer, keys) {
+    var a = String(answer).trim().replace(/−/g, '-'); if (!a) return false;
+    var neg = a.charAt(0) === '-', room = neg ? 6 : 5; if (a.length > room) return false;
+    var ks = keys.map(function (k) { return String(k).trim().replace(/−/g, '-'); }).filter(String);
+    if (ks.indexOf(a) >= 0) return true;
+    var parsed = ks.map(sprParseC).filter(Boolean), exact = parsed.filter(function (k) { return k.dec === null || k.dec === 0; });
+    var decs = parsed.filter(function (k) { return k.dec !== null && k.dec > 0; });
+    if (!exact.length && decs.length) exact = decs.every(function (k) { return k.n * decs[0].d === decs[0].n * k.d; }) ? [decs[0]] : [];
+    var av = sprParseC(a); if (!av) return false;
+    return exact.some(function (kv) {
+      if (av.n * kv.d === kv.n * av.d) return true;
+      if (av.dec === null || av.dec < 1 || a.length !== room) return false;
+      var p10 = Math.pow(10, av.dec), num = Math.abs(kv.n) * p10, sign = kv.n < 0 ? -1 : 1;
+      return av.n === sign * Math.floor(num / kv.d) || av.n === sign * Math.floor((2 * num + kv.d) / (2 * kv.d));
+    });
+  }
+  function rightC(q, ans, keys) {
+    if (!ans || !keys) return false;
+    if (q.type === 'spr') return sprRightC(ans, keys);
+    return keys.some(function (k) { return String(k).trim().toUpperCase() === String(ans).trim().toUpperCase(); });
+  }
+  /** Seconds on one item (its visits: q_enter … q_leave), like the server's metrics. */
+  function timeOn(qid) {
+    var t = 0, open = null;
+    A.events.forEach(function (e) {
+      if (e.qid === qid && e.type === 'q_enter') open = e.t_ms;
+      else if (open !== null && ((e.type === 'q_leave' && e.qid === qid) || e.type === 'q_enter' || e.type === 'save_exit')) { t += Math.max(0, e.t_ms - open); open = null; }
+    });
+    return t / 1000;
+  }
+  function plNextBtn(busy) { var nb = $('#btn-next'); nb.disabled = !!busy; nb.textContent = busy ? 'Saving…' : 'Next'; }
   function plNext() {
-    var q = curQ(); if (!q || A.plBusy) return;
+    var q = curQ(); if (!q || A.plBusy || A.plWait) return;
     var go = function () {
-      A.plBusy = true; var nb = $('#btn-next'); nb.disabled = true; nb.textContent = 'Saving…';
+      var pk = A.plk && A.plk[q.qid];
+      if (!pk) { A.plWait = go; plNextBtn(true); return; }                 // the server has not answered the last one yet
       var sp = $('.spr-in', qBox(q.qid)); if (sp) sp.blur();
       log('q_leave', q.qid, null); persist();
-      var pl = payload(); pl.qid = q.qid;
-      var sent = A.evBase + A.events.length;
-      call('placementNext', A.code, A.st.session_id, pl).then(function (r) {
-        A.plBusy = false; nb.textContent = 'Next';
-        if (r && r.other_copy) { onOtherCopy(); return; }
-        if (!r || !r.ok) { nb.disabled = false; toast((r && r.msg) || 'Could not save. Try Next again.', 3000); return; }
-        A.acked = Math.max(A.acked, sent);
-        if (r.done) { stopLoops(); LS.del(lsKey()); LS.del('tz_active'); renderResult(r.result); return; }
-        var nq = r.question, l = qlist();
-        if (!l.some(function (x) { return x.qid === nq.qid; })) {
-          l.push(nq); A.test.questions.push(nq);
-          var box = buildQuestion(nq, l.length - 1, pdef()); $('#qwrap').appendChild(box);
-          typeset(box).then(function () { refreshQ(nq.qid); });
-        }
-        goTo(l.length - 1, true);
-        persist(); setSaveDot('Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      }).catch(function (e) {
-        A.plBusy = false; nb.disabled = false; nb.textContent = 'Next';
-        log('q_enter', q.qid, pst().cur + 1); persist();
-        modal('Could not reach the server', 'Your answer is kept on this device. Check the internet connection, then select <b>Next</b> again.', [{ label: 'OK', value: 1 }]); errMsg(e);
-      });
+      var ans = pst().ans[q.qid], right = rightC(q, ans, decKey(pk.k, A.st.session_id + '|' + q.qid));
+      var a = !right ? 'W' : pk.level === 'H' ? 'F' : (timeOn(q.qid) <= (Number(pk.band && pk.band.max) || 1e9) ? 'F' : 'S');
+      var ref = pk.next ? pk.next[a] : null;
+      var nq = ref ? (pk.items || []).filter(function (x) { return x.qid === ref.qid; })[0] : null;
+      plSend(q.qid, a, nq ? nq.qid : '');
+      if (nq) plShow(nq); else plFinishing();
     };
     if (!pst().ans[q.qid]) {
       modal('Go on without an answer?', 'You cannot come back to this question. A question without an answer counts as not known.',
         [{ label: 'Answer it', value: false, cls: 'btn-outline' }, { label: 'Skip it', value: true }]).then(function (ok) { if (ok) go(); });
     } else go();
   }
+  /** One answer to the server, behind the screen: in order (write queue), retried until it arrives. */
+  function plSend(qid, guess, nextQid) {
+    var sid = A.st.session_id, code = A.code;
+    var pl = JSON.parse(JSON.stringify(payload())); pl.qid = qid; pl.guess = guess; pl.next_qid = nextQid;   // up to this answer
+    var sent = A.evBase + A.events.length;
+    A.plPend = (A.plPend || 0) + 1;
+    enqueue({ label: 'Your answer', run: function () {
+      return new Promise(function (ok, no) {
+        var n = 0, attempt = function () {
+          call('placementNext', code, sid, pl).then(function (r) { if (r) r._sent = sent; ok(r); }).catch(function (e) {
+            if (/^(Error:\s*)?(LOGIN|SESSION|FORM):/.test(String((e && e.message) || e))) { no(e); return; }
+            n++; saveDot('busy', 'Saving… (no connection, trying again)');
+            setTimeout(attempt, Math.min(15000, 1500 * n));
+          });
+        };
+        attempt();
+      });
+    }, done: function (r) { A.plPend = Math.max(0, (A.plPend || 1) - 1); if (r && A.st && A.st.session_id === sid) plAfter(qid, r); } });
+  }
+  function plAfter(qid, r) {
+    if (r.other_copy) { onOtherCopy(); return; }
+    if (!r.ok) { toast(r.msg || 'Could not save. Try again.', 3000); return; }
+    A.acked = Math.max(A.acked, r._sent || 0);
+    if (r.done) { plDone(r.result); return; }
+    var l = qlist(), i = -1; l.forEach(function (x, k) { if (x.qid === qid) i = k; });
+    var nq = r.question, pred = i >= 0 ? l[i + 1] : null;
+    if (r.repeat && l.some(function (x) { return x.qid === nq.qid; })) pred = nq;
+    if (!pred || pred.qid !== nq.qid) {                                   // the server decided another way: swap the item shown
+      if (pred) { var box = qBox(pred.qid); if (box) box.remove(); l.splice(l.indexOf(pred), 1); A.test.questions = A.test.questions.filter(function (x) { return x.qid !== pred.qid; }); delete pst().ans[pred.qid]; }
+      A.plk[nq.qid] = r.pl;
+      plShow(nq);
+    } else A.plk[nq.qid] = r.pl || A.plk[nq.qid];
+    if (A.plWait && A.plk[curQ().qid]) { var f = A.plWait; A.plWait = null; plNextBtn(false); f(); }
+    persist(); setSaveDot('Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  }
+  function plShow(nq) {
+    var l = qlist();
+    if (!l.some(function (x) { return x.qid === nq.qid; })) {
+      nq.display_no = l.length + 1; l.push(nq); A.test.questions.push(nq);
+      var box = buildQuestion(nq, l.length - 1, pdef()); $('#qwrap').appendChild(box);
+      typeset(box).then(function () { refreshQ(nq.qid); });
+    }
+    if ($('#v-wait').classList.contains('on')) view('v-question');
+    goTo(l.length - 1, true);
+    persist();
+  }
+  function plFinishing() {
+    view('v-wait'); A.plFin = true;
+    $('#v-wait').innerHTML = '<div class="page center"><div class="spinner"></div><h1 style="font-size:24px">Finishing your test…</h1><p class="lead">Saving your last answers.</p></div>';
+  }
+  function plDone(result) {
+    A.plFin = false; stopLoops(); LS.del(lsKey()); LS.del('tz_active'); A.homeAt = 0;
+    renderResult(result);
+  }
+  /** #43: the 4 areas in a clean 2 × 2 grid (stacked on a phone): name, Strong / Medium / Weak with one colour + icon, one line. */
+  var PL_ICON = {
+    strong: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    medium: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>',
+    weak: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M12 7.5v6M12 16.6v.1" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>'
+  };
   function renderPlacementResult(res) {
     show('scr-result');
+    var ds = res.domains || [], rank = { weak: 0, medium: 1, strong: 2 }, low = null;
+    ds.forEach(function (d, i) { var w = String(d.word || '').toLowerCase(); if (w in rank && (low === null || rank[w] < rank[String(ds[low].word).toLowerCase()])) low = i; });
+    var line = { strong: 'You know this well.', medium: 'A good base. Keep practising.', weak: 'Practise this soon.' };
     var h = brandBar('res-home', 'Back to home') + '<div class="page res-page pl-res"><h1>Your Placement Test</h1>' +
       '<p class="lead res-meta">' + esc(res.date || '') + (res.n ? ' · ' + res.n + ' questions' : '') + '</p>' +
-      '<div class="pl-doms" id="pl-doms">' + (res.domains || []).map(function (d) {
-        return '<div class="pl-dom ' + esc(String(d.word).toLowerCase()) + '"><span class="n">' + esc(d.name) + '</span><b>' + esc(d.word || '–') + '</b></div>';
+      '<div class="pl-doms" id="pl-doms">' + ds.map(function (d, i) {
+        var w = String(d.word || '').toLowerCase(), first = i === low && w !== 'strong';
+        return '<div class="pl-dom ' + esc(w) + (first ? ' next' : '') + '"><span class="n">' + esc(d.name) + '</span>' +
+          '<b class="w">' + (PL_ICON[w] || '') + esc(d.word || '–') + '</b>' +
+          '<span class="l">' + (first ? '<strong>Practise this next.</strong>' : esc(line[w] || '')) + '</span></div>';
       }).join('') + '</div>' +
       '<p class="lead">Thank you! Your teacher will go over the test with you. Your practice now starts at the right level for you in each area.</p></div>';
     $('#result-body').innerHTML = h;
@@ -1358,7 +1539,8 @@
   function startViewer(d, sid, teacher, qid, fix) {
     A.pl = false; $('#scr-test').classList.remove('placement');
     var keep = VW && VW.sid === sid && VW.teacher === teacher ? VW.keys : {};
-    VW = { d: d, sid: sid, teacher: teacher, keys: keep, fix: !!fix, t0: {}, msg: {}, best: d.best || null };
+    VW = { d: d, sid: sid, teacher: teacher, keys: keep, fix: !!fix, t0: {}, msg: {}, best: d.best || null, fk: {} };
+    if (fix && d.fk && d.fk.qid) VW.fk[d.fk.qid] = d.fk;
     var prof = { parts: d.parts.map(function (p) {
                    return { part: p.part, title: p.title, layout: p.layout, spr_layout: p.spr_layout, choices: p.choices, calculator: !!p.calculator,
                             reference: !!p.reference, annotate: p.annotate !== false, directions_html: p.directions_html || '', time_limit_sec: 0 }; }),
@@ -1413,26 +1595,68 @@
       '<span class="muted fix-best">Best Score: <b id="fix-best">' + (VW.best ? VW.best.right + '/' + VW.best.n : '') + '</b></span>';
     var cb = $('#btn-check');
     if (cb) cb.onclick = function () { doCheck(q, cb); };
+    fixPrefetch(q);
     var ab = $('#btn-fix-ask'); if (ab) ab.onclick = function () { toggleAsk(q.qid); fixBar(q); };
+  }
+  /** #43: the key of the open Fix question, fetched while the student thinks (one question at a time, encoded). */
+  function fixPrefetch(q) {
+    if (!VW || !VW.fix || q.status !== 'open') return;
+    VW.fk = VW.fk || {}; if (VW.fk[q.qid]) return;
+    VW.fk[q.qid] = { pending: true };
+    var sid = VW.sid;
+    call('fixKey', A.code, sid, q.qid).then(function (r) { if (VW && VW.sid === sid) VW.fk[q.qid] = r && r.ok ? r : { none: true }; })
+      .catch(function () { if (VW && VW.sid === sid) delete VW.fk[q.qid]; });
+  }
+  function applyCheck(q, ans, r) {
+    var ps = pst();
+    if (r.best) VW.best = r.best;
+    q.status = r.status; q.tried = r.tried || q.tried; q.n_tries = r.n_tries || q.n_tries + 1; q.tries_left = r.tries_left;
+    ps.elim[q.qid] = (q.tried || []).slice();
+    if (r.correct) { VW.msg[q.qid] = '<span class="rv-st right">✓ Fixed</span>'; q.answer = ans; }
+    else if (r.status === 'locked') { VW.msg[q.qid] = ''; q.answer = ans; ps.ans[q.qid] = ans; }
+    else { VW.msg[q.qid] = '<span class="rv-st wrong">✗ Not yet' + (q.type !== 'spr' ? ' — ' + r.tries_left + (r.tries_left === 1 ? ' try left' : ' tries left') : '') + '</span>';
+           if (q.type !== 'spr') delete ps.ans[q.qid]; }
+    if (curQ() && curQ().qid === q.qid) {
+      refreshQ(q.qid);
+      var sp = $('.spr-in', qBox(q.qid)); if (sp) sp.readOnly = q.status !== 'open';
+      fixBar(q);
+    }
   }
   function doCheck(q, btn) {
     var ps = pst(), ans = ps.ans[q.qid];
     var inp = $('.spr-in', qBox(q.qid)); if (inp && q.type === 'spr') ans = inp.value.trim();
     if (!ans) { toast(q.type === 'spr' ? 'Type an answer first.' : 'Choose an answer first.', 2000); return; }
-    btn.disabled = true;
     var secs = Math.round((Date.now() - (VW.t0[q.qid] || Date.now())) / 1000);
+    var fk = VW.fk && VW.fk[q.qid], keys = fk && fk.k ? decKey(fk.k, VW.sid + '|' + q.qid) : null, mcq = q.type !== 'spr';
+    var a = mcq ? String(ans).trim().toUpperCase() : String(ans).trim();
+    var fits = mcq ? (fk && fk.letters ? fk.letters.indexOf(a) >= 0 : /^[A-D]$/.test(a)) : (!!sprParseC(a.replace(/−/g, '-')) && a.replace(/−/g, '-').length <= (a.charAt(0) === '-' || a.charAt(0) === '−' ? 6 : 5));
+    if (keys && fits) {
+      // instant: decided here; the try is recorded behind the screen (checkTry is the truth)
+      if (mcq && (q.tried || []).indexOf(a) >= 0) { toast('You already tried ' + a + '.', 2000); return; }
+      var corr = rightC(q, a, keys), n = (q.n_tries || 0) + 1, max = fk.max || 3, locked = !corr && mcq && n >= max;
+      var before = { status: q.status, tried: (q.tried || []).slice(), n_tries: q.n_tries, tries_left: q.tries_left, answer: q.answer, best: VW.best, msg: VW.msg[q.qid], ans: ps.ans[q.qid], elim: (ps.elim[q.qid] || []).slice() };
+      var mine = { ok: true, correct: corr, status: corr ? 'fixed' : locked ? 'locked' : 'open', n_tries: n, tries_left: mcq ? Math.max(0, max - n) : null,
+                   tried: (q.tried || []).concat(!corr && mcq ? [a] : []), best: VW.best ? { right: VW.best.right + (corr ? 1 : 0), n: VW.best.n } : null };
+      var sid = VW.sid;
+      enqueue({ label: 'Your try', fn: 'checkTry', args: [A.code, sid, q.qid, ans, secs], apply: function () { applyCheck(q, ans, mine); },
+        undo: function () {
+          if (!VW || VW.sid !== sid) return;
+          q.status = before.status; q.tried = before.tried; q.n_tries = before.n_tries; q.tries_left = before.tries_left; q.answer = before.answer;
+          VW.best = before.best; VW.msg[q.qid] = before.msg; ps.ans[q.qid] = before.ans; ps.elim[q.qid] = before.elim;
+          if (curQ() && curQ().qid === q.qid) { refreshQ(q.qid); fixBar(q); }
+        },
+        done: function (r) {
+          if (!VW || VW.sid !== sid || !r) return;
+          if (!r.ok) { toast(r.msg || 'Try again.', 2500); return; }
+          if (r.correct !== mine.correct || r.status !== mine.status) applyCheck(q, ans, r);      // the server decides
+          else if (r.best) { VW.best = r.best; var bb = $('#fix-best'); if (bb && curQ() && curQ().qid === q.qid) bb.textContent = r.best.right + '/' + r.best.n; }
+        } });
+      return;
+    }
+    btn.disabled = true;
     call('checkTry', A.code, VW.sid, q.qid, ans, secs).then(function (r) {
       if (!r.ok) { btn.disabled = false; toast(r.msg || 'Try again.', 2500); return; }
-      VW.best = r.best;
-      q.status = r.status; q.tried = r.tried || q.tried; q.n_tries = r.n_tries || q.n_tries + 1; q.tries_left = r.tries_left;
-      ps.elim[q.qid] = (q.tried || []).slice();
-      if (r.correct) { VW.msg[q.qid] = '<span class="rv-st right">✓ Fixed</span>'; q.answer = ans; }
-      else if (r.status === 'locked') { VW.msg[q.qid] = ''; q.answer = ans; ps.ans[q.qid] = ans; }
-      else { VW.msg[q.qid] = '<span class="rv-st wrong">✗ Not yet' + (q.type !== 'spr' ? ' — ' + r.tries_left + (r.tries_left === 1 ? ' try left' : ' tries left') : '') + '</span>';
-             if (q.type !== 'spr') delete ps.ans[q.qid]; }
-      refreshQ(q.qid);
-      var sp = $('.spr-in', qBox(q.qid)); if (sp) sp.readOnly = q.status !== 'open';
-      fixBar(q);
+      applyCheck(q, ans, r);
     }).catch(function (e) { btn.disabled = false; toast(errMsg(e), 3000); });
   }
   function viewBar(q) {
@@ -1457,26 +1681,37 @@
     var np = A.st.seq_parts[k + dir];
     if (np) viewPart(np, dir > 0 ? 0 : qlist(np).length - 1);
   }
-  function exitViewer() {
+  function exitViewerHome() { exitViewer(true); }
+  function exitViewer(toHome) {
     try { hideCalc(true); } catch (e) {}
     $('#ref-panel').classList.remove('on'); closePops(); hideHlToolbar();
     if (A.st) A.viewZoom = A.st.zoom;
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing');
     var wasFix = VW && VW.fix, sid = VW && VW.sid;
     A.view = null; A.st = null; A.test = null; A.profile = null; built = null;
-    if (wasFix) { VW = null; if (A.resC) delete A.resC[sid]; openResult(sid); return; }           // Best Score changed: show the result again
+    if (toHome === true) { if (wasFix) { VW = null; if (A.resC) delete A.resC[sid]; } A.homeAt = 0; showHome(); return; }
+    if (wasFix) {                                                       // #43: the result at once with the new Best Score; exact after the tries are saved
+      var have = A.resC && A.resC[sid], vw = VW; VW = null;
+      if (have && vw && vw.best) {
+        var p = JSON.parse(JSON.stringify(have)), qq = vw.d.questions || [];
+        p.best = vw.best; p.fix = { open: qq.filter(function (x) { return x.status === 'open'; }).length, fixed: qq.filter(function (x) { return x.status === 'fixed'; }).length, locked: qq.filter(function (x) { return x.status === 'locked'; }).length };
+        A.resC[sid] = p; show('scr-result'); renderResult(p);
+      } else { if (A.resC) delete A.resC[sid]; show('scr-result'); $('#result-body').innerHTML = '<div class="page"><div class="spinner"></div><p class="lead" style="text-align:center">Loading your result…</p></div>'; }
+      whenSaved(function () { if ($('#scr-result').classList.contains('on')) openResult(sid); });
+      return;
+    }
     show('scr-result');
     var sc = A.resScroll || [0, 0];
     $('#scr-result').scrollTop = sc[0]; if (sc[1]) window.scrollTo(0, sc[1]);
   }
   function fmtTime(s) { s = Math.round(s || 0); var m = Math.floor(s / 60), r = s % 60; return m ? m + ' min ' + r + ' s' : r + ' s'; }
-  function initReview() { $('#btn-view-back').onclick = exitViewer; }
+  function initReview() { $('#btn-view-back').onclick = function () { exitViewer(); }; $('#btn-exit').onclick = askExit; }
 
   /* ================= teacher page: TeacherPage.html (window.SMLT) ================= */
   function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
   function initTeacher() {
     // the teacher page (TeacherPage.html) uses these helpers of the student client
-    window.SMLX = { A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
+    window.SMLX = { nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
                     figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell };
     if (window.SMLT) window.SMLT.init();
   }
@@ -1977,7 +2212,7 @@
   function boot() {
     if (typeof google === 'undefined' || !google.script) { $('#login-err').textContent = 'Open this app from its web-app link.'; return; }
     A.api = { autosave: autosave, persist: persist }; // used by the local test harness only
-    initTools(); initReview(); initTeacher(); initLogin();
+    initNav(); initTools(); initReview(); initTeacher(); initLogin();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
