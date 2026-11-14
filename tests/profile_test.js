@@ -29,6 +29,13 @@ G.fresh(); const a = C.pickForPractice_('FX-T01', 'S.D', 5, 'seed-a');
 check(a.level === 'E' && a.qids.length === 5 && a.qids.every(id => d(id) === 'M' && lv(id) === 1), 'Circles at level E → 5 Medium level-1 items (no Easy): ' + a.qids.map(id => d(id) + lv(id)).join(' '));
 G.fresh(); const a10 = C.pickForPractice_('FX-T01', 'S.D', 10, 'seed-a10');
 check(!a10.qids.some(id => d(id) === 'E') && a10.qids.filter(id => d(id) === 'M' && lv(id) === 1).length === 6, 'Circles at level E, 10 questions: all 6 Medium level 1 first, never Easy (' + a10.qids.map(id => d(id) + lv(id)).join(' ') + ')');
+// a second Circles set after missing every item (re-checks of missed sub-skills, a probe of a Hard-only sub-skill): still Medium level 1
+G.fresh(); const s1 = G.call('startPractice', ['FX-T01', 'S.D', 5]); G.fresh(); const t1x = G.call('getSet', ['FX-T01', s1.set_id, {}]);
+const wr = {}; t1x.questions.forEach(q => { wr[q.qid] = 'D'; });
+G.fresh(); G.call('submit', ['FX-T01', s1.set_id, { state: { parts: { P: { ans: wr, elim: {}, mark: {}, ask: {} } } }, events: [], ev_from: 0, copy: t1x.copy }]);
+G.fresh(); const lvRow = C.readTable_('Levels').rows.find(r => r.student_code === 'FX-T01' && String(r.skill).replace(/^'/, '') === 'S.D');
+G.fresh(); const a3 = C.pickForPractice_('FX-T01', 'S.D', 5, 'seed-a3');
+check(lvRow.level === 'E' && a3.qids.every(id => d(id) === 'M' && lv(id) === 1) && a3.why.some(x => /recheck/.test(x)), 'after missing a Circles set: re-checks stay Medium level 1, no Hard probe (' + a3.qids.map(id => d(id) + lv(id)).join(' ') + ' · ' + a3.why.join(', ') + ')');
 setLevel('FX-T01', 'Q.E', 'H');
 G.fresh(); const b = C.pickForPractice_('FX-T01', 'Q.E', 5, 'seed-b');
 check(b.qids.length === 5 && b.qids.every(id => (d(id) === 'M' && lv(id) >= 2) || d(id) === 'H'), 'Probability at level H → Medium level 2–3 + the real Hard items: ' + b.qids.map(id => d(id) + lv(id)).join(' '));

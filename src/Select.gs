@@ -159,6 +159,12 @@ function pickForPractice_(codeN, skill, n, setSeed) {
   var all = livePool_().filter(function (r) { return clean_(r.skill) === skill && profServes_(skill, r.difficulty); }); // Skill_Profile
   var pool = all.filter(function (r) { var h = hist[String(r.qid)]; return !h || now - h.last_ms >= S.block_days * 86400000; });
   if (pool.length < n) pool = all;                                  // block dropped only if the pool is too small
+  // Skill_Profile: level E in a skill with no Easy → Medium level 1 only; level H with no Hard → Medium level 2–3 + Hard only
+  // (also for re-checks and probes of sub-skills); widened only when too few such items exist.
+  var fit = null;
+  if (st.level === 'E' && !prof.allowed.E && prof.allowed.M) fit = function (r) { return String(r.difficulty).toUpperCase() === 'M' && (Number(r.level) || 1) === 1; };
+  if (st.level === 'H' && !prof.allowed.H && prof.allowed.M) fit = function (r) { var d = String(r.difficulty).toUpperCase(); return d === 'H' || (d === 'M' && (Number(r.level) || 1) >= 2); };
+  if (fit) { var fp = pool.filter(fit), fa = all.filter(fit); if (fp.length >= n) pool = fp; else if (fa.length >= n) pool = fa; }
   var map = bucketMap_(all, S);
   if (!map.standin) {
     ['E', 'M', 'H'].forEach(function (d) { var ps = profSlot_(skill, d); if (ps) map[d] = ps; });  // no Easy → Medium level 1 …

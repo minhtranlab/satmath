@@ -115,7 +115,7 @@ def fx5():
         for j in range(k):
             n += 1; a, b = 3 + n % 8, 2 + n % 5
             stem = '<p>Made-up profile item %d (%s %s%d). What is \\(%d \\times %d\\)?</p>' % (n, sk, diff, lvl, a, b)
-            q = mcq(n, sk, sk + '.%d' % (1 + j % 2), diff, lvl, stem, ['\\(%d\\)' % (a * b), '\\(%d\\)' % (a * b + 1), '\\(%d\\)' % (a + b), '\\(%d\\)' % (a * b - 1)], 'A')
+            q = mcq(n, sk, sk + '.%d' % (3 if (sk == 'S.D' and diff == 'H') else 1 + j % 2), diff, lvl, stem, ['\\(%d\\)' % (a * b), '\\(%d\\)' % (a * b + 1), '\\(%d\\)' % (a + b), '\\(%d\\)' % (a * b - 1)], 'A')
             q['qid'] = 'FX5-%03d' % n; q['batch'] = 'FX5'; q['source'] = {'set': 'FX5', 'page': n}; q['code'] = '%s%d' % (diff, 9700 + n)
             out.append(q)
     return out

@@ -676,7 +676,7 @@
    "tags": {
     "domain": "S",
     "skill": "S.D",
-    "subskill": "S.D.1",
+    "subskill": "S.D.3",
     "subskill2": "",
     "difficulty": "H",
     "level": 2,
@@ -725,7 +725,7 @@
    "tags": {
     "domain": "S",
     "skill": "S.D",
-    "subskill": "S.D.2",
+    "subskill": "S.D.3",
     "subskill2": "",
     "difficulty": "H",
     "level": 2,
@@ -774,7 +774,7 @@
    "tags": {
     "domain": "S",
     "skill": "S.D",
-    "subskill": "S.D.1",
+    "subskill": "S.D.3",
     "subskill2": "",
     "difficulty": "H",
     "level": 2,
@@ -823,7 +823,7 @@
    "tags": {
     "domain": "S",
     "skill": "S.D",
-    "subskill": "S.D.2",
+    "subskill": "S.D.3",
     "subskill2": "",
     "difficulty": "H",
     "level": 2,
