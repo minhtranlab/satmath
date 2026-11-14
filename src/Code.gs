@@ -64,7 +64,14 @@ function sheet_(name) {
    always read the Sheet itself (row numbers must be exact). ---- */
 var _tables = {}, _readMode = 'fresh', TAB_CACHE_SEC = 1800, TAB_CHUNK = 90000;
 var _forceFresh = false, _perfAllowInactive = false;                                            // the speed check measures the old way too
-function cachedReads_() { if (!_forceFresh) _readMode = 'cached'; }
+// one CacheService round trip costs ~50 ms: a read-only call fetches the version + first chunk of every usual tab at once
+var PRELOAD_TABS_ = ['Settings', 'Students', 'Classes', 'Assignments', 'Sets', 'Responses', 'Tries', 'Levels', 'Review', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placements', 'Placement_Forms'];
+var _pre = null;
+function cachedReads_() { if (_forceFresh) return; _readMode = 'cached'; preloadTabs_(); }
+function preloadTabs_() {
+  _pre = null;
+  try { var keys = []; PRELOAD_TABS_.forEach(function (n) { keys.push(tabVerKey_(n), tabHeadKey_(n)); }); _pre = CacheService.getScriptCache().getAll(keys) || {}; } catch (e) { _pre = null; }
+}
 /** Simple trigger: a hand edit in the Sheet → that tab's snapshot is out of date; Students / Classes / Responses → sync on the next teacher page. */
 function onEdit(e) {
   try {
@@ -73,8 +80,9 @@ function onEdit(e) {
   } catch (x) {}
 }
 function tabVerKey_(name) { return 'smlv_' + name; }
+function tabHeadKey_(name) { return 'smlh_' + name; }
 function tabChanged_(name) {
-  delete _tables[name];
+  delete _tables[name]; _pre = null;
   try { CacheService.getScriptCache().put(tabVerKey_(name), String(Date.now()) + Math.random().toString(36).slice(2, 6), 21600); } catch (e) {}
 }
 function flushTabCache_() {
@@ -83,15 +91,22 @@ function flushTabCache_() {
   names.forEach(tabChanged_);
   return 'cache: ' + names.length + ' tabs';
 }
+/** Snapshot layout: smlv_<tab> = version; smlh_<tab> = '{"v":version,"n":chunks}' + newline + chunk 0; smlt_<tab>_<version>_<i> = chunk i ≥ 1.
+ *  A snapshot counts only when its v equals the current version (a read that raced a write stored the old v → ignored). */
 function tabFromCache_(name) {
   try {
-    var c = CacheService.getScriptCache(), v = c.get(tabVerKey_(name));
-    if (!v) return null;
-    var base = 'smlt_' + name + '_' + v, n = Number(c.get(base + '_n'));
-    if (!n) return null;
-    var keys = []; for (var i = 0; i < n; i++) keys.push(base + '_' + i);
-    var got = c.getAll(keys), parts = [];
-    for (var j = 0; j < n; j++) { if (got[keys[j]] === undefined || got[keys[j]] === null) return null; parts.push(got[keys[j]]); }
+    var c = CacheService.getScriptCache(), vk = tabVerKey_(name), hk = tabHeadKey_(name), v, head;
+    if (_pre && PRELOAD_TABS_.indexOf(name) >= 0) { v = _pre[vk]; head = _pre[hk]; }
+    else { var g = c.getAll([vk, hk]) || {}; v = g[vk]; head = g[hk]; }
+    if (!v || !head) return null;
+    var nl = head.indexOf('\n'), meta = JSON.parse(head.slice(0, nl));
+    if (meta.v !== v || !(meta.n >= 1)) return null;
+    var parts = [head.slice(nl + 1)];
+    if (meta.n > 1) {
+      var keys = []; for (var i = 1; i < meta.n; i++) keys.push('smlt_' + name + '_' + v + '_' + i);
+      var got = c.getAll(keys) || {};
+      for (var j = 0; j < keys.length; j++) { if (got[keys[j]] === undefined || got[keys[j]] === null) return null; parts.push(got[keys[j]]); }
+    }
     var o = JSON.parse(parts.join(''), function (k, val) { return val && typeof val === 'object' && '$d' in val ? new Date(val.$d) : val; });
     return tableObj_(name, o.headers, o.rows);
   } catch (e) { return null; }
@@ -101,10 +116,10 @@ function tabToCache_(name, t, ver) {
     var c = CacheService.getScriptCache(), v = ver;
     if (!v) return;                                                     // readTable_ always sets the version BEFORE reading
     var rows = t.rows.map(function (r) { var o = {}; Object.keys(r).forEach(function (k) { var x = r[k]; o[k] = Object.prototype.toString.call(x) === '[object Date]' ? { $d: x.getTime() } : x; }); return o; });
-    var s = JSON.stringify({ headers: t.headers, rows: rows }), put = {}, base = 'smlt_' + name + '_' + v, n = Math.ceil(s.length / TAB_CHUNK) || 1;
+    var s = JSON.stringify({ headers: t.headers, rows: rows }), put = {}, n = Math.ceil(s.length / TAB_CHUNK) || 1;
     if (n > 60) return;                                               // too big for the cache: read the Sheet
-    for (var i = 0; i < n; i++) put[base + '_' + i] = s.slice(i * TAB_CHUNK, (i + 1) * TAB_CHUNK);
-    put[base + '_n'] = String(n);
+    for (var i = 1; i < n; i++) put['smlt_' + name + '_' + v + '_' + i] = s.slice(i * TAB_CHUNK, (i + 1) * TAB_CHUNK);
+    put[tabHeadKey_(name)] = JSON.stringify({ v: v, n: n }) + '\n' + s.slice(0, TAB_CHUNK);
     c.putAll(put, TAB_CACHE_SEC);
   } catch (e) {}
 }
