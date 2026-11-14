@@ -340,7 +340,7 @@ function pickMixed_(codeN, n, setSeed) {
       if (unfixed || (t && t !== 'Not A Mistake')) hurt[k] = Math.max(hurt[k] || 0, toMs_(r.submitted_at));
     });
     // 1) skills with unfixed wrong answers / tagged mistakes (newest first, one item each, at most half the set);
-    // 2) the rest by weight (Skill_Profile): Sainte-Laguë over this student's past Mixed items → long-run share = weight;
+    // 2) the rest by weight (Skill_Profile, mixedPlan_): area by area like the real test, skills by weight → long-run share = weight;
     //    ties: the lower level first, then random.
     var rr = {}; shuffle_(skills.slice(), seed).forEach(function (k, i) { rr[k] = i; });
     var first = skills.filter(function (k) { return hurt[k]; }).sort(function (a, b) { return hurt[b] - hurt[a] || rr[a] - rr[b]; }).slice(0, Math.ceil(n / 2));

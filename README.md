@@ -48,7 +48,7 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 ## Skill profiles (v0.5.1, 14 Nov 2026)
 - Sheet tab `Skill_Profile` (one row per CB skill; Minh edits it): `allowed` difficulties, `weight` (% of Mixed Practice items), `max_set`.
 - No Easy (S.C, S.D): an Easy slot gets Medium level 1. No Hard (Q.D, Q.E): a Hard slot gets the hardest Medium or a real Hard item.
-- Mixed Practice: skills with unfixed wrong answers first, then Sainte-Laguë over the weights (`src/Profile.gs`). Review + Placement unchanged.
+- Mixed Practice: skills with unfixed wrong answers first, then by weight: the 4 areas 35/35/15/15 in every set, skills inside an area by D'Hondt over their weights (a rare skill waits its turn) (`src/Profile.gs`). Review + Placement unchanged.
 
 ## Add a batch of questions (no code change)
 ```

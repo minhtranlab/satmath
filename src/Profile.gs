@@ -6,8 +6,8 @@
  *     Easy items of the skill are never served.
  *   - allowed without H (Probability, Two-variable data): a Hard slot gets the hardest Medium items (level 2–3) or one of the
  *     few real Hard items; no Hard slot is required.
- *   - weight: Mixed Practice shares its items over the skills in proportion to the weights (Sainte-Laguë over the student's
- *     past Mixed items, so the long-run share follows the weight); skills with unfixed wrong answers still come first.
+ *   - weight: Mixed Practice shares its items over the skills in proportion to the weights (apportionment over the student's
+ *     past Mixed items: areas 35/35/15/15 per set, skills by D'Hondt inside an area); unfixed wrong answers still come first.
  *   - max_set: practice by skill offers only this many questions (Q.F, Q.G: 5) and mixes all difficulties.
  * Review and the Placement test do not use the profile.
  */
@@ -69,21 +69,30 @@ function mixedWeights_(skills) {
   skills.forEach(function (k) { w[k] = tot > 0 ? w[k] / tot : 1 / skills.length; });
   return w;
 }
-/** Which skills get the n items of a Mixed set: first the "hurt" skills (in their order, one item each), then Sainte-Laguë over
- *  the weights — the next item goes to the skill with the lowest (past + this set + 0.5) / weight. At most perSkill each.
- *  past: {skill: Mixed items so far}. Returns the list of skills, one per item. */
+/** Which skills get the n items of a Mixed set. First the "hurt" skills (in their order, one item each). Then, item by item:
+ *  the domain by Sainte-Laguë over the domain weights (each set mixes the 4 areas like the real test: 35 / 35 / 15 / 15),
+ *  the skill inside it by D'Hondt over the skill weights — (past + this set + 1) / weight, so a rare skill waits its turn.
+ *  past = this student's Mixed items so far per skill → the long-run share of every skill = its weight. ≤ perSkill per skill. */
 function mixedPlan_(skills, weights, past, n, perSkill, first, tie) {
-  var cnt = {}, plan = [];
-  (first || []).forEach(function (k) { if (plan.length < n && skills.indexOf(k) >= 0 && (cnt[k] || 0) < perSkill) { plan.push(k); cnt[k] = (cnt[k] || 0) + 1; } });
+  var cnt = {}, plan = [], dw = {}, dp = {}, dc = {}, dom = function (k) { return String(k).charAt(0); };
+  skills.forEach(function (k) { var d = dom(k); dw[d] = (dw[d] || 0) + (weights[k] || 0); dp[d] = (dp[d] || 0) + (past[k] || 0); dc[d] = dc[d] || 0; });
+  var add = function (k) { plan.push(k); cnt[k] = (cnt[k] || 0) + 1; dc[dom(k)]++; };
+  (first || []).forEach(function (k) { if (plan.length < n && skills.indexOf(k) >= 0 && (cnt[k] || 0) < perSkill) add(k); });
+  var ok = function (k) { return (cnt[k] || 0) < perSkill && weights[k] > 0; };
   while (plan.length < n) {
+    var bd = null, bdv = Infinity;
+    Object.keys(dw).forEach(function (d) {
+      if (!(dw[d] > 0) || !skills.some(function (k) { return dom(k) === d && ok(k); })) return;
+      var v = (dp[d] + dc[d] + 0.5) / dw[d]; if (v < bdv - 1e-12) { bdv = v; bd = d; }
+    });
+    if (!bd) break;
     var best = null, bv = Infinity;
     skills.forEach(function (k) {
-      if ((cnt[k] || 0) >= perSkill || !(weights[k] > 0)) return;
-      var v = ((past[k] || 0) + (cnt[k] || 0) + 0.5) / weights[k];
-      if (v < bv - 1e-12 || (Math.abs(v - bv) <= 1e-12 && tie && tie[k] < tie[best])) { bv = v; best = k; }
+      if (dom(k) !== bd || !ok(k)) return;
+      var v = ((past[k] || 0) + (cnt[k] || 0) + 1) / weights[k];
+      if (v < bv - 1e-12 || (Math.abs(v - bv) <= 1e-12 && tie && best && tie[k] < tie[best])) { bv = v; best = k; }
     });
-    if (!best) break;
-    plan.push(best); cnt[best] = (cnt[best] || 0) + 1;
+    add(best);
   }
   return plan;
 }
