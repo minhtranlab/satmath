@@ -25,6 +25,10 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.update === '1') {
     return ContentService.createTextOutput(runUpdateIfNeeded_()).setMimeType(ContentService.MimeType.TEXT);
   }
+  // Speed check (#42): timings + row counts only (Perf.gs).
+  if (e && e.parameter && e.parameter.perf === '1') {
+    return ContentService.createTextOutput(perfRun_()).setMimeType(ContentService.MimeType.JSON);
+  }
   var t = HtmlService.createTemplateFromFile('Index');
   return t.evaluate()
     .setTitle(getSettings_().app_name || 'SAT Math Lib')
