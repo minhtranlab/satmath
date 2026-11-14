@@ -32,6 +32,50 @@
       r[fn].apply(r, args);
     });
   }
+  /* ---- write queue (#42): a change shows on screen at once; the save runs in the background, in order, retried once.
+     If it still fails, the screen is put back (job.undo) and a clear message says what was not saved. Nothing is lost while
+     moving around inside the app; closing the tab with unsaved changes asks first. "Saving… / Saved ✓" bottom right. ---- */
+  var WQ = { list: [], busy: false, seq: 0, idle: [] };
+  function saveDot(state, msg) {
+    var d = $('#wq-dot'); if (!d) { d = el('div', { id: 'wq-dot', role: 'status', 'aria-live': 'polite' }); document.body.appendChild(d); }
+    d.className = state; d.textContent = msg || (state === 'busy' ? 'Saving…' : state === 'ok' ? 'Saved ✓' : 'Not saved');
+    clearTimeout(WQ.hideT); if (state === 'ok') WQ.hideT = setTimeout(function () { d.className = ''; }, 1800);
+  }
+  /** job: {fn, args: [...], apply(), undo(), done(result), label: 'what is saved'} → returns a promise of the server result. */
+  function enqueue(job) {
+    job.id = ++WQ.seq;
+    try { if (job.apply) job.apply(); } catch (e) { try { console.warn('apply failed', e); } catch (x) {} }
+    var p = new Promise(function (ok, no) { job.ok = ok; job.no = no; });
+    p.catch(function () {});
+    WQ.list.push(job); saveDot('busy'); pump();
+    return p;
+  }
+  function pump() {
+    if (WQ.busy) return;
+    var job = WQ.list[0];
+    if (!job) { saveDot('ok'); var f = WQ.idle; WQ.idle = []; f.forEach(function (fn) { try { fn(); } catch (e) {} }); return; }
+    WQ.busy = true;
+    var attempt = function (n) {
+      call.apply(null, [job.fn].concat(job.args)).then(function (r) {
+        WQ.list.shift(); WQ.busy = false;
+        try { if (job.done) job.done(r); } catch (e) {}
+        job.ok(r); pump();
+      }).catch(function (e) {
+        var appMsg = /^(Error:\s*)?(LOGIN|SESSION|FORM):/.test(String((e && e.message) || e));
+        if (n < 1 && !appMsg) { setTimeout(function () { attempt(n + 1); }, 1500); return; }   // retry once (network)
+        WQ.list.shift(); WQ.busy = false;
+        try { if (job.undo) job.undo(); } catch (x) {}
+        saveDot('fail', 'Not saved');
+        modal('Not saved', esc((job.label ? job.label + ': ' : '') + errMsg(e)) + '<br><br>The screen shows it as it was before. Try again.', [{ label: 'OK', value: 1 }]);
+        job.no(e); pump();
+      });
+    };
+    attempt(0);
+  }
+  /** Run fn when nothing is waiting to be saved (at once if the queue is empty). */
+  function whenSaved(fn) { if (!WQ.list.length && !WQ.busy) fn(); else WQ.idle.push(fn); }
+  window.addEventListener('beforeunload', function (e) { if (WQ.list.length) { e.preventDefault(); e.returnValue = 'Some changes are still being saved.'; return e.returnValue; } });
+
   /** Text for the student: only the app's own English messages ("LOGIN: …", "SESSION: …", "FORM: …"). Anything else
    *  (network / library / browser text, often in the browser's language) → one plain English line (#16 m3). */
   var NET_MSG = 'Could not reach the server. Check your internet connection and try again.';
@@ -119,15 +163,23 @@
     var out = function () { LS.del('tz_code'); LS.del('tz_active'); A.student = null; A.teacher = false; A.code = null; $('#login-code').value = ''; $('#login-err').textContent = ''; show('scr-login'); };
     $('#btn-logout').onclick = out; $('#t-logout').onclick = out;
     var saved = LS.get('tz_code');
-    if (saved) doLogin(saved, true);
+    if (saved) {
+      // #42: signed in on this device → the last home page shows at once while the server checks the code
+      var hc = LS.get('sml_home');
+      if (hc && hc.code === String(saved).toUpperCase() && hc.home && !LS.get('tz_active')) {
+        A.student = { code: hc.code, name: hc.name }; A.code = hc.code; A.home = hc.home; A.home._code = hc.code; A.homeAt = 0; showHome(true);
+      }
+      doLogin(saved, true);
+    }
   }
   function doLogin(code, auto) {
     code = String(code || '').trim().toUpperCase();
     if (!code) { $('#login-err').textContent = 'Enter your code.'; return; }
     $('#login-btn').disabled = true; $('#login-err').textContent = auto ? 'Signing in…' : '';
-    call('login', code, deviceId()).then(function (r) {
-      $('#login-btn').disabled = false;
-      if (!r.ok) { $('#login-err').textContent = r.msg; LS.del('tz_code'); return; }
+    if (!auto) $('#login-btn').textContent = 'Signing in…';
+    call('login', code, deviceId(), true).then(function (r) {
+      $('#login-btn').disabled = false; $('#login-btn').textContent = 'Sign In';
+      if (!r.ok) { $('#login-err').textContent = r.msg; LS.del('tz_code'); LS.del('sml_home'); A.student = null; A.home = null; show('scr-login'); return; }
       if (r.teacher) { // teacher mode: the code is never stored on the device
         LS.del('tz_code'); LS.del('tz_active'); A.teacher = true; A.code = code; A.student = { name: 'Teacher', code: code };
         $$('.app-name').forEach(function (x) { x.textContent = r.app_name || 'SAT Math Lib'; });
@@ -140,9 +192,11 @@
       document.title = r.app_name || 'SAT Math Lib';
       var act = LS.get('tz_active');
       if (act && act.code === A.code && act.session_id) { openTest(act.session_id, {}); return; }
-      showHome();
+      if (r.home) { r.home._code = A.code; A.home = r.home; A.homeAt = Date.now(); LS.set('sml_home', { code: A.code, name: A.student.name, home: r.home }); }
+      if ($('#scr-home').classList.contains('on') && A.home) renderHomeQuiet(A.home); else showHome();
     }).catch(function (e) {
-      $('#login-btn').disabled = false;
+      $('#login-btn').disabled = false; $('#login-btn').textContent = 'Sign In';
+      if (A.student && $('#scr-home').classList.contains('on')) { setTimeout(function () { doLogin(code, true); }, 10000); return; }   // home from the device stays
       $('#login-code').value = code;
       $('#login-err').textContent = 'No connection. Signing in again automatically when the internet is back…';
       clearTimeout(A.reloginT);
@@ -151,15 +205,32 @@
       window.addEventListener('online', retry, { once: true });
     });
   }
-  function showHome() {
+  function showHome(skipFetch) {
     A.profile = null; stopLoops(); clearTimeout(A.subT); // nothing of a set runs behind the home
     A.pl = false; $('#scr-test').classList.remove('placement');
     show('scr-home');
     $('#home-name').textContent = A.student.name;
-    $('#home-hello').textContent = '';
-    $('#home-list').innerHTML = '<div class="spinner"></div>';
+    var have = A.home && A.home._code === A.code ? A.home : null;
+    if (have) renderHome(have);
+    else { $('#home-hello').textContent = ''; $('#home-list').innerHTML = '<div class="spinner"></div><p class="lead" style="text-align:center">Loading your page…</p>'; }
+    if (have && Date.now() - (A.homeAt || 0) < 3000) return;            // just loaded with the sign-in
+    if (skipFetch === true) return;
+    var nav = A.homeNav = (A.homeNav || 0) + 1;
     call('homeData', A.code).then(function (r) {
-      A.home = r;
+      r._code = A.code; A.homeAt = Date.now();
+      var same = have && JSON.stringify(have) === JSON.stringify(r);
+      A.home = r; LS.set('sml_home', { code: A.code, name: A.student.name, home: r });
+      if (!same && nav === A.homeNav) renderHomeQuiet(r);
+    }).catch(function (e) { if (!have) $('#home-list').innerHTML = '<div class="empty">Could not load your page: ' + esc(errMsg(e)) + ' <br><br><button class="btn-outline" onclick="location.reload()">Reload</button></div>'; });
+  }
+  /** A newer home page: drawn again only while the student is on it and not typing / in a dialog. */
+  function renderHomeQuiet(r) {
+    if (!$('#scr-home').classList.contains('on') || $('#modal-root').classList.contains('on')) return;
+    var a = document.activeElement; if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return;
+    var y = window.scrollY; renderHome(r); window.scrollTo(0, y);
+  }
+  function renderHome(r) {
+    {
       var box = $('#home-list'); box.innerHTML = '';
       $('#home-hello').textContent = 'Hi ' + (r.first_name || A.student.name || '') + '. What do you want to practise?';
       // ① assigned by your teacher (assignments come with the teacher page; empty until then)
@@ -174,9 +245,9 @@
           var b = el('button', { class: 'hz-btn', type: 'button' }, a.set_id ? 'Continue' : 'Start');
           b.onclick = function () {
             if (a.set_id) { openTest(a.set_id, {}); return; }
-            b.disabled = true;
-            call('startAssignment', A.code, a.assignment_id).then(function (r) { openTest(r.set_id, {}); })
-              .catch(function (e) { b.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+            var undo = busyBtn(b, 'Opening…');
+            call('startAssignment', A.code, a.assignment_id, { device: deviceStr() }).then(function (r) { openTest(r.set_id, {}, r.set); })
+              .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
           };
           row.appendChild(b); asg.appendChild(row);
         });
@@ -222,7 +293,7 @@
         });
         box.appendChild(t);
       }
-    }).catch(function (e) { $('#home-list').innerHTML = '<div class="empty">Could not load your page: ' + esc(errMsg(e)) + ' <br><br><button class="btn-outline" onclick="location.reload()">Reload</button></div>'; });
+    }
   }
   /** Three columns: area → skill → the chosen skill (its sub-skills, read-only progress) + 5 / 10 / 20 + Start. */
   function skillPicker(r) {
@@ -256,12 +327,14 @@
     draw();
     return box;
   }
+  /** #42: the button says what is happening; the set comes back in the same call (no second wait). */
+  function busyBtn(btn, text) { if (!btn) return function () {}; var t = btn.textContent; btn.disabled = true; btn.textContent = text; return function () { btn.disabled = false; btn.textContent = t; }; }
   function startPractice(skill, n, btn) {
-    if (btn) btn.disabled = true;
-    call('startPractice', A.code, skill, n).then(function (r) {
+    var undo = busyBtn(btn, 'Picking your questions…');
+    call('startPractice', A.code, skill, n, { device: deviceStr() }).then(function (r) {
       if (r.short) toast('Only ' + r.n + ' questions are left for this skill right now.', 3500);
-      openTest(r.set_id, {});
-    }).catch(function (e) { if (btn) btn.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+      openTest(r.set_id, {}, r.set);
+    }).catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
   }
 
   /** Mixed Practice (Minh 13 Nov): only 5 / 10 / 20; the app mixes skills at the student's level for each. */
@@ -277,22 +350,22 @@
       $$('[data-mn]', box).forEach(function (b) { b.onclick = function () { A.mixN = +b.getAttribute('data-mn'); draw(); }; });
       var go = $('#btn-mixed', box);
       go.onclick = function () {
-        go.disabled = true;
-        call('startMixed', A.code, A.mixN).then(function (x) { openTest(x.set_id, {}); })
-          .catch(function (e) { go.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+        var undo = busyBtn(go, open ? 'Opening…' : 'Mixing your questions…');
+        call('startMixed', A.code, A.mixN, { device: deviceStr() }).then(function (x) { openTest(x.set_id, {}, x.set); })
+          .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
       };
     };
     draw();
     return box;
   }
   function startReview(btn) {
-    if (btn) btn.disabled = true;
-    call('startReview', A.code).then(function (r) { openTest(r.set_id, {}); })
-      .catch(function (e) { if (btn) btn.disabled = false; modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+    var undo = busyBtn(btn, 'Picking your questions…');
+    call('startReview', A.code, { device: deviceStr() }).then(function (r) { openTest(r.set_id, {}, r.set); })
+      .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
   }
 
   /* ================= load / resume a test ================= */
-  function openTest(setId, opts) {
+  function openTest(setId, opts, pre) {
     // #32 t2: no old header / timer / "Saved …" while the test loads
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro');
     $('#tb-title').textContent = ''; var vb = $('#view-bar'); if (vb) vb.innerHTML = ''; setSaveDot('');
@@ -302,7 +375,8 @@
     $('#fb-name').textContent = A.student.name;
     opts = opts || {}; opts.device = deviceStr();
     var t0 = Date.now();
-    call('getSet', A.code, setId, opts).then(function (res) {
+    A.homeAt = 0;                                                      // home changes once a set is opened: shown, then refreshed
+    (pre && pre.ok ? Promise.resolve(pre) : call('getSet', A.code, setId, opts)).then(function (res) {
       var rtt = Date.now() - t0;
       A.offset = res.server_now + rtt / 2 - Date.now();
       setupTest(res);
@@ -889,8 +963,9 @@
     var on = !(qid in ps.ask);
     if (on) ps.ask[qid] = ''; else delete ps.ask[qid];
     if (askAfter()) {
-      call('askTeacher', A.code, VW.sid, qid, on, '').then(function () { toast(on ? 'Your teacher will see this question.' : 'Question removed from your teacher\'s list.', 2200); })
-        .catch(function (e) { if (on) delete ps.ask[qid]; else ps.ask[qid] = ''; refreshQ(qid); toast(errMsg(e)); });
+      enqueue({ fn: 'askTeacher', args: [A.code, VW.sid, qid, on, ''], label: on ? 'Ask teacher' : 'Remove the question',
+        apply: function () { toast(on ? 'Your teacher will see this question.' : 'Question removed from your teacher\'s list.', 2200); },
+        undo: function () { if (on) delete ps.ask[qid]; else ps.ask[qid] = ''; var vq = VW.d.questions.filter(function (q) { return q.qid === qid; })[0]; if (vq) vq.asked = !on; refreshQ(qid); } });
       var vq = VW.d.questions.filter(function (q) { return q.qid === qid; })[0]; if (vq) { vq.asked = on; vq.ask_note = ''; }
     } else { log(on ? 'ask_on' : 'ask_off', qid, null); persist(); }
     refreshQ(qid);
@@ -902,7 +977,7 @@
     v = String(v || '').slice(0, 200);
     if (ps.ask[qid] === v) return;
     ps.ask[qid] = v;
-    if (askAfter()) call('askTeacher', A.code, VW.sid, qid, true, v).catch(function (e) { toast(errMsg(e)); });
+    if (askAfter()) enqueue({ fn: 'askTeacher', args: [A.code, VW.sid, qid, true, v], label: 'Note for your teacher' });
     else { log('ask_note', qid, v); persist(); }
   }
   function toggleMark(qid) {
@@ -1116,8 +1191,15 @@
   /* ================= result page (student + teacher) ================= */
   /** My Tests → View result. */
   function openResult(sessionId) {
-    show('scr-result'); $('#result-body').innerHTML = '<div class="page"><div class="spinner"></div></div>';
-    call('getResult', A.code, sessionId).then(renderResult).catch(function (e) { toast(errMsg(e)); showHome(); });
+    show('scr-result');
+    A.resC = A.resC || {};
+    var have = A.resC[sessionId];
+    if (have) renderResult(have); else $('#result-body').innerHTML = '<div class="page"><div class="spinner"></div><p class="lead" style="text-align:center">Loading your result…</p></div>';
+    call('getResult', A.code, sessionId).then(function (r) {
+      var same = have && JSON.stringify(have) === JSON.stringify(r);
+      A.resC[sessionId] = r;
+      if (!same && $('#scr-result').classList.contains('on') && (!A.result || A.result.session_id === sessionId)) renderResult(r);
+    }).catch(function (e) { if (!have) { toast(errMsg(e)); showHome(); } });
   }
   function pct(a, b) { return b ? Math.round(100 * a / b) : 0; }
   function xy(r, n) { return '<span class="xy">' + r + '/' + n + '</span>'; }
@@ -1148,6 +1230,7 @@
     var b = $('#result-body');
     if (!res || !res.ok) { b.innerHTML = brandBar('res-home', 'Back to home') + '<div class="page"><p class="lead">' + esc((res && res.msg) || 'No result.') + '</p></div>'; $('#res-home').onclick = showHome; return; }
     if (res.placement) { renderPlacementResult(res); return; }
+    if (res.session_id && !A.teacher) { A.resC = A.resC || {}; A.resC[res.session_id] = res; }
     A.result = res;
     var teacher = !!res.teacher;
     var h = brandBar('res-home', teacher ? 'Back to students' : 'Back to home') + '<div class="page res-page">';
@@ -1393,7 +1476,7 @@
   function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
   function initTeacher() {
     // the teacher page (TeacherPage.html) uses these helpers of the student client
-    window.SMLX = { A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset,
+    window.SMLX = { A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
                     figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell };
     if (window.SMLT) window.SMLT.init();
   }

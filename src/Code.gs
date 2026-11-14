@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.5.2 (2026-11-14, rare skills 1 %, table titles centred, OLD1)';
+var APP_VERSION = 'v0.6 (2026-11-14, speed: instant clicks, saved in the background, archive classes)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -99,8 +99,8 @@ function tabFromCache_(name) {
 function tabToCache_(name, t, ver) {
   try {
     var c = CacheService.getScriptCache(), v = ver;
-    if (!v) { v = String(Date.now()) + Math.random().toString(36).slice(2, 6); c.put(tabVerKey_(name), v, 21600); }
-    var rows = t.rows.map(function (r) { var o = {}; Object.keys(r).forEach(function (k) { var x = r[k]; o[k] = x instanceof Date ? { $d: x.getTime() } : x; }); return o; });
+    if (!v) return;                                                     // readTable_ always sets the version BEFORE reading
+    var rows = t.rows.map(function (r) { var o = {}; Object.keys(r).forEach(function (k) { var x = r[k]; o[k] = Object.prototype.toString.call(x) === '[object Date]' ? { $d: x.getTime() } : x; }); return o; });
     var s = JSON.stringify({ headers: t.headers, rows: rows }), put = {}, base = 'smlt_' + name + '_' + v, n = Math.ceil(s.length / TAB_CHUNK) || 1;
     if (n > 60) return;                                               // too big for the cache: read the Sheet
     for (var i = 0; i < n; i++) put[base + '_' + i] = s.slice(i * TAB_CHUNK, (i + 1) * TAB_CHUNK);
@@ -122,7 +122,11 @@ function readTable_(name) {
     t = tabFromCache_(name);
     if (t) return (_tables[name] = t);
   }
-  try { ver = CacheService.getScriptCache().get(tabVerKey_(name)); } catch (e) {}
+  // the version is taken (or made) BEFORE reading: a write during the read changes it, so this snapshot is never used
+  try {
+    var c = CacheService.getScriptCache(); ver = c.get(tabVerKey_(name));
+    if (!ver) { ver = String(Date.now()) + Math.random().toString(36).slice(2, 6); c.put(tabVerKey_(name), ver, 21600); }
+  } catch (e) {}
   t = readTableSheet_(name);
   tabToCache_(name, t, ver);
   return (_tables[name] = t);
@@ -325,7 +329,7 @@ function loginFailed_(keys) {
   keys.forEach(function (k) { var t = failTimes_(cache, k, now); t.push(now); try { cache.put(k, JSON.stringify(t.slice(-50)), 1800); } catch (e) {} });
 }
 
-function login(code, deviceId) {
+function login(code, deviceId, withHome) {
   cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var keys = loginKeys_(code, deviceId);
   if (loginLockedAll_()) return { ok: false, locked: true, msg: LOCK_ALL_MSG };
@@ -337,8 +341,9 @@ function login(code, deviceId) {
     return { ok: false, msg: loginLockedAll_() ? LOCK_ALL_MSG : loginLocked_(keys) ? LOCK_MSG : 'Code not found. Check it or ask your teacher.' };
   }
   if (!isYes_(st.active)) return { ok: false, msg: 'This code is locked. Ask your teacher.' };
+  var home = null; if (withHome) { try { home = homeData(code); } catch (e) { home = null; } }   // #42: one round trip
   return { ok: true, student: { code: normCode_(st.student_code), name: String(st.name || '') },
-           app_name: getSettings_().app_name, version: APP_VERSION };
+           app_name: getSettings_().app_name, version: APP_VERSION, home: home };
 }
 
 /* ============================== sets ============================== */
@@ -410,7 +415,14 @@ function clientQuestion_(q, withFigs) {
 var FIGS_WITH_SET = 3; // figures of the first 3 questions come with the set; the rest by getFigures (spec v1.1 §6.1)
 
 /** Start a self-practice set: one CB skill + n questions (selection in Select.gs). Returns the new set id. */
-function startPractice(code, skill, n) {
+function startPractice(code, skill, n, opts) { return withSet_(startPracticeCore_(code, skill, n), code, opts); }
+/** #42: one round trip instead of two — the set is opened in the same call when the page asks for it (opts = getSet opts). */
+function withSet_(r, code, opts) {
+  if (!opts || !r || !r.set_id || r.done) return r;
+  try { r.set = getSet(code, r.set_id, opts); } catch (e) { /* the page opens it with its own call */ }
+  return r;
+}
+function startPracticeCore_(code, skill, n) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
   n = Number(n);

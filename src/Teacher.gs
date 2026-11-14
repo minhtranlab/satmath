@@ -78,15 +78,20 @@ function saveClass(code, cls) {
   try {
     var t = readTable_('Classes'), row = cls.class_id ? t.rows.filter(function (x) { return String(x.class_id) === String(cls.class_id); })[0] : null;
     var f = { name: name, student_codes: members.join(', '), active: cls.active === false ? 'No' : 'Yes' };
-    var id;
-    if (row) { updateRow_('Classes', row._row, f); id = String(row.class_id); }
+    var id, closed = 0;
+    if (row) {
+      updateRow_('Classes', row._row, f); id = String(row.class_id);
+      if (cls.active === false) readTable_('Assignments').rows.forEach(function (a) {   // archive: its open assignments close (#42)
+        if (String(a.target_type) === 'class' && String(a.target_id) === id && String(a.status) === 'published') { updateRow_('Assignments', a._row, { status: 'closed' }); closed++; }
+      });
+    }
     else {
       var n = 0; t.rows.forEach(function (x) { var m = /^C-(\d+)$/.exec(String(x.class_id)); if (m) n = Math.max(n, Number(m[1])); });
       id = 'C-' + ('00' + (n + 1)).slice(-3);
       f.class_id = id; f.created_in = 'app'; appendObjects_('Classes', [f]);
     }
     syncStudents_();
-    return { ok: true, class_id: id };
+    return { ok: true, class_id: id, closed: closed };
   } finally { lock.releaseLock(); }
 }
 
@@ -542,7 +547,8 @@ function dayStr_(ymd, withDay) {
   var d = new Date(ymd + 'T12:00:00+07:00'); if (isNaN(d.getTime())) return ymd;
   return fmtDate_(d, withDay ? 'EEE d MMM' : 'd MMM');
 }
-function startAssignment(code, aid) {
+function startAssignment(code, aid, opts) { return withSet_(startAssignmentCore_(code, aid), code, opts); }
+function startAssignmentCore_(code, aid) {
   var st = requireStudent_(code), c = normCode_(st.student_code);
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {

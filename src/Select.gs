@@ -390,7 +390,8 @@ function mixedPast_(codeN) {
   return out;
 }
 var MIXED_TITLE = 'Mixed Practice';
-function startMixed(code, n) {
+function startMixed(code, n, opts) { return withSet_(startMixedCore_(code, n), code, opts); }
+function startMixedCore_(code, n) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
   n = Number(n);
@@ -443,7 +444,8 @@ function reviewServe_(aQid, pool) {
 }
 
 /** Start (or resume) a Review mini-set of ≤ 5 open items, picked at random. */
-function startReview(code) {
+function startReview(code, opts) { return withSet_(startReviewCore_(code), code, opts); }
+function startReviewCore_(code) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code);
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);

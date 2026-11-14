@@ -54,6 +54,12 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 - No Easy (S.C, S.D): an Easy slot gets Medium level 1. No Hard (Q.D, Q.E): a Hard slot gets the hardest Medium or a real Hard item.
 - Mixed Practice: skills with unfixed wrong answers first, then by weight: the 4 areas 35/35/15/15 in every set, skills inside an area by D'Hondt over their weights (a rare skill waits its turn) (`src/Profile.gs`). Review + Placement unchanged.
 
+## Speed (v0.6, 14 Nov 2026)
+- Reads come from per-tab snapshots in CacheService (`smlv_<tab>` version + `smlt_<tab>_<ver>_i` chunks, 30 min). Every write through `appendObjects_` / `updateRow_` changes the tab's version; a hand edit in the Sheet does too (`onEdit`). A deploy flushes all (`cache` update step). Writes still read the Sheet for exact row numbers.
+- `?perf=1` on the exec URL: timings only (no data), at most once per 20 s.
+- Browser: teacher screens are cached and refreshed quietly; class screens and the profiles of an open class are fetched ahead; changes show at once and are saved by a queue (in order, one retry, put back + message if refused, warns before closing the tab).
+- Classes: Archive (active = No, its open assignments closed) / Show archived / Restore. Inactive students hidden unless "Show inactive".
+
 ## Add a batch of questions (no code change)
 ```
 python3 tools/build_library.py "<project folder>/data/library" HM3          # 0 errors needed

@@ -11,7 +11,44 @@
   var T = { home: null, view: null, cv: null, filter: '', tab: 'go', gridF: '' };
 
   function body() { return $('#t-body'); }
-  function spin() { body().innerHTML = '<div class="spinner"></div>'; }
+  function spin(msg) { body().innerHTML = '<div class="spinner"></div>' + (msg ? '<p class="muted t-wait">' + esc(msg) + '</p>' : ''); }
+
+  /* ---- speed (#42): every screen is cached on this page. A screen seen before shows at once (no server wait), then refreshes
+     quietly in the background; screens you are likely to open next are fetched ahead (prefetch). Changes go through the
+     write queue (X.enqueue): on screen at once, saved in the background. ---- */
+  var C = {}, NAV = 0, PF = [], pfBusy = false;
+  function cget(k) { return C[k] ? C[k].d : null; }
+  function cput(k, d) { C[k] = { d: d, at: Date.now() }; }
+  function stale(re) { Object.keys(C).forEach(function (k) { if (re.test(k)) C[k].at = 0; }); }
+  function busyTyping() { var a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && body().contains(a)); }
+  function load(key, fn, args, render, msg) {
+    var nav = ++NAV, have = C[key];
+    if (have) render(have.d, false); else spin(msg);
+    var w0 = X.WQ.seq;                                                // a change saved meanwhile → this answer may be older than it
+    var p = call.apply(null, [fn, A.code].concat(args)).then(function (r) {
+      if (have && (X.WQ.seq !== w0 || X.WQ.list.length)) return have.d;
+      var same = have && JSON.stringify(have.d) === JSON.stringify(r);
+      cput(key, r);
+      if (nav === NAV && (!have || !same) && !busyTyping()) { var y = window.scrollY; render(r, true); window.scrollTo(0, y); }
+      return r;
+    });
+    if (have) { p.catch(function () {}); return Promise.resolve(have.d); }
+    return p.catch(function (e) { if (nav === NAV) fail(e); throw e; });
+  }
+  function prefetch(key, fn, args) {
+    if (C[key] || PF.some(function (x) { return x.key === key; })) return;
+    PF.push({ key: key, fn: fn, args: args }); pfPump();
+  }
+  function pfPump() {
+    if (pfBusy || !PF.length) return;
+    var j = PF.shift(); if (C[j.key]) { pfPump(); return; }
+    pfBusy = true;
+    call.apply(null, [j.fn, A.code].concat(j.args)).then(function (r) { if (!C[j.key]) cput(j.key, r); }).catch(function () {})
+      .then(function () { pfBusy = false; setTimeout(pfPump, 30); });
+  }
+  /** After a save: the screens it touched refresh quietly once nothing is waiting to be saved. */
+  function refreshLater(re) { stale(re); X.whenSaved(function () { if (T.view === 'home') showHome(); else if (T.view === 'class' && T.target) openClass(T.target, T.scopeArg, true); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); }); }
+  function save(job) { job.args = [A.code].concat(job.args || []); return X.enqueue(job); }
   function fail(e) { body().innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; }
   function dotHtml(c) { return '<i class="sm-dot ' + (c || 'n') + '"></i>'; }
   function diffName(d) { return { E: 'Easy', M: 'Medium', H: 'Hard' }[d] || d; }
@@ -56,27 +93,36 @@
 
   /* ================= classes (start screen) ================= */
   function showHome() {
-    T.view = 'home'; closePanel(); spin();
-    call('teacherHome', A.code).then(function (r) {
-      T.home = r; $('#t-asks-n').textContent = r.open_asks ? '(' + r.open_asks + ')' : '';
-      var h = '<div class="t-head"><h1>Classes</h1><div class="t-actions"><button class="btn-outline" type="button" id="t-new-st">New student</button><button class="btn-blue" type="button" id="t-new-cl">New class</button></div></div>';
-      h += '<div class="t-cards">' + r.classes.filter(function (c) { return c.active; }).map(function (c) {
-        return '<button type="button" class="t-card" data-class="' + esc(c.class_id) + '"><b>' + esc(c.name) + '</b><span class="t-mem">' + c.members.map(function (m) { return esc(m.name); }).join(', ') + '</span>' +
-          '<span class="t-meta">' + (c.last ? 'Last activity ' + esc(c.last) : 'No activity yet') + (c.asks ? ' · <b class="t-red">' + c.asks + ' asked</b>' : '') + (c.open_assignments ? ' · ' + c.open_assignments + ' assignment(s) open' : '') + '</span></button>';
-      }).join('') + '<button type="button" class="t-card all" data-class="all"><b>All students</b><span class="t-mem">' + r.students.filter(function (s) { return s.active; }).length + ' active students</span><span class="t-meta">Everything they did</span></button></div>';
-      h += '<h2 class="t-h2">Students</h2><table class="t-table" id="t-students"><tr><th>Name</th><th>Code</th><th>Classes</th><th>Last activity</th><th>Asked</th><th>Review</th><th></th></tr>' +
-        r.students.map(function (s) {
-          return '<tr class="' + (s.active ? '' : 'off') + '"><td><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button>' + (s.active ? '' : ' <span class="muted">(off)</span>') + '</td>' +
-            '<td>' + codeHtml(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
-            '<td><button type="button" class="hz-link" data-go-st="' + esc(s.code) + '">What to go over</button></td></tr>';
-        }).join('') + '</table>';
-      body().innerHTML = h;
-      bindCopies(body());
-      $$('[data-class]', body()).forEach(function (b) { b.onclick = function () { T.tab = 'go'; T.filter = ''; openClass(b.getAttribute('data-class')); }; });
-      $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
-      $$('[data-go-st]', body()).forEach(function (b) { b.onclick = function () { T.tab = 'go'; T.filter = ''; openClass('st:' + b.getAttribute('data-go-st'), 'all'); }; });
-      $('#t-new-st').onclick = newStudent; $('#t-new-cl').onclick = function () { editClass(null); };
-    }).catch(fail);
+    T.view = 'home'; closePanel();
+    return load('home', 'teacherHome', [], renderHome, 'Loading your classes…');
+  }
+  function renderHome(r) {
+    T.home = r; $('#t-asks-n').textContent = r.open_asks ? '(' + r.open_asks + ')' : '';
+    var arch = r.classes.filter(function (c) { return !c.active; }), off = r.students.filter(function (s) { return !s.active; });
+    var h = '<div class="t-head"><h1>Classes</h1><div class="t-actions"><button class="btn-outline" type="button" id="t-new-st">New student</button><button class="btn-blue" type="button" id="t-new-cl">New class</button></div></div>';
+    h += '<div class="t-cards">' + r.classes.filter(function (c) { return c.active || T.showArch; }).map(function (c) {
+      return '<button type="button" class="t-card' + (c.active ? '' : ' arch') + (c.saving ? ' t-fresh' : '') + '" data-class="' + esc(c.class_id) + '"><b>' + esc(c.name) + (c.active ? '' : ' <span class="t-archtag">Archived</span>') + '</b><span class="t-mem">' + c.members.map(function (m) { return esc(m.name); }).join(', ') + '</span>' +
+        '<span class="t-meta">' + (c.saving ? 'Saving…' : (c.last ? 'Last activity ' + esc(c.last) : 'No activity yet') + (c.asks ? ' · <b class="t-red">' + c.asks + ' asked</b>' : '') + (c.open_assignments ? ' · ' + c.open_assignments + ' assignment(s) open' : '')) + '</span></button>';
+    }).join('') + '<button type="button" class="t-card all" data-class="all"><b>All students</b><span class="t-mem">' + r.students.filter(function (s) { return s.active; }).length + ' active students</span><span class="t-meta">Everything they did</span></button></div>';
+    if (arch.length) h += '<p class="t-toggle"><label><input type="checkbox" id="t-show-arch"' + (T.showArch ? ' checked' : '') + '> Show archived classes (' + arch.length + ')</label></p>';
+    h += '<div class="t-head t-head2"><h2 class="t-h2">Students</h2>' + (off.length ? '<label class="t-toggle"><input type="checkbox" id="t-show-off"' + (T.showOff ? ' checked' : '') + '> Show inactive (' + off.length + ')</label>' : '') + '</div>' +
+      '<table class="t-table" id="t-students"><tr><th>Name</th><th>Code</th><th>Classes</th><th>Last activity</th><th>Asked</th><th>Review</th><th></th></tr>' +
+      r.students.filter(function (s) { return s.active || T.showOff; }).map(function (s) {
+        return '<tr class="' + (s.active ? '' : 'off') + '"><td><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button>' + (s.active ? '' : ' <span class="muted">(off)</span>') + '</td>' +
+          '<td>' + codeHtml(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
+          '<td><button type="button" class="hz-link" data-go-st="' + esc(s.code) + '">What to go over</button></td></tr>';
+      }).join('') + '</table>';
+    body().innerHTML = h;
+    bindCopies(body());
+    $$('[data-class]', body()).forEach(function (b) { b.onclick = function () { if (b.classList.contains('t-fresh')) return; T.tab = 'go'; T.filter = ''; openClass(b.getAttribute('data-class')); }; });
+    $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
+    $$('[data-go-st]', body()).forEach(function (b) { b.onclick = function () { T.tab = 'go'; T.filter = ''; openClass('st:' + b.getAttribute('data-go-st'), 'all'); }; });
+    var sa = $('#t-show-arch'); if (sa) sa.onchange = function () { T.showArch = sa.checked; renderHome(T.home); };
+    var so = $('#t-show-off'); if (so) so.onchange = function () { T.showOff = so.checked; renderHome(T.home); };
+    $('#t-new-st').onclick = newStudent; $('#t-new-cl').onclick = function () { editClass(null); };
+    // fetched ahead: the class screens and the Asked inbox
+    r.classes.filter(function (c) { return c.active && !c.saving; }).forEach(function (c) { prefetch('cv|' + c.class_id + '|', 'classView', [c.class_id, '']); });
+    prefetch('asks', 'asksInbox', []);
   }
   function newStudent() {
     var cls = (T.home && T.home.classes) || [];
@@ -86,7 +132,9 @@
       [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Create', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }],
       function (m) { var i = $('[name=name]', m); if (i) i.focus(); }).then(function (r) {
       if (!r.v) return;
+      toast('Creating the student and the sign-in code…', 4000);
       call('createStudent', A.code, r.vals.name, r.vals.cls || []).then(function (x) {
+        stale(/^(home|cv\|)/);
         dialog('Student created', '<p><b>' + esc(x.name) + '</b> signs in with:</p><p class="t-newcode">' + codeHtml(x.student_code, '', true) + '</p><p class="muted">Copy it now and give it to the student.</p>',
           [{ label: 'Done', value: 1 }], bindCopies).then(showHome);
       }).catch(function (e) { toast(X.errMsg(e), 3500); });
@@ -99,22 +147,56 @@
       studs.filter(function (s) { return s.active; }).map(function (s) { return '<label><input type="checkbox" name="st" value="' + esc(s.code) + '"' + (mem.indexOf(s.code) >= 0 ? ' checked' : '') + '> ' + esc(s.name) + ' <span class="muted">' + esc(s.code) + '</span></label>'; }).join('') + '</div>',
       [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: c ? 'Save' : 'Create class', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }]).then(function (r) {
       if (!r.v) return;
-      call('saveClass', A.code, { class_id: c ? c.class_id : '', name: r.vals.name, student_codes: r.vals.st || [] }).then(function (x) {
-        toast(c ? 'Saved.' : 'Class created.', 1800); if (c) openClass(c.class_id); else showHome();
-      }).catch(function (e) { toast(X.errMsg(e), 3500); });
+      saveClassNow(c, r.vals.name, r.vals.st || [], true);
     });
   }
 
+  /** Save a class (new, edited, archived, restored): on screen at once, saved in the background. */
+  function saveClassNow(c, name, codes, active) {
+    var home = T.home, names = {}; (home ? home.students : []).forEach(function (s) { names[s.code] = s.name; });
+    var mem = codes.map(function (x) { return { code: x, name: names[x] || x }; });
+    var before = home ? JSON.stringify(home.classes) : null, cvKey = c ? 'cv|' + c.class_id + '|' : null, cvBefore = cvKey && C[cvKey] ? JSON.stringify(C[cvKey].d) : null;
+    var tmp = null;
+    save({ fn: 'saveClass', args: [{ class_id: c ? c.class_id : '', name: name, student_codes: codes, active: active }], label: c ? 'Class "' + name + '"' : 'New class "' + name + '"',
+      apply: function () {
+        if (!home) return;
+        if (c) home.classes.forEach(function (x) { if (x.class_id === c.class_id) { x.name = name; x.members = mem; x.active = active; } });
+        else { tmp = { class_id: 'tmp-' + Date.now(), name: name, members: mem, active: true, saving: true, last: '', asks: 0, open_assignments: 0 }; home.classes.push(tmp); }
+        if (cvKey && C[cvKey]) { C[cvKey].d.members = mem; C[cvKey].d.target.title = name; C[cvKey].d.target.active = active; }
+        if (c && active) { T.tab = T.tab || 'go'; openClass(c.class_id); } else showHome();
+      },
+      undo: function () {
+        if (home && before) home.classes = JSON.parse(before);
+        if (cvKey && cvBefore && C[cvKey]) C[cvKey].d = JSON.parse(cvBefore);
+        if (T.view === 'home') renderHome(T.home); else if (T.view === 'class' && T.cv) { T.cv = cget(cvKey) || T.cv; renderClass(); }
+      },
+      done: function (x) {
+        if (tmp) tmp.class_id = x.class_id, tmp.saving = false;
+        if (x.closed) toast('Archived. ' + x.closed + ' open assignment(s) closed.', 2500);
+        refreshLater(/^(home|cv\||tree\|)/);
+      } });
+  }
+  function archiveClass(c, on) {
+    var go = function () { saveClassNow(c, c.name, c.members.map(function (m) { return m.code; }), !on); if (on) toast('Archived "' + c.name + '". Its students, sets and history stay.', 2500); };
+    if (!on) { go(); return; }
+    dialog('Archive "' + c.name + '"?', '<p>The class leaves the Classes screen. Its students, sets and history stay in the Sheet; open assignments of this class are closed.</p><p class="muted">You can bring it back with "Show archived classes" → Restore.</p>',
+      [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Archive class', value: 1 }]).then(function (r) { if (r.v) go(); });
+  }
+
   /* ================= class screen ================= */
-  function openClass(target, scope) {
-    T.view = 'class'; T.target = target; closePanel(); spin();
-    return call('classView', A.code, target, scope || '').then(function (r) { T.cv = r; renderClass(); return r; }).catch(fail);
+  function openClass(target, scope, quiet) {
+    T.view = 'class'; T.target = target; T.scopeArg = scope || ''; if (!quiet) closePanel();
+    var key = 'cv|' + target + '|' + (scope || '');
+    return load(key, 'classView', [target, scope || ''], function (r) {
+      T.cv = r; renderClass();
+      r.members.forEach(function (m) { prefetch('prof|' + m.code, 'studentProfile', [m.code]); });   // the profiles of this class, fetched ahead
+    }, 'Loading the class…');
   }
   function renderClass() {
     var r = T.cv, isCls = r.target.kind === 'class';
     var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(r.target.title) + '</h1>' +
       '<div class="t-chips">' + r.members.map(function (m) { return '<button type="button" class="t-chip" data-prof="' + esc(m.code) + '">' + esc(m.name) + '</button>'; }).join('') + '</div></div>' +
-      '<div class="t-actions">' + (isCls ? '<button class="btn-outline" type="button" id="t-edit-cl">Edit class</button>' : '') +
+      '<div class="t-actions">' + (isCls ? (clsRow() && !clsRow().active ? '<button class="btn-blue" type="button" id="t-restore-cl">Restore class</button>' : '<button class="btn-outline" type="button" id="t-arch-cl">Archive class</button><button class="btn-outline" type="button" id="t-edit-cl">Edit class</button>') : '') +
       (r.target.kind !== 'all' ? '<button class="btn-blue" type="button" id="t-new-asg">New assignment</button>' : '') + '</div></div>';
     h += '<div class="t-bar"><label>Look at <select id="t-scope" class="field">' + r.scopes.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === r.scope ? ' selected' : '') + '>' + esc(s.label) + '</option>'; }).join('') + '</select></label>' +
       '<input id="t-search" class="field" placeholder="Find a question: E326, M12, CB id…" autocomplete="off" value="' + esc(T.filter) + '"></div>';
@@ -123,9 +205,12 @@
     body().innerHTML = h;
     $('#t-back').onclick = showHome;
     $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
-    var ec = $('#t-edit-cl'); if (ec) ec.onclick = function () { editClass((T.home.classes || []).filter(function (c) { return c.class_id === r.target.id; })[0] || { class_id: r.target.id, name: r.target.title, members: r.members }); };
+    var cr = function () { return clsRow() || { class_id: r.target.id, name: r.target.title, members: r.members, active: true }; };
+    var ec = $('#t-edit-cl'); if (ec) ec.onclick = function () { editClass(cr()); };
+    var ac = $('#t-arch-cl'); if (ac) ac.onclick = function () { archiveClass(cr(), true); };
+    var rc = $('#t-restore-cl'); if (rc) rc.onclick = function () { archiveClass(cr(), false); };
     var na = $('#t-new-asg'); if (na) na.onclick = function () { openBuilder(r.target.kind === 'student' ? 'st:' + r.target.id : r.target.id); };
-    $('#t-scope').onchange = function () { openClass(T.target, this.value); };
+    $('#t-scope').onchange = function () { openClass(T.target, this.value, true); };
     var si = $('#t-search');
     si.oninput = function () { T.filter = si.value.trim(); renderTab(); };
     si.onkeydown = function (e) {
@@ -136,6 +221,7 @@
     $$('[data-tab]', body()).forEach(function (b) { b.onclick = function () { T.tab = b.getAttribute('data-tab'); $$('[data-tab]', body()).forEach(function (x) { x.classList.toggle('on', x === b); }); renderTab(); }; });
     renderTab();
   }
+  function clsRow() { var r = T.cv; return r && T.home ? (T.home.classes || []).filter(function (c) { return c.class_id === r.target.id; })[0] : null; }
   function filtered() {
     var f = T.filter.toUpperCase();
     return T.cv.rows.filter(function (q) { return !f || [q.code, q.qid, q.cb_id].some(function (x) { return String(x || '').toUpperCase().indexOf(f) >= 0; }); });
@@ -214,7 +300,11 @@
     $$('[data-plrep]', tb).forEach(function (b) { b.onclick = function () { openPlacement(b.getAttribute('data-plrep')); }; });
     $$('[data-ascope]', tb).forEach(function (b) { b.onclick = function () { T.tab = 'go'; openClass(T.target, 'a:' + b.getAttribute('data-ascope')); }; });
     $$('[data-aclose]', tb).forEach(function (b) { b.onclick = function () {
-      call('closeAssignment', A.code, b.getAttribute('data-aclose'), false).then(function () { toast('Closed: students no longer see it.', 2000); openClass(T.target, T.cv.scope); }).catch(function (e) { toast(X.errMsg(e)); });
+      var id = b.getAttribute('data-aclose'), a = T.cv.assignments.filter(function (x) { return x.assignment_id === id; })[0];
+      save({ fn: 'closeAssignment', args: [id, false], label: 'Closing "' + (a ? a.title : id) + '"',
+        apply: function () { if (a) a.status = 'closed'; renderTab(); toast('Closed: students no longer see it.', 2000); },
+        undo: function () { if (a) a.status = 'published'; if (T.view === 'class') renderTab(); },
+        done: function () { refreshLater(/^(home|cv\|)/); } });
     }; });
   }
 
@@ -223,8 +313,10 @@
   function openPanel(qid) {
     var p = $('#t-panel'), pin = $('#t-panel-in');
     p.classList.add('on'); p.setAttribute('aria-hidden', 'false');
+    var have = cget('qp|' + qid);
+    if (have) { renderPanel(have.q); return; }
     pin.innerHTML = '<div class="spinner"></div>';
-    call('questionPanel', A.code, qid).then(function (r) { renderPanel(r.q); }).catch(function (e) { pin.innerHTML = '<p class="empty">' + esc(X.errMsg(e)) + '</p><button class="btn-outline" type="button" onclick="this.closest(\'.t-panel\').classList.remove(\'on\')">Close</button>'; });
+    call('questionPanel', A.code, qid).then(function (r) { cput('qp|' + qid, r); renderPanel(r.q); }).catch(function (e) { pin.innerHTML = '<p class="empty">' + esc(X.errMsg(e)) + '</p><button class="btn-outline" type="button" onclick="this.closest(\'.t-panel\').classList.remove(\'on\')">Close</button>'; });
   }
   function renderPanel(q) {
     var pin = $('#t-panel-in'), row = T.cv ? T.cv.rows.filter(function (x) { return x.qid === q.qid; })[0] : null;
@@ -257,24 +349,28 @@
     if (!row) return;
     $$('[data-save]', pin).forEach(function (b) { b.onclick = function () {
       var i = +b.getAttribute('data-save'), s = row.students[i], type = $('[data-tag="' + i + '"]', pin).value, note = $('[data-note="' + i + '"]', pin).value;
-      b.disabled = true;
-      call('tagMistake', A.code, s.set_id, row.qid, type, note).then(function (r) {
-        b.disabled = false; s.mistake_type = type; s.mistake_note = note;
-        if (!s.right1 && row.untagged && type) row.untagged--;
-        toast(type ? 'Saved: ' + type + (r.review_added ? ' · added to ' + s.name.split(/\s+/)[0] + '\'s Review' : '') : 'Tag removed.', 2500);
-      }).catch(function (e) { b.disabled = false; toast(X.errMsg(e)); });
+      var old = { t: s.mistake_type, n: s.mistake_note, u: row.untagged };
+      save({ fn: 'tagMistake', args: [s.set_id, row.qid, type, note], label: 'Mistake type for ' + s.name,
+        apply: function () { s.mistake_type = type; s.mistake_note = note; if (!s.right1 && type && !old.t && row.untagged) row.untagged--; b.textContent = 'Saved ✓'; setTimeout(function () { b.textContent = 'Save'; }, 1500); },
+        undo: function () { s.mistake_type = old.t; s.mistake_note = old.n; row.untagged = old.u; if ($('#t-panel').classList.contains('on')) renderPanel(q); },
+        done: function (r) { toast(type ? 'Saved: ' + type + (r && r.review_added ? ' · added to ' + s.name.split(/\s+/)[0] + '\'s Review' : '') : 'Tag removed.', 2500); stale(/^(home|cv\||prof\|)/); } });
     }; });
     $$('[data-resolve]', pin).forEach(function (b) { b.onclick = function () {
-      var s = row.students[+b.getAttribute('data-resolve')], reopen = s.ask_status === 'resolved';
-      call('resolveAsk', A.code, s.set_id, row.qid, reopen).then(function () { s.ask_status = reopen ? 'open' : 'resolved'; if (!reopen && row.asks) row.asks--; renderPanel(q); toast(reopen ? 'Open again.' : 'Resolved.', 1500); })
-        .catch(function (e) { toast(X.errMsg(e)); });
+      var s = row.students[+b.getAttribute('data-resolve')], reopen = s.ask_status === 'resolved', oa = row.asks;
+      save({ fn: 'resolveAsk', args: [s.set_id, row.qid, reopen], label: 'Resolve',
+        apply: function () { s.ask_status = reopen ? 'open' : 'resolved'; if (!reopen && row.asks) row.asks--; if (reopen) row.asks++; renderPanel(q); },
+        undo: function () { s.ask_status = reopen ? 'resolved' : 'open'; row.asks = oa; if ($('#t-panel').classList.contains('on')) renderPanel(q); },
+        done: function () { stale(/^(home|asks|cv\||prof\|)/); } });
     }; });
   }
 
   /* ================= Asked inbox ================= */
   function showAsks() {
-    T.view = 'asks'; closePanel(); spin();
-    call('asksInbox', A.code).then(function (r) {
+    T.view = 'asks'; closePanel();
+    return load('asks', 'asksInbox', [], renderAsks, 'Loading the questions students asked…');
+  }
+  function renderAsks(r) {
+    {
       $('#t-asks-n').textContent = r.asks.length ? '(' + r.asks.length + ')' : '';
       var h = '<h1>Asked</h1><p class="sub">Questions students asked you about. Open one to see it with the student\'s tries; Resolve when you have gone over it.</p>';
       h += r.asks.length ? '<table class="t-table"><tr><th>Question</th><th>Student</th><th>Note</th><th>Set</th><th></th></tr>' + r.asks.map(function (a, i) {
@@ -283,17 +379,26 @@
       }).join('') + '</table>' : '<div class="empty">No open questions. 🎉</div>';
       body().innerHTML = h; bindCopies(body());
       $$('[data-open]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-open')]; openClass('st:' + a.student_code, 's:' + a.set_id).then(function () { openPanel(a.qid); }); }; });
-      $$('[data-res]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-res')]; call('resolveAsk', A.code, a.set_id, a.qid, false).then(showAsks).catch(function (e) { toast(X.errMsg(e)); }); }; });
-    }).catch(fail);
+      $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
+        var i = +b.getAttribute('data-res'), a = r.asks[i];
+        save({ fn: 'resolveAsk', args: [a.set_id, a.qid, false], label: 'Resolve',
+          apply: function () { r.asks.splice(r.asks.indexOf(a), 1); renderAsks(r); },
+          undo: function () { r.asks.splice(i, 0, a); if (T.view === 'asks') renderAsks(r); },
+          done: function () { stale(/^(home|cv\||prof\|)/); } });
+      }; });
+    }
   }
 
   /* ================= student profile ================= */
   function openProfile(sc) {
-    T.view = 'profile'; T.pcode = sc; closePanel(); spin();
-    call('studentProfile', A.code, sc).then(function (r) {
+    T.view = 'profile'; T.pcode = sc; closePanel();
+    return load('prof|' + sc, 'studentProfile', [sc], renderProfile, 'Loading the student…');
+  }
+  function renderProfile(r) {
+    {
       var s = r.student, t = r.totals, pct = function (a, b) { return b ? Math.round(100 * a / b) + '%' : '–'; };
       var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(s.name) + '</h1><div class="muted">' + codeHtml(s.code) + ' · ' + esc(s.classes || 'no class') + (s.active ? '' : ' · <b>off</b>') + '</div></div>' +
-        '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button></div></div>';
+        '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-ren">Rename</button><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button></div></div>';
       h += '<div class="t-stats"><div><b>' + t.answers + '</b>answers</div><div><b>' + pct(t.first_try_right, t.answers) + '</b>first try</div><div><b>' + pct(t.best_right, t.answers) + '</b>best</div>' +
         '<div><b>' + t.tries + '</b>tries</div><div><b>' + t.time_min + '</b>minutes</div><div><b>' + r.review_open + '</b>in Review</div><div><b>' + r.asks_open + '</b>asked</div></div>';
       var pf = r.profiles, mk = r.mistakes;
@@ -322,7 +427,12 @@
       $('#t-back').onclick = showHome;
       $('#t-p-go').onclick = function () { openClass('st:' + s.code, 'all'); };
       $('#t-p-asg').onclick = function () { openBuilder('st:' + s.code); };
-      $('#t-p-act').onclick = function () { call('editStudent', A.code, s.code, { active: !s.active }).then(function () { openProfile(s.code); }).catch(function (e) { toast(X.errMsg(e)); }); };
+      $('#t-p-act').onclick = function () { setStudent(r, { active: !s.active }); };
+      $('#t-p-ren').onclick = function () {
+        dialog('Rename', '<label class="t-lab">Name<input class="field" name="name" maxlength="60" value="' + esc(s.name) + '"></label>',
+          [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Save', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }],
+          function (m) { var i = $('[name=name]', m); if (i) i.select(); }).then(function (x) { if (x.v) setStudent(r, { name: String(x.vals.name).trim() }); });
+      };
       $$('[data-sub]', body()).forEach(function (b) { b.onclick = function () { var tr = $('#t-sub-' + b.getAttribute('data-sub')); tr.hidden = !tr.hidden; }; });
       $$('[data-plrep]', body()).forEach(function (b) { b.onclick = function () { openPlacement(b.getAttribute('data-plrep')); }; });
       $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
@@ -330,12 +440,22 @@
         call('teacherResult', A.code, x.set_id).then(X.renderResult).catch(function (e) { toast(X.errMsg(e)); });
       }; });
       $$('[data-sgo]', body()).forEach(function (b) { b.onclick = function () { openClass('st:' + s.code, 's:' + r.sets[+b.getAttribute('data-sgo')].set_id); }; });
-    }).catch(fail);
+    }
+  }
+  /** Turn a student on / off or rename: the profile and the lists change at once; saved in the background. */
+  function setStudent(r, f) {
+    var s = r.student, old = { active: s.active, name: s.name };
+    var hs = T.home ? T.home.students.filter(function (x) { return x.code === s.code; })[0] : null, hold = hs ? { active: hs.active, name: hs.name } : null;
+    var put = function (v) { Object.keys(v).forEach(function (k) { s[k] = v[k]; if (hs) hs[k] = v[k]; }); };
+    save({ fn: 'editStudent', args: [s.code, f], label: (f.active === undefined ? 'Rename ' : f.active ? 'Turn on ' : 'Turn off ') + old.name,
+      apply: function () { put(f); if (T.view === 'profile' && T.pcode === s.code) renderProfile(r); toast(f.active === undefined ? 'Renamed.' : f.active ? 'Turned on: the code works again.' : 'Turned off: the code no longer signs in.', 1800); },
+      undo: function () { put(old); if (hs && hold) { hs.active = hold.active; hs.name = hold.name; } if (T.view === 'profile' && T.pcode === s.code) renderProfile(r); else if (T.view === 'home') renderHome(T.home); },
+      done: function () { stale(/^(home|cv\||tree\|)/); } });
   }
 
   /* ================= assignment builder (§7) ================= */
   function openBuilder(target) {
-    T.view = 'build'; closePanel(); spin();
+    T.view = 'build'; closePanel(); ++NAV; if (!T.home) spin('Loading…');
     var go = function () {
       var h = T.home;
       var opts = '<option value="">— choose a student or a class —</option><optgroup label="Classes">' + h.classes.filter(function (c) { return c.active; }).map(function (c) { return '<option value="' + esc(c.class_id) + '">' + esc(c.name) + '</option>'; }).join('') + '</optgroup>' +
@@ -360,10 +480,7 @@
             '<p class="b-pub"><button type="button" class="btn-blue" id="b-plpub">Publish the placement test</button></p>';
           $('#b-plpub').onclick = function () {
             if (!to.value) { toast('Choose a student or a class.', 2500); return; }
-            var btn = this; btn.disabled = true;
-            call('publishAssignment', A.code, { kind: 'placement', target: to.value, title: $('#b-title').value, form: $('#b-form').value, available_from: $('#b-from').value, due: $('#b-due').value })
-              .then(function () { toast('Published: placement test.', 2500); T.tab = 'asg'; openClass(to.value); })
-              .catch(function (e) { btn.disabled = false; toast(X.errMsg(e), 3500); });
+            publishNow({ kind: 'placement', target: to.value, title: $('#b-title').value, form: $('#b-form').value, available_from: $('#b-from').value, due: $('#b-due').value }, 'placement test');
           };
         } else {
           $('#b-sub').textContent = 'Untimed, like practice. Tick topics, how many questions and which difficulties; the app picks the questions (those nobody has done first). Same questions for everyone in a class.';
@@ -378,13 +495,15 @@
       to.onchange = function () { if (kind === 'questions') loadTree(to.value); };
       draw();
     };
-    if (T.home) go(); else call('teacherHome', A.code).then(function (r) { T.home = r; go(); }).catch(fail);
+    if (T.home) go(); else call('teacherHome', A.code).then(function (r) { T.home = r; cput('home', r); go(); }).catch(fail);
   }
   function loadTree(target) {
     var box = $('#b-tree'); $('#b-pick').innerHTML = '';
     if (!target) { box.innerHTML = '<p class="muted">Choose who it is for first.</p>'; return; }
-    box.innerHTML = '<div class="spinner"></div>';
-    call('assignmentTree', A.code, target).then(function (r) {
+    var have = cget('tree|' + target);
+    if (!have) box.innerHTML = '<div class="spinner"></div><p class="muted t-wait">Counting the questions for each topic…</p>';
+    (have ? Promise.resolve(have) : call('assignmentTree', A.code, target)).then(function (r) {
+      cput('tree|' + target, r);
       T.tree = r;
       var cnt = function (c, d) { return c ? '<span class="muted">' + c['f' + d] + ' new / ' + c[d] + '</span>' : '<span class="muted">0</span>'; };
       var topic = function (code, name, c, sub, prof) {
@@ -408,7 +527,7 @@
     if (!topics.length) { toast('Tick at least one topic.', 2500); return; }
     var bad = topics.filter(function (t) { return !t.diffs; })[0];
     if (bad) { toast('Tick Easy, Medium or Hard for every topic.', 2500); return; }
-    var box = $('#b-pick'); box.innerHTML = '<div class="spinner"></div>';
+    var box = $('#b-pick'); box.innerHTML = '<div class="spinner"></div><p class="muted t-wait">Picking the questions…</p>';
     call('pickAssignment', A.code, { target: target, topics: topics }).then(function (r) {
       T.pick = r; T.pickTopics = topics; renderPick();
     }).catch(function (e) { box.innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; });
@@ -430,12 +549,23 @@
       var out = t.picked[i]; t.picked[i] = t.queue.shift(); t.queue.push(out); renderPick();
     }; });
     $('#b-publish').onclick = function () {
-      var btn = this; btn.disabled = true;
       var qids = []; r.topics.forEach(function (t) { t.picked.forEach(function (x) { qids.push(x.qid); }); });
-      call('publishAssignment', A.code, { target: $('#b-to').value, title: $('#b-title').value, available_from: $('#b-from').value, due: $('#b-due').value, qids: qids, topics: T.pickTopics })
-        .then(function (x) { toast('Published: ' + x.n + ' questions.', 2500); var tg = $('#b-to').value; T.tab = 'asg'; openClass(tg); })
-        .catch(function (e) { btn.disabled = false; toast(X.errMsg(e), 3500); });
+      publishNow({ target: $('#b-to').value, title: $('#b-title').value, available_from: $('#b-from').value, due: $('#b-due').value, qids: qids, topics: T.pickTopics }, qids.length + ' questions');
     };
+  }
+
+  /** Publish: the class screen opens at once on Assignments with the new one marked "Publishing…"; saved in the background. */
+  function publishNow(a, what) {
+    var key = 'cv|' + a.target + '|', tmp = { assignment_id: 'tmp-' + Date.now(), title: a.title || 'New assignment', kind: a.kind === 'placement' ? 'placement' : 'questions', form: a.form || '',
+      n: (a.qids || []).length, available_from: a.available_from || '', due: a.due || '', status: 'publishing…', students: [] };
+    var h = T.home || { classes: [], students: [] }, names = {}; h.students.forEach(function (x) { names[x.code] = x.name; });
+    var cls = h.classes.filter(function (c) { return c.class_id === a.target; })[0];
+    var codes = /^st:/.test(a.target) ? [a.target.slice(3)] : cls ? cls.members.map(function (m) { return m.code; }) : [];
+    tmp.students = codes.map(function (c) { return { code: c, name: names[c] || c, state: 'not started', n: 0, first_try: null, best: null, set_id: '' }; });
+    save({ fn: 'publishAssignment', args: [a], label: 'Publishing "' + tmp.title + '"',
+      apply: function () { if (C[key]) C[key].d.assignments.push(tmp); T.tab = 'asg'; openClass(a.target); },
+      undo: function () { if (C[key]) C[key].d.assignments = C[key].d.assignments.filter(function (x) { return x !== tmp; }); if (T.view === 'class' && T.cv) renderClass(); },
+      done: function () { tmp.status = 'published'; toast('Published: ' + what + '.', 2500); refreshLater(/^(home|cv\|)/); } });
   }
 
   /* ================= placement report ================= */
@@ -447,8 +577,11 @@
   }
   function openPlacement(setId) {
     var back = T.view === 'profile' && T.pcode ? T.pcode : null, prevView = T.view;
-    T.view = 'placement'; closePanel(); spin();
-    call('placementReport', A.code, setId).then(function (r) {
+    T.view = 'placement'; closePanel();
+    load('pl|' + setId, 'placementReport', [setId], function (r) { renderPlacementReport(r, back); }, 'Loading the report…');
+  }
+  function renderPlacementReport(r, back) {
+    {
       var lvName = function (l) { return l === '<E' ? 'Easy (below Easy)' : diffName(l); };
       var h = '<button type="button" class="hz-link t-back" id="t-back">← ' + (back ? esc(r.student) : 'Classes') + '</button>' +
         '<div class="t-head"><div><h1>Placement test — ' + esc(r.student) + '</h1><div class="muted">Form ' + esc(r.form) + ' · ' + esc(r.date) + ' · ' + r.n_items + ' questions · ' + r.n_right + ' right · ' + r.time_min + ' min' + (r.done ? '' : ' · <b>not finished</b>') + '</div></div>' +
@@ -475,7 +608,7 @@
       $('#t-back').onclick = function () { if (back) openProfile(back); else showHome(); };
       $('#pl-prof').onclick = function () { openProfile(r.student_code); };
       $$('#pl-items tr[data-q]').forEach(function (tr) { tr.onclick = function () { T.cv = null; openPanel(tr.getAttribute('data-q')); }; });
-    }).catch(fail);
+    }
   }
 
   /* ================= entry ================= */

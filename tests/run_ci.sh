@@ -18,4 +18,5 @@ run node e2e_teacher_test.js  # browser: teacher page from sign-in to profile
 run node e2e_placement_test.js # browser: assign placement → one question at a time → result → teacher report
 run node site_test.js         # GitHub Pages wrapper: only the app link, noindex; laptop + phone student and teacher sign-in
 run node calc_test.js         # browser: calculator panel on laptop + phone (drag, resize, expand, close, window resize)
+run node speed_test.js        # speed: tab snapshots (write / hand edit / race), write queue (order, retry, rollback, no loss), < 0.3 s clicks, archive
 echo "ALL SUITES PASSED"

@@ -697,4 +697,14 @@ button.t-mini{border:0;cursor:pointer;font:inherit;font-size:12px}
 .b-prof{font-size:12px;font-weight:600;color:#8a5a00;background:#fff3d6;border-radius:99px;padding:1px 8px;margin-left:4px;white-space:nowrap}
 /* table titles centred (QQ #36) */
 .q-text .tcap, .q-text caption, .t-pq .tcap, .t-pq caption { text-align: center; font-weight: 600; margin: 12px 0 4px; }
+/* write queue indicator (#42) */
+#wq-dot { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 90; font: 600 13px 'Noto Sans', Arial, sans-serif;
+  padding: 6px 12px; border-radius: 99px; background: #fff; border: 1px solid #dde0ea; box-shadow: 0 2px 8px rgba(20,30,60,.12); color: #5f6577; opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s; pointer-events: none; }
+#wq-dot.busy, #wq-dot.ok, #wq-dot.fail { opacity: 1; transform: none; }
+#wq-dot.ok { color: #1d6b40; border-color: #bfe3cc; } #wq-dot.fail { color: #b3261e; border-color: #f2c4c0; }
+.t-fresh { opacity: .55; transition: opacity .2s; }
+.t-wait { text-align: center; margin-top: -8px; }
+.t-card.arch { opacity: .7; border-style: dashed; } .t-archtag { font-size: 11px; font-weight: 700; color: #8a5a00; background: #fff3d6; border-radius: 99px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+.t-toggle { font-size: 14px; color: #5f6577; margin: 8px 0; } .t-toggle input { margin-right: 6px; vertical-align: -2px; }
+.t-head2 { align-items: center; margin-top: 18px; }
 </style>
