@@ -54,6 +54,10 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 - No Easy (S.C, S.D): an Easy slot gets Medium level 1. No Hard (Q.D, Q.E): a Hard slot gets the hardest Medium or a real Hard item.
 - Mixed Practice: skills with unfixed wrong answers first, then by weight: the 4 areas 35/35/15/15 in every set, skills inside an area by D'Hondt over their weights (a rare skill waits its turn) (`src/Profile.gs`). Review + Placement unchanged.
 
+## Time to the final answer + leaving the window (v0.8, 16 Nov 2026, ideas from Test Zone)
+- `deriveMetrics_` keeps each visit; `ans_ms` = time on the question before its last select / change (a revisit without a change does not count). Responses: `time_try1_sec` = `time_answer_sec` = that time (0 for blank), `time_total_sec` = all the time. Profiles (Rushed / Slow, SLOW_RIGHT), GUESS_LIKELY, IDLE_LIKELY and the Placement bands use it. Sets: `time_answer_min`, `time_check_min` (answered questions after the answer), `time_blank_min`.
+- Leaving the window (blur / tab hidden, ≥ `away_min_sec`, not when focus is in the calculator) → event `away` (value = ms) on the open question → Responses `away_n` / `away_sec`, Sets `away_n` / `away_sec` / `away_at`. Teacher: result line, profile Sets column, class grid, Placement report (⚠ = `LEFT_THEN_RIGHT`: left ≥ `away_flag_sec`, then right). Students: only the Placement test (`away_notice_placement`) shows a start line and a calm note on return. Nothing is blocked.
+
 ## Fixes 16 Nov (v0.7.1)
 - Reference panel: the SAT Math sheet for `reference_sheet` 'sat_math' or 'sat' (one constant in Client.html), in every set kind and in the review / Fix viewer.
 - Sizes: 5 by default (Practice by skill, Mixed). A skill (or Mixed) with an unfinished set shows "Continue N-question set" + "Start a new set instead" (asks; then `startPractice` / `startMixed` with `opts.replace` = that set → status `abandoned`, not graded, not in the history). If the page was old and the server still has an unfinished set of another size, the page asks; it never opens it silently.

@@ -119,7 +119,8 @@ check(!/"key"|accepted|correct answer/i.test(JSON.stringify(res)), 'result has n
 const resp = G.table('Responses');
 check(resp.length === 5 && resp.every(r => r.set_id === sp.set_id && r.skill === 'H.B' && r.subskill), 'Responses: 5 rows with skill + sub-skill');
 check(resp.filter(r => r.profile === 'BLANK').length === 1 && resp.filter(r => String(r.try1_correct) === '0').length === 1, 'one blank, one wrong');
-check(resp.every(r => r.profile === 'BLANK' || Number(r.time_try1_sec) === 70), 'time per question from the events (70 s each)');
+check(resp.every(r => r.profile === 'BLANK' ? Number(r.time_total_sec) === 70 && Number(r.time_answer_sec) === 0 : Number(r.time_try1_sec) === 20 && Number(r.time_answer_sec) === 20 && Number(r.time_total_sec) === 70),
+  'time from the events: 20 s to the answer, 70 s in total (50 s after the answer not counted for pace); blank: 70 s on a blank question');
 const sr = G.table('Sets')[0];
 check(sr.status === 'submitted' && Number(sr.first_try) === 3 && Number(sr.best_score) === 3 && sr.progress === 'Submitted', 'Sets row: submitted, 3 / 3');
 check(G.call('submit', ['FX-T01', sp.set_id, { state, events, ev_from: 0, copy: t.copy }]).first_try.right === 3 && G.table('Responses').length === 5, 'second submit = same result, no new rows');

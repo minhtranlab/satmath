@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.7.1 (2026-11-16, Reference sheet in every set, 5 by default, Continue or start a new set)';
+var APP_VERSION = 'v0.8 (2026-11-16, time to the final answer, leave-window log for the teacher)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -265,7 +265,9 @@ var SETTINGS_DEFAULTS_ = {
   // placement test (blueprint v2.2, Minh 14 Nov): time bands in seconds (fast ≤ fast, normal ≤ max, slow above; grid-in + spr extra)
   pl_easy_fast_sec: 40, pl_easy_max_sec: 60, pl_medium_fast_sec: 60, pl_medium_max_sec: 90, pl_hard_fast_sec: 90, pl_hard_max_sec: 180,
   pl_spr_extra_sec: 15, pl_slow_credit: 0.5, pl_max_per_domain: 6, pl_easy_cap: 3, pl_strong_run: 2, pl_wrong_stop: 2,
-  pl_pattern: 'ALG,PSD,ALG,GEO', pl_adv_medium_if: 'H'
+  pl_pattern: 'ALG,PSD,ALG,GEO', pl_adv_medium_if: 'H',
+  // #48 leaving the window (all sets: recorded for the teacher; only the Placement test tells the student)
+  away_min_sec: 2, away_flag_sec: 20, away_notice_placement: 'Yes'
 };
 var _settings = null;
 function getSettings_() {
@@ -520,7 +522,8 @@ function getSet(code, setId, opts) {
     prof.placement = true; prof.n_range = '8–24';
     prof.parts[0].directions_html = '<p>This test finds your level in the four areas of SAT Math. You get one question at a time; the next one ' +
       'depends on your answer. You cannot go back to a question. There is no timer, but the time on each question is recorded, so take your time ' +
-      'and work carefully. You may use the Desmos calculator and the reference sheet. You can stop and continue later from your home page.</p>';
+      'and work carefully. You may use the Desmos calculator and the reference sheet. You can stop and continue later from your home page.</p>' +
+      (isYes_(getSettings_().away_notice_placement) ? '<p class="pl-away-note">This test notes when you leave the test window.</p>' : '');
   }
   var plk = null; if (pl) try { plk = plPackFor_(s); } catch (e) { plk = null; }                    // #43: key of the current item only
   return {
@@ -530,7 +533,8 @@ function getSet(code, setId, opts) {
     resumed: !!parseState_(s), state: parseState_(s), copy: copy, server_now: Date.now(),
     profile: prof,
     questions: qs.map(function (q, i) { return clientQuestion_(q, pl ? i === qs.length - 1 : i < FIGS_WITH_SET); }),
-    settings: { app_name: S.app_name, autosave_sec: S.autosave_sec, desmos_api_key: desmosKey_(), show_results: 'score_and_right_wrong' },
+    settings: { app_name: S.app_name, autosave_sec: S.autosave_sec, desmos_api_key: desmosKey_(), show_results: 'score_and_right_wrong',
+                away_min_sec: Number(S.away_min_sec) || 2, away_notice: String(s.kind) === 'placement' && isYes_(S.away_notice_placement) },
     ask_note_max: Number(S.ask_note_max) || 200
   };
 }
@@ -785,10 +789,14 @@ function fullEvents_(s, payload) {
 /** Per-question metrics from the events (Test Zone deriveMetrics_). Time while the page was away is not counted. */
 function deriveMetrics_(events, qids) {
   var m = {};
-  qids.forEach(function (id) { m[id] = { visits: 0, time_ms: 0, first_visit_ms: null, order: null, answers: [], calc: false, ref: false, ever_marked: false }; });
+  qids.forEach(function (id) { m[id] = { visits: 0, time_ms: 0, first_visit_ms: null, order: null, answers: [], calc: false, ref: false, ever_marked: false,
+                                          iv: [], last_ans_t: null, away_n: 0, away_ms: 0 }; });
   var openQ = null, openT = 0, visitIdx = {}, order = 0, calcOpen = false, lastT = 0, resumeQ = null;
   function close(t) {
-    if (openQ && m[openQ]) { var d = Math.max(0, t - openT); m[openQ].time_ms += d; if (visitIdx[openQ] === 1) m[openQ].first_visit_ms = (m[openQ].first_visit_ms || 0) + d; }
+    if (openQ && m[openQ]) {
+      var d = Math.max(0, t - openT); m[openQ].time_ms += d; if (visitIdx[openQ] === 1) m[openQ].first_visit_ms = (m[openQ].first_visit_ms || 0) + d;
+      if (d > 0) m[openQ].iv.push([openT, t]);
+    }
     openQ = null;
   }
   events.forEach(function (e) {
@@ -808,7 +816,8 @@ function deriveMetrics_(events, qids) {
         break;
       case 'q_leave': if (openQ === q) { if (String(e.value) === 'pagehide') resumeQ = q; close(t); } break;
       case 'review_open': case 'part_end': resumeQ = null; close(t); break;
-      case 'select': case 'change': if (m[q]) m[q].answers.push(String(e.value)); break;
+      case 'select': case 'change': if (m[q]) { m[q].answers.push(String(e.value)); m[q].last_ans_t = t; } break;
+      case 'away': if (m[q]) { m[q].away_n++; m[q].away_ms += Math.max(0, Number(e.value) || 0); } break;
       case 'mark': if (m[q]) m[q].ever_marked = true; break;
       case 'calc_open': calcOpen = true; if (openQ && m[openQ]) m[openQ].calc = true; break;
       case 'calc_close': calcOpen = false; break;
@@ -817,7 +826,27 @@ function deriveMetrics_(events, qids) {
     if (e.type !== 'resume') lastT = Math.max(lastT, t);
   });
   close(lastT);
+  // #48 time to the final answer: the time on the question before the moment its last answer was chosen (every visit up to
+  // then; a revisit after it — no change — does not count). No answer event (old data) → all the time.
+  qids.forEach(function (id) {
+    var x = m[id];
+    if (x.last_ans_t === null) { x.ans_ms = x.time_ms; return; }
+    x.ans_ms = x.iv.reduce(function (a, v) { return a + Math.max(0, Math.min(v[1], x.last_ans_t) - v[0]); }, 0);
+  });
   return m;
+}
+
+/** #48 per set (teacher only): answering · checking (on answered questions after their final answer) · blank, and the
+ *  leave-window log (count, seconds, at which questions). */
+function setPaceFields_(f, rows) {
+  var sum = function (fn) { return rows.reduce(function (a, r) { return a + (Number(fn(r)) || 0); }, 0); };
+  var used = sum(function (r) { return r.time_total_sec; }), blank = sum(function (r) { return r.profile === 'BLANK' ? r.time_total_sec : 0; });
+  var ans = sum(function (r) { return r.profile === 'BLANK' ? 0 : (r.time_answer_sec === '' || r.time_answer_sec === undefined ? r.time_total_sec : r.time_answer_sec); });
+  f.time_answer_min = round_(ans / 60, 1); f.time_blank_min = round_(blank / 60, 1); f.time_check_min = round_(Math.max(0, used - ans - blank) / 60, 1);
+  var aw = rows.filter(function (r) { return Number(r.away_n) > 0; }).sort(function (a, b) { return Number(a.order) - Number(b.order); });
+  f.away_n = aw.length ? sum(function (r) { return r.away_n; }) : 0; f.away_sec = aw.length ? sum(function (r) { return r.away_sec; }) : 0;
+  f.away_at = aw.map(function (r) { return 'Q' + r.order; }).join(', ');
+  return f;
 }
 
 function gradeSet_(s, state, events) {
@@ -838,7 +867,9 @@ function gradeSet_(s, state, events) {
     if (first && !fin) pattern = 'cleared';
     else if (first && fin && first !== fin) pattern = (firstCorr ? 'R' : 'W') + '→' + (corr ? 'R' : 'W');
     var tg = tags[q.qid] || ((q.tags) ? { domain: q.tags.domain, skill: q.tags.skill, subskill: q.tags.subskill, difficulty: q.tags.difficulty, level: q.tags.level } : {});
-    var timeSec = x.time_ms / 1000;
+    // #48: pace (Rushed / Slow, SLOW_RIGHT, GUESS_LIKELY, IDLE_LIKELY, placement bands) reads the time to the final answer;
+    // the total time on the question is kept (time_total_sec). A blank question: its time is "time on blank questions".
+    var totalSec = x.time_ms / 1000, timeSec = fin ? x.ans_ms / 1000 : totalSec;
     var norm = timeNormFor_(q.type, tg.difficulty);
     var tp = timeProfile_(!!fin, corr, Math.min(timeSec, norm ? norm.slow * 3 : timeSec), norm, 120, S);
     var elim = ((ps.elim && ps.elim[q.qid]) || []).slice().sort();
@@ -855,7 +886,8 @@ function gradeSet_(s, state, events) {
       try1_answer: txt_(fin), try1_correct: fin ? (corr ? 1 : 0) : '', final_answer: txt_(fin), best_correct: corr ? 1 : 0,
       n_tries: fin ? 1 : 0, locked: '', fixed_at: '', n_changes: nCh, change_pattern: pattern, eliminated: elim.join(','),
       ever_marked: !!(x.ever_marked || (ps.mark && ps.mark[q.qid])), visits: x.visits,
-      time_try1_sec: round_(timeSec, 1), time_total_sec: round_(timeSec, 1), pace_ratio: round_(tp.ratio, 2),
+      time_try1_sec: round_(timeSec, 1), time_total_sec: round_(totalSec, 1), time_answer_sec: fin ? round_(timeSec, 1) : 0, pace_ratio: round_(tp.ratio, 2),
+      away_n: x.away_n || '', away_sec: x.away_n ? round_(x.away_ms / 1000, 0) : '',
       calc_used: !!x.calc, ref_used: !!x.ref, profile: tp.profile, flags: flags.join(','), submitted_at: now,
       asked: ps.ask && q.qid in ps.ask ? 1 : '', ask_note: ps.ask && ps.ask[q.qid] ? txt_(ps.ask[q.qid]) : '',
       ask_at: ps.ask && q.qid in ps.ask ? now : '', ask_status: ps.ask && q.qid in ps.ask ? 'open' : '',
@@ -890,6 +922,7 @@ function submit(code, setId, payload) {
     var fields = { submitted_at: nowIso_(), status: 'submitted', events_saved: evSaved, last_saved_at: nowIso_(), progress: 'Submitted',
                    state_json: compactState_(state), first_try: g.right, best_score: g.right,
                    n_blank: g.rows.filter(function (r) { return r.profile === 'BLANK'; }).length, time_used_min: round_(used / 60, 1) };
+    setPaceFields_(fields, g.rows);
     if (payload.device) fields.device = txt_(String(payload.device).slice(0, 60));
     updateRow_('Sets', s._row, fields);
     var done = {}; Object.keys(s).forEach(function (k) { done[k] = s[k]; }); Object.keys(fields).forEach(function (k) { done[k] = fields[k]; });
@@ -921,7 +954,7 @@ function reviewData_(s, rows, asTeacher) {
     if (asTeacher) o.code = q.code || '';                      // the short code (E326) is for the teacher only (Minh 13 Nov)
     o.answer = String(r.final_answer === undefined ? '' : r.final_answer).replace(/^'/, '');
     o.status = String(r.profile) === 'BLANK' || o.answer === '' ? 'blank' : (Number(r.best_correct) === 1 ? 'right' : 'wrong');
-    o.time_s = Math.round(Number(r.time_total_sec) || 0);
+    o.time_s = Math.round(Number(r.time_answer_sec !== '' && r.time_answer_sec !== undefined ? r.time_try1_sec : r.time_total_sec) || 0);
     o.label = 'Q' + q.display_no; o.badge = qBadge_(String(r.profile)); o.no = q.display_no;
     o.asked = !!r.asked && String(r.ask_status) !== 'resolved'; o.ask_note = String(r.ask_note || '').replace(/^'/, '');
     return o;

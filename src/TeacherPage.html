@@ -278,7 +278,7 @@
           if (!s) return '<td class="t-gc none"></td>';
           var path = s.tries.length ? s.tries.map(function (t) { return esc(t.a || '–'); }).join(' → ') : '–';
           return '<td class="t-gc ' + (s.right1 ? 'right' : s.best ? 'fixed' : 'wrong') + (gridKeep(s) ? '' : ' dim') + '"><span class="t-gpath">' + path + ' ' + (s.right1 ? '✓' : s.best ? '✓ later' : '✗') + '</span>' +
-            '<span class="t-gmeta">' + s.time_s + ' s' + (s.badge ? ' · ' + s.badge : '') + (s.asked && s.ask_status === 'open' ? ' · ?' : '') + (s.mistake_type ? ' · <i class="t-tagdot" title="' + esc(s.mistake_type) + '"></i>' : '') + '</span></td>';
+            '<span class="t-gmeta">' + s.time_s + ' s' + (s.away_s ? ' · left ' + s.away_s + ' s' : '') + (s.badge ? ' · ' + s.badge : '') + (s.asked && s.ask_status === 'open' ? ' · ?' : '') + (s.mistake_type ? ' · <i class="t-tagdot" title="' + esc(s.mistake_type) + '"></i>' : '') + '</span></td>';
         }).join('') + '</tr>';
       }).join('') + '</table></div>';
     tb.innerHTML = h;
@@ -333,7 +333,7 @@
       h += '<h3 class="t-h3">Students</h3>' + row.students.map(function (s, i) {
         var tries = s.tries.length ? s.tries.map(function (t) { return '<span class="' + (t.ok ? 'ok' : 'no') + '">' + esc(t.a || '–') + '</span>'; }).join(' → ') : '<span class="no">blank</span>';
         return '<div class="t-ps" data-i="' + i + '"><div class="t-psh"><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button><span class="muted">' + esc(s.set_title) + ' · ' + esc(s.date) + '</span></div>' +
-          '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · ' + s.time_s + ' s' + (s.pace ? ' (' + Math.round(s.pace * 100) + '% of normal)' : '') + (s.badge ? ' ' + X.bdg(s.badge) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
+          '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · ' + s.time_s + ' s to the answer' + (s.pace ? ' (' + Math.round(s.pace * 100) + '% of normal)' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + (s.badge ? ' ' + X.bdg(s.badge) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
           (s.asked ? '<div class="t-pask">Asked' + (s.ask_note ? ': “' + esc(s.ask_note) + '”' : '') + ' <button type="button" class="hz-link" data-resolve="' + i + '">' + (s.ask_status === 'resolved' ? 'Open again' : 'Resolve') + '</button>' + (s.ask_status === 'resolved' ? ' <span class="muted">(resolved)</span>' : '') + '</div>' : '') +
           '<div class="t-ptag"><select class="field" data-tag="' + i + '"><option value="">' + esc(ph) + '</option>' + types.map(function (t) { return '<option' + (t === s.mistake_type ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>' +
           '<input class="field" data-note="' + i + '" maxlength="300" placeholder="Note (optional)" value="' + esc(s.mistake_note) + '"><button type="button" class="btn-outline" data-save="' + i + '">Save</button></div></div>';
@@ -423,11 +423,13 @@
           '<td>' + (k.n ? dotHtml(k.dot) + k.right + '/' + k.n : '') + '</td><td><button type="button" class="hz-link t-lv-one" data-k="' + i + '" title="' + esc(diffsFor(k.level).split(',').map(diffName).join(' + ')) + '">Assign</button></td></tr>' +
           (k.subs.length ? '<tr class="t-subs" id="t-sub-' + i + '" hidden><td colspan="7">' + k.subs.map(function (x) { return '<span>' + dotHtml(x.dot) + esc(x.name) + ' ' + x.right + '/' + x.n + '</span>'; }).join('') + '</td></tr>' : '');
       }).join('') + '</table></div>';
-      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<table class="t-table"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th></th></tr>' + r.sets.map(function (x, i) {
-        return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td><td>' + (x.time_min ? x.time_min + ' min' : '') + '</td>' +
+      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<div class="t-tw"><table class="t-table" id="t-sets"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th>Left the window</th><th></th></tr>' + r.sets.map(function (x, i) {
+        return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td>' +
+          '<td>' + (x.time_min ? x.time_min + ' min' : '') + (x.done && x.answer_min !== null ? '<div class="muted t-small">answering ' + x.answer_min + ' min</div>' : '') + '</td>' +
+          '<td class="t-away">' + (x.done && x.answer_min !== null ? (x.away_n ? x.away_n + '× · ' + X.durStr(x.away_sec) + (x.away_at ? '<div class="muted t-small">at ' + esc(x.away_at) + '</div>' : '') : '<span class="muted">—</span>') : '') + '</td>' +
           '<td>' + (x.done && x.kind === 'placement' ? '<button type="button" class="hz-link" data-plrep="' + esc(x.set_id) + '">Report</button>'
             : x.done ? '<button type="button" class="hz-link" data-res="' + i + '">Result</button> <button type="button" class="hz-link" data-sgo="' + i + '">Go over</button>' : '') + '</td></tr>';
-      }).join('') + '</table>' : '<div class="empty">No sets yet.</div>');
+      }).join('') + '</table></div>' : '<div class="empty">No sets yet.</div>');
       body().innerHTML = h; bindCopies(body());
       $('#t-back').onclick = showHome;
       $('#t-p-go').onclick = function () { openClass('st:' + s.code, 'all'); };
@@ -675,6 +677,8 @@
       var h = '<button type="button" class="hz-link t-back" id="t-back">← ' + (back ? esc(r.student) : 'Classes') + '</button>' +
         '<div class="t-head"><div><h1>Placement test — ' + esc(r.student) + '</h1><div class="muted">Form ' + esc(r.form) + ' · ' + esc(r.date) + ' · ' + r.n_items + ' questions · ' + r.n_right + ' right · ' + r.time_min + ' min' + (r.done ? '' : ' · <b>not finished</b>') + '</div></div>' +
         '<div class="t-actions"><button class="btn-outline" type="button" id="pl-prof">Profile</button></div></div>';
+      if (r.pace) h += '<p class="t-pace" id="pl-pace">' + (r.pace.has_answer_time ? 'Answering <b>' + r.pace.answer_min + ' min</b> · ' : '') + X.awayLine(r.pace.away_n, r.pace.away_sec, r.pace.away_at) +
+        (r.items.some(function (x) { return x.away_flag; }) ? ' · <span class="t-warn">⚠ = left the window ≥ ' + r.away_flag_sec + ' s on that question, then right (a sign, not proof)</span>' : '') + '</p>';
       h += '<div class="pl-tdoms" id="pl-tdoms">' + r.domains.map(function (d) {
         var pv = r.previous ? r.previous.domains.filter(function (x) { return x.dom === d.dom; })[0] : null;
         return '<div class="pl-tdom"><div class="muted">' + esc(d.name) + '</div><div>' + plLvl(d.level) + (pv && pv.level ? ' <span class="muted">(before: ' + esc(PL_WORD[pv.level] || pv.level) + (pv.level === '<E' ? ', below Easy' : '') + ')</span>' : '') + '</div>' +
@@ -690,7 +694,7 @@
       h += '<h2 class="t-h2">Questions in order</h2><table class="t-table pl-items" id="pl-items"><tr><th>#</th><th>Question</th><th>Area · slot</th><th>Sub-skill</th><th>Answer</th><th>Time</th></tr>' + r.items.map(function (x) {
         return '<tr data-q="' + esc(x.qid) + '" tabindex="0"><td class="muted">' + x.no + '</td><td>' + codeHtml(x.code) + '</td><td>' + esc(PL_SHORT[x.dom] || x.dom) + ' · <b>' + esc(x.slot) + '</b></td><td class="muted">' + esc(x.subskill_name) + '</td>' +
           '<td><span class="t-mini ' + (x.right ? 'right' : '') + '">' + (x.blank ? 'blank' : esc(x.answer)) + ' ' + (x.right ? '✓' : '✗') + '</span></td>' +
-          '<td>' + x.time_s + ' s <span class="pl-band ' + esc(x.band) + '">' + esc(x.band) + '</span></td></tr>';
+          '<td>' + x.time_s + ' s <span class="pl-band ' + esc(x.band) + '">' + esc(x.band) + '</span>' + (x.away_sec ? ' <span class="t-awayq' + (x.away_flag ? ' flag' : '') + '" title="Left the window on this question">' + (x.away_flag ? '⚠ ' : '') + 'left ' + X.durStr(x.away_sec) + '</span>' : '') + '</td></tr>';
       }).join('') + '</table>';
       var b = r.bands || {};
       h += '<p class="t-line muted">Time bands (Settings): Easy fast ≤ ' + (b.E || [])[0] + ' s, normal ≤ ' + (b.E || [])[1] + ' s · Medium ≤ ' + (b.M || [])[0] + ' / ' + (b.M || [])[1] + ' s · Hard ≤ ' + (b.H || [])[0] + ' / ' + (b.H || [])[1] + ' s (Hard: time recorded only) · grid-in + ' + b.spr + ' s. A slow right answer counts half a step.</p>';

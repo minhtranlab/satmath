@@ -281,6 +281,9 @@
     var y = window.scrollY; renderHome(r); window.scrollTo(0, y);
   }
   /** Assigned focus card (mockup B approved by Minh 14 Nov 21:09, without the "Desmos + reference sheet" line). */
+  /** #48 "2 min 10 s" */
+  function durStr(sec) { sec = Math.round(Number(sec) || 0); var m = Math.floor(sec / 60), x = sec % 60; return m ? m + ' min' + (x ? ' ' + x + ' s' : '') : x + ' s'; }
+  function awayLine(n, sec, at) { return n ? 'Left the window: ' + n + '× · ' + durStr(sec) + (at ? ' · at ' + at : '') : 'Left the window: never'; }
   function focusCard(a) {
     var c = el('article', { class: 'hz-focus', id: a.placement ? 'placement-card' : 'assigned' });
     var diffs = (a.diffs || '').split(',').filter(String).map(function (d) { return { E: 'Easy', M: 'Medium', H: 'Hard' }[d]; });
@@ -1235,14 +1238,16 @@
     if (q.type === 'spr') return sprRightC(ans, keys);
     return keys.some(function (k) { return String(k).trim().toUpperCase() === String(ans).trim().toUpperCase(); });
   }
-  /** Seconds on one item (its visits: q_enter … q_leave), like the server's metrics. */
+  /** Seconds to the final answer on one item (#48, like the server): its visits (q_enter … q_leave) up to the last answer. */
   function timeOn(qid) {
-    var t = 0, open = null;
+    var iv = [], open = null, lastAns = null;
     A.events.forEach(function (e) {
+      if (e.qid === qid && (e.type === 'select' || e.type === 'change')) lastAns = e.t_ms;
       if (e.qid === qid && e.type === 'q_enter') open = e.t_ms;
-      else if (open !== null && ((e.type === 'q_leave' && e.qid === qid) || e.type === 'q_enter' || e.type === 'save_exit')) { t += Math.max(0, e.t_ms - open); open = null; }
+      else if (open !== null && ((e.type === 'q_leave' && e.qid === qid) || e.type === 'q_enter' || e.type === 'save_exit')) { iv.push([open, e.t_ms]); open = null; }
     });
-    return t / 1000;
+    var end = lastAns === null ? Infinity : lastAns;
+    return iv.reduce(function (a, v) { return a + Math.max(0, Math.min(v[1], end) - v[0]); }, 0) / 1000;
   }
   function plNextBtn(busy) { var nb = $('#btn-next'); nb.disabled = !!busy; nb.textContent = busy ? 'Saving…' : 'Next'; }
   function plNext() {
@@ -1479,6 +1484,8 @@
       h += '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>' +
         '<div class="sm-scores"><div class="sm-score" id="score-first"><div class="k">First Try</div><div class="v">' + res.first_try.right + '<small>/' + res.first_try.n + '</small></div><div class="s">right the first time</div></div>' +
         '<div class="sm-score best" id="score-best"><div class="k">Best Score</div><div class="v">' + res.best.right + '<small>/' + res.best.n + '</small></div><div class="s">first try + fixed later</div></div></div>';
+      if (teacher && res.pace) h += '<p class="t-pace" id="res-pace">' + (res.pace.has_answer_time ? 'Answering <b>' + res.pace.answer_min + ' min</b> · checking ' + res.pace.check_min + ' min · on blank questions ' + res.pace.blank_min + ' min · ' : '') +
+        awayLine(res.pace.away_n, res.pace.away_sec, res.pace.away_at) + '</p>';
       if (res.review_summary) h += '<p class="sm-revsum" id="review-summary"><b>' + res.review_summary.cleared + '</b> cleared, <b>' + res.review_summary.still + '</b> still to review.</p>';
       var fx = res.fix || {};
       if (!teacher && fx.open) h += '<div class="sm-fix"><button class="btn-blue" id="btn-fix" type="button">Fix wrong answers (' + fx.open + ')</button>' +
@@ -1770,7 +1777,7 @@
   function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
   function initTeacher() {
     // the teacher page (TeacherPage.html) uses these helpers of the student client
-    window.SMLX = { nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
+    window.SMLX = { durStr: durStr, awayLine: awayLine, nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
                     figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell };
     if (window.SMLT) window.SMLT.init();
   }
@@ -1821,9 +1828,35 @@
     });
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden' && A.st && (A.st.phase === 'test' || A.st.phase === 'review')) { persist(); autosave(); }
+      if (document.visibilityState === 'hidden') awayStart(true); else awayEnd();
     });
+    window.addEventListener('blur', function () { awayStart(false); });
+    window.addEventListener('focus', awayEnd);
     window.addEventListener('resize', fpOnWindowResize);
     window.addEventListener('online', function () { if (A.st && (A.st.phase === 'test' || A.st.phase === 'review')) autosave(); });
+  }
+  /* #48 leaving the set window — recorded in every set for the teacher (count, time, question). Only the Placement test
+     tells the student (start screen line + a calm note on return); practice shows nothing. < away_min_sec is ignored, and
+     so is focus moving into the calculator (or any frame inside the page). Nothing is blocked. */
+  var AWAY = { t0: 0, q: null };
+  function awayLive() { return !!(A.st && A.st.phase === 'test' && !A.view && $('#scr-test').classList.contains('on') && !$('#modal-root').classList.contains('on')); }
+  function awayStart(hidden) {
+    if (AWAY.t0 || !awayLive()) return;
+    if (!hidden) {
+      var ae = document.activeElement;
+      if (ae && (ae.tagName === 'IFRAME' || (ae.closest && ae.closest('#calc-panel')))) return;      // the calculator has focus
+    }
+    var q = curQ(); AWAY.t0 = Date.now(); AWAY.q = q ? q.qid : null;
+  }
+  function awayEnd() {
+    if (!AWAY.t0) return;
+    if (document.visibilityState === 'hidden') return;
+    var d = Date.now() - AWAY.t0, q = AWAY.q; AWAY.t0 = 0; AWAY.q = null;
+    if (!A.st || A.st.phase !== 'test' || A.view || !q) return;
+    var set = (A.test && A.test.settings) || {};
+    if (d < (Number(set.away_min_sec) || 2) * 1000) return;
+    log('away', q, Math.round(d)); persist();
+    if (A.pl && set.away_notice) toast('You just left the test window. Your teacher can see this.', 4000);
   }
   function setZoom(z) {
     A.st.zoom = Math.round(Math.max(0.8, Math.min(1.8, z)) * 10) / 10; persist(); applyZoom();

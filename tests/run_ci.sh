@@ -21,4 +21,5 @@ run node calc_test.js         # browser: calculator panel on laptop + phone (dra
 run node speed_test.js        # speed: tab snapshots (write / hand edit / race), write queue (order, retry, rollback, no loss), < 0.3 s clicks, archive
 run node nav_test.js          # Back / Backspace / Exit, home order, placement one key at a time + instant next, Fix instant, result 2×2, assign from profile
 run node fix47_test.js        # Reference sheet in every set kind + viewer; default 5; unfinished set → Continue / "Start a new set instead" (abandoned)
+run node pace48_test.js       # time to the final answer (revisit / change / blank), pace + placement bands from it; leave-window log (practice silent, placement note, ⚠)
 echo "ALL SUITES PASSED"

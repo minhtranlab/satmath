@@ -223,6 +223,8 @@ function placementNext(code, setId, payload) {
     var band = plBand_(level, cur.type, Number(row.time_try1_sec) || 0, S);
     it.a = !right ? 'W' : (level !== 'H' && band === 'slow') ? 'S' : 'F';
     row.flags = (row.flags ? row.flags + ',' : '') + 'PL_' + it.dom + '_' + it.slot + ',PL_' + band.toUpperCase();
+    // #48 a sign for the teacher, not proof (no score change): left the window ≥ away_flag_sec on this item, then right
+    if (right && Number(row.away_sec) >= (Number(S.away_flag_sec) || 20)) row.flags += ',LEFT_THEN_RIGHT';
     row.asked = ''; row.ask_note = ''; row.ask_at = ''; row.ask_status = ''; row.ask_code = '';
     appendObjects_('Responses', [row]);
     appendObjects_('Tries', [{ set_id: row.set_id, student_code: row.student_code, qid: row.qid, try_no: 1, answer: row.try1_answer,
@@ -335,6 +337,7 @@ function finishPlacement_(s, stt) {
   _plLatest = {};
   var fields = { submitted_at: now, status: 'submitted', progress: 'Submitted', first_try: right, best_score: right, n: rows.length,
                  n_blank: rows.filter(function (r) { return r.profile === 'BLANK'; }).length, time_used_min: round_(time / 60, 1), slots: plSlotsText_(items) };
+  setPaceFields_(fields, rows);
   updateRow_('Sets', s._row, fields);
   Object.keys(fields).forEach(function (k) { s[k] = fields[k]; });
   return placementStudentView_(s, rec);
@@ -372,7 +375,8 @@ function placementReport_(s) {
     return { no: i + 1, qid: String(r.qid), code: clean_(Q.code), dom: it.dom || '', slot: it.slot || '', skill: clean_(r.skill), skill_name: skillName_(clean_(r.skill)),
              subskill_name: subskillName_(clean_(r.subskill)), difficulty: String(r.difficulty || ''), type: String(Q.type || 'mcq'),
              answer: clean_(r.final_answer), right: Number(r.try1_correct) === 1, blank: String(r.profile) === 'BLANK',
-             time_s: Math.round(Number(r.time_try1_sec) || 0), band: m ? m[1].toLowerCase() : '', step: it.a || '' };
+             time_s: Math.round(Number(r.time_try1_sec) || 0), band: m ? m[1].toLowerCase() : '', step: it.a || '',
+             away_sec: Number(r.away_sec) || 0, away_flag: /LEFT_THEN_RIGHT/.test(String(r.flags || '')) };
   });
   var skills = plSkillLevels_(rows, results), teach = rec ? plTeachFirst_(skills, results) : [];
   var doms = PL_DOMAINS_.map(function (d) {
@@ -390,7 +394,8 @@ function placementReport_(s) {
   return { ok: true, placement_report: true, set_id: String(s.set_id), student: st ? String(st.name || '') : String(s.student_code), student_code: normCode_(s.student_code),
            form: String(s.level_at_start || ''), done: isFinished_(s), date: dateStr_(s.submitted_at || s.created_at), n_items: list.length,
            n_right: list.filter(function (x) { return x.right; }).length, time_min: rec ? Number(rec.time_min) || 0 : round_(list.reduce(function (a, x) { return a + x.time_s; }, 0) / 60, 1),
-           domains: doms, skills: skills, teach_first: teach, items: list, previous: prev, bands: bands };
+           domains: doms, skills: skills, teach_first: teach, items: list, previous: prev, bands: bands, pace: paceOf_(rows),
+           away_flag_sec: Number(S.away_flag_sec) || 20 };
 }
 /** A student's placements (newest first) for the teacher's profile page. */
 function plSummaries_(codeN) {

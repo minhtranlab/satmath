@@ -20,6 +20,12 @@ var TYPES_ = [
   { key: 'BLANK', status: 'blank', badge: '', label: 'Blank', meaning: 'No answer.' }
 ];
 
+/** #48 teacher only: answering · checking · blank minutes and the leave-window log of a set (from its Responses rows). */
+function paceOf_(rows) {
+  var f = setPaceFields_({}, rows.slice().sort(function (a, b) { return Number(a.order) - Number(b.order); }));
+  return { answer_min: f.time_answer_min, check_min: f.time_check_min, blank_min: f.time_blank_min,
+           away_n: f.away_n, away_sec: f.away_sec, away_at: f.away_at, has_answer_time: rows.some(function (r) { return r.time_answer_sec !== '' && r.time_answer_sec !== undefined; }) };
+}
 function resultView_(s, rows, asTeacher) {
   rows = rows.slice().sort(function (a, b) { return Number(a.order) - Number(b.order); });
   var n = rows.length;
@@ -67,6 +73,6 @@ function resultView_(s, rows, asTeacher) {
     var clean = rows.filter(function (r) { return Number(r.try1_correct) === 1 && String(r.profile) !== 'SLOW_RIGHT'; }).length;
     v.review_summary = { cleared: clean, still: n - clean };
   }
-  if (asTeacher) { v.teacher = true; v.student = st ? String(st.name || '') : String(s.student_code); v.student_code = normCode_(s.student_code); }
+  if (asTeacher) { v.teacher = true; v.student = st ? String(st.name || '') : String(s.student_code); v.student_code = normCode_(s.student_code); v.pace = paceOf_(rows); }
   return v;
 }
