@@ -7,7 +7,9 @@ const { setup, shot, login, waitMath, check, summary, sleep } = require('./h');
 async function openSet(page, E, code) {
   await login(page, E.url, code || 'FX-T01');
   await page.waitForSelector('#picker .sm-it');
-  await page.click('#picker [data-k="H.B"]'); await page.click('#picker [data-n="5"]'); await page.click('#btn-start');
+  await page.click('#picker [data-k="H.B"]');
+  if (await page.$('#picker #btn-cont')) await page.click('#picker #btn-cont');           // #47: an unfinished set → Continue
+  else { await page.click('#picker [data-n="5"]'); await page.click('#btn-start'); }
   await page.waitForSelector('#btn-begin, #qwrap .q.on', { state: 'visible' });
   if (await page.$('#btn-begin:visible')) await page.click('#btn-begin');
   await page.waitForSelector('#qwrap .q.on'); await waitMath(page);

@@ -54,6 +54,10 @@ Version B items (HM twins / variants, E413) stay `candidate` — never in practi
 - No Easy (S.C, S.D): an Easy slot gets Medium level 1. No Hard (Q.D, Q.E): a Hard slot gets the hardest Medium or a real Hard item.
 - Mixed Practice: skills with unfixed wrong answers first, then by weight: the 4 areas 35/35/15/15 in every set, skills inside an area by D'Hondt over their weights (a rare skill waits its turn) (`src/Profile.gs`). Review + Placement unchanged.
 
+## Fixes 16 Nov (v0.7.1)
+- Reference panel: the SAT Math sheet for `reference_sheet` 'sat_math' or 'sat' (one constant in Client.html), in every set kind and in the review / Fix viewer.
+- Sizes: 5 by default (Practice by skill, Mixed). A skill (or Mixed) with an unfinished set shows "Continue N-question set" + "Start a new set instead" (asks; then `startPractice` / `startMixed` with `opts.replace` = that set → status `abandoned`, not graded, not in the history). If the page was old and the server still has an unfinished set of another size, the page asks; it never opens it silently.
+
 ## Navigation, home, instant next (v0.7, 14 Nov 2026)
 - Every screen is a `#hash` entry (home · set · result · view · t-<teacher screen>). Browser Back / the phone back gesture goes up one level and never leaves the app; inside a set, a test or Fix it asks "Save and leave?". Backspace outside a text box does nothing. Exit (top left in every set) = save + home at once.
 - Student home: Assigned focus card (mockup B) with Pick up beside it → Practise by skill → Mixed Practice → Review → History.

@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.7 (2026-11-14, Back/Exit, new home, instant next question, assign from profile)';
+var APP_VERSION = 'v0.7.1 (2026-11-16, Reference sheet in every set, 5 by default, Continue or start a new set)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -396,6 +396,16 @@ function requireSet_(code, setId) {
 function parseState_(s) { try { return s.state_json ? JSON.parse(s.state_json) : null; } catch (e) { return null; } }
 function isOpenStatus_(v) { return String(v) === 'in_progress'; }
 function isFinished_(s) { return String(s.status) === 'submitted'; }
+/** #47: the student chose "Start a new set instead" for this unfinished set: status abandoned (not graded, not in the history;
+ *  its answers stay in the Sheet). Only the set the page names, only an open practice / mixed set; returns the rest. */
+function abandonReplaced_(open, replace) {
+  if (!replace) return open;
+  return open.filter(function (o) {
+    if (String(o.set_id) !== String(replace) || ['practice', 'mixed'].indexOf(String(o.kind)) < 0) return true;
+    updateRow_('Sets', o._row, { status: 'abandoned', progress: 'Closed: a new set was started', last_saved_at: nowIso_() });
+    return false;
+  });
+}
 function setQids_(s) { return String(s.qids || '').split(/[,\s]+/).map(function (x) { return x.trim(); }).filter(String); }
 
 /** The set's questions (server side, keys included), in set order, with part / display_no set. */
@@ -447,14 +457,15 @@ function clientQuestion_(q, withFigs) {
 var FIGS_WITH_SET = 3; // figures of the first 3 questions come with the set; the rest by getFigures (spec v1.1 §6.1)
 
 /** Start a self-practice set: one CB skill + n questions (selection in Select.gs). Returns the new set id. */
-function startPractice(code, skill, n, opts) { return withSet_(startPracticeCore_(code, skill, n), code, opts); }
+function startPractice(code, skill, n, opts) { return withSet_(startPracticeCore_(code, skill, n, opts && opts.replace), code, opts); }
 /** #42: one round trip instead of two — the set is opened in the same call when the page asks for it (opts = getSet opts). */
 function withSet_(r, code, opts) {
   if (!opts || !r || !r.set_id || r.done) return r;
-  try { r.set = getSet(code, r.set_id, opts); } catch (e) { /* the page opens it with its own call */ }
+  var o = {}; Object.keys(opts).forEach(function (k) { if (k !== 'replace') o[k] = opts[k]; });
+  try { r.set = getSet(code, r.set_id, o); } catch (e) { /* the page opens it with its own call */ }
   return r;
 }
-function startPracticeCore_(code, skill, n) {
+function startPracticeCore_(code, skill, n, replace) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
   n = Number(n);
@@ -466,7 +477,8 @@ function startPracticeCore_(code, skill, n) {
   lock.waitLock(20000);
   try {
     var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'practice' && String(r.skill) === skill; });
-    if (open.length) return { ok: true, set_id: String(open[open.length - 1].set_id), resumed: true }; // one open practice set per skill
+    open = abandonReplaced_(open, replace);                             // #47 "Start a new set instead" (the student said yes)
+    if (open.length) { var o = open[open.length - 1]; return { ok: true, set_id: String(o.set_id), resumed: true, n: Number(o.n) || 0 }; } // one open practice set per skill
     var setId = newSetId_(codeN);
     var pick = pickForPractice_(codeN, skill, n, setId);
     if (!pick.qids.length) throw new Error('FORM: There are no questions for this skill yet. Try another skill.');
@@ -915,7 +927,7 @@ function reviewData_(s, rows, asTeacher) {
     return o;
   });
   var p = setProfile_(s, qs.length).parts[0];
-  return { ok: true, session_id: String(s.set_id), form_id: String(s.set_id), title: setTitle_(s), question_font: 'serif',
+  return { ok: true, session_id: String(s.set_id), form_id: String(s.set_id), title: setTitle_(s), question_font: 'serif', reference_sheet: 'sat_math',
            parts: [{ part: p.part, title: p.title, layout: p.layout, spr_layout: p.spr_layout, choices: 4, calculator: true, reference: true,
                      annotate: false, directions_html: p.directions_html }],
            questions: qs, settings: { desmos_api_key: desmosKey_() } };

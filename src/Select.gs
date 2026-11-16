@@ -390,8 +390,8 @@ function mixedPast_(codeN) {
   return out;
 }
 var MIXED_TITLE = 'Mixed Practice';
-function startMixed(code, n, opts) { return withSet_(startMixedCore_(code, n), code, opts); }
-function startMixedCore_(code, n) {
+function startMixed(code, n, opts) { return withSet_(startMixedCore_(code, n, opts && opts.replace), code, opts); }
+function startMixedCore_(code, n, replace) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
   n = Number(n);
@@ -399,7 +399,8 @@ function startMixedCore_(code, n) {
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'mixed'; });
-    if (open.length) return { ok: true, set_id: String(open[open.length - 1].set_id), resumed: true };
+    open = abandonReplaced_(open, replace);                             // #47 "Start a new set instead"
+    if (open.length) { var o = open[open.length - 1]; return { ok: true, set_id: String(o.set_id), resumed: true, n: Number(o.n) || 0 }; }
     var setId = newSetId_(codeN), pick = pickMixed_(codeN, n, setId);
     if (!pick.qids.length) throw new Error('FORM: There are no questions yet.');
     appendObjects_('Sets', [{ set_id: setId, student_code: codeN, kind: 'mixed', skill: '', n: pick.qids.length, qids: pick.qids.join(','),
@@ -504,7 +505,7 @@ function homeData(code) {
   var plSet = {}; sets.forEach(function (s) { if (String(s.kind) === 'placement') plSet[String(s.set_id)] = 1; });
   var open = sets.filter(function (s) { return isOpenStatus_(s.status) && String(s.kind) !== 'assignment' && String(s.kind) !== 'placement'; }).map(function (s) {
     var stt = parseState_(s) || {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length;
-    return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
+    return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), skill: String(s.skill || ''), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
   });
   var fixLeft = {};
   readTable_('Responses').rows.forEach(function (r) {

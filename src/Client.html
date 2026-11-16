@@ -372,10 +372,20 @@
     }
   }
   /** Three columns: area → skill → the chosen skill (its sub-skills, read-only progress) + 5 / 10 / 20 + Start. */
+  /** #47: an unfinished practice set of a skill (or the Mixed set) — the page offers Continue, never a size that would not open. */
+  function openSetOf(r, kind, skill) {
+    return (r.open || []).filter(function (o) { return o.kind === kind && (kind !== 'practice' || o.skill === skill); }).pop() || null;
+  }
+  /** "Start a new set instead": asks first; yes → the size buttons; Start then closes the old set and opens the new one. */
+  function askNewSet(o) {
+    return modal('Start a new set?', 'Your unfinished set (' + o.n + ' questions, ' + o.answered + ' answered) will be closed. Start a new set?',
+      [{ label: 'Keep it', value: false, cls: 'btn-outline' }, { label: 'Start a new set', value: true }]);
+  }
   function skillPicker(r) {
     var box = el('div', { class: 'sm-mill', id: 'picker' });
     var sizes = r.sizes && r.sizes.length ? r.sizes : [5, 10, 20];
-    var st = A.pick = A.pick || { d: 0, k: null, n: sizes.indexOf(10) >= 0 ? 10 : sizes[0] };
+    var st = A.pick = A.pick || { d: 0, k: null, n: sizes.indexOf(5) >= 0 ? 5 : sizes[0], fresh: {} };   // #47: 5 by default
+    st.fresh = st.fresh || {};
     function dot(c) { return '<i class="sm-dot ' + (c || 'n') + '"></i>'; }
     function draw() {
       var d = r.domains[st.d] || r.domains[0];
@@ -384,51 +394,82 @@
       var k = d.skills.filter(function (x) { return x.skill === st.k; })[0] || withQ[0] || d.skills[0];
       st.k = k.skill;
       var sz = k.max_n ? sizes.filter(function (n) { return n <= k.max_n; }) : sizes; if (!sz.length) sz = [k.max_n];
-      var nOn = sz.indexOf(st.n) >= 0 ? st.n : sz[sz.length - 1];         // a rare skill offers 5 only (Skill_Profile)
+      var nOn = sz.indexOf(st.n) >= 0 ? st.n : sz[0];                   // a rare skill offers 5 only (Skill_Profile)
+      var op = openSetOf(r, 'practice', k.skill), fresh = op && st.fresh[op.set_id];
+      var go = !k.live ? '<div class="sm-start"><button type="button" class="hz-btn" id="btn-start" disabled>No questions yet</button></div>'
+        : op && !fresh ? '<div class="sm-start sm-cont"><button type="button" class="hz-btn" id="btn-cont" data-set="' + esc(op.set_id) + '">Continue ' + op.n + '-question set</button>' +
+            '<span class="sm-contn">' + op.answered + '/' + op.n + ' done</span></div><p class="sm-new"><button type="button" class="hz-link" id="btn-newset">Start a new set instead</button></p>'
+        : '<div class="sm-start"><div class="sm-seg" role="group" aria-label="Number of questions">' + sz.map(function (n) { return '<button type="button" data-n="' + n + '"' + (n === nOn ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>' +
+            '<button type="button" class="hz-btn" id="btn-start">Start ' + nOn + ' questions</button></div>' +
+            (fresh ? '<p class="sm-new"><button type="button" class="hz-link" id="btn-keepset">Keep my unfinished set</button></p>' : '');
       box.innerHTML = '<div class="sm-col sm-c1"><p class="sm-colh">Area</p>' + r.domains.map(function (x, i) {
           return '<button type="button" class="sm-it' + (x === d ? ' cur' : '') + '" data-d="' + i + '"><span class="n">' + esc(x.name) + '</span><span class="cnt">' + x.fresh + ' new</span></button>'; }).join('') + '</div>' +
         '<div class="sm-col sm-c2"><p class="sm-colh">Skill</p>' + d.skills.map(function (x) {
-          return '<button type="button" class="sm-it sk' + (x === k ? ' cur' : '') + (x.live ? '' : ' off') + '" data-k="' + esc(x.skill) + '">' + dot(x.dot) + '<span>' + esc(x.name) + '</span><span class="cnt">' + (x.live ? x.fresh + ' new' : 'none yet') + '</span></button>'; }).join('') + '</div>' +
+          var un = openSetOf(r, 'practice', x.skill);
+          return '<button type="button" class="sm-it sk' + (x === k ? ' cur' : '') + (x.live ? '' : ' off') + '" data-k="' + esc(x.skill) + '">' + dot(x.dot) + '<span>' + esc(x.name) + (un ? ' <em class="sm-unf">unfinished</em>' : '') + '</span><span class="cnt">' + (x.live ? x.fresh + ' new' : 'none yet') + '</span></button>'; }).join('') + '</div>' +
         '<div class="sm-col sm-c3"><div class="sm-pan"><h3>' + esc(k.name) + '</h3><div class="sm-subl">' + k.subs.map(function (x) {
           return '<div>' + dot(x.dot) + '<span>' + esc(x.name) + '</span><span class="cnt">' + x.fresh + ' new</span></div>'; }).join('') + '</div>' +
-        '<div class="sm-start"><div class="sm-seg" role="group" aria-label="Number of questions">' + sz.map(function (n) { return '<button type="button" data-n="' + n + '"' + (n === nOn ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>' +
-        '<button type="button" class="hz-btn" id="btn-start"' + (k.live ? '' : ' disabled') + '>' + (k.live ? 'Start ' + nOn + ' questions' : 'No questions yet') + '</button></div>' +
-        '<p class="sm-note">' + (k.note ? esc(k.note) + '. ' : '') + 'No timer. The app picks the questions for you.</p></div></div>';
+        go + '<p class="sm-note">' + (k.note ? esc(k.note) + '. ' : '') + 'No timer. The app picks the questions for you.</p></div></div>';
       $$('[data-d]', box).forEach(function (b) { b.onclick = function () { st.d = +b.getAttribute('data-d'); st.k = null; draw(); }; });
       $$('[data-k]', box).forEach(function (b) { b.onclick = function () { st.k = b.getAttribute('data-k'); draw(); }; });
       $$('[data-n]', box).forEach(function (b) { b.onclick = function () { st.n = +b.getAttribute('data-n'); draw(); }; });
       var sb = $('#btn-start', box);
-      if (sb) sb.onclick = function () { startPractice(k.skill, nOn, sb); };
+      if (sb && k.live) sb.onclick = function () { startPractice(k.skill, nOn, sb, fresh ? op.set_id : ''); };
+      var cb = $('#btn-cont', box); if (cb) cb.onclick = function () { busyBtn(cb, 'Opening…'); openTest(op.set_id, {}); };
+      var nb = $('#btn-newset', box); if (nb) nb.onclick = function () { askNewSet(op).then(function (yes) { if (yes) { st.fresh[op.set_id] = 1; draw(); } }); };
+      var kb = $('#btn-keepset', box); if (kb) kb.onclick = function () { delete st.fresh[op.set_id]; draw(); };
     }
     draw();
     return box;
   }
   /** #42: the button says what is happening; the set comes back in the same call (no second wait). */
   function busyBtn(btn, text) { if (!btn) return function () {}; var t = btn.textContent; btn.disabled = true; btn.textContent = text; return function () { btn.disabled = false; btn.textContent = t; }; }
-  function startPractice(skill, n, btn) {
+  /** The set that opens is always the one the button named: if the server still has an unfinished set of another size (this
+   *  page was old), it asks instead of opening it silently. */
+  function startPractice(skill, n, btn, replace) {
     var undo = busyBtn(btn, 'Picking your questions…');
-    call('startPractice', A.code, skill, n, { device: deviceStr() }).then(function (r) {
+    call('startPractice', A.code, skill, n, { device: deviceStr(), replace: replace || '' }).then(function (r) {
+      if (r.resumed && r.n && r.n !== n) { undo(); return resumeOrNew(r, n, function (rep) { startPractice(skill, n, btn, rep); }); }
       if (r.short) toast('Only ' + r.n + ' questions are left for this skill right now.', 3500);
       openTest(r.set_id, {}, r.set);
     }).catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+  }
+  function resumeOrNew(r, n, again) {
+    A.homeAt = 0;
+    return modal('You have an unfinished set', 'You started a ' + r.n + '-question set earlier and did not finish it.',
+      [{ label: 'Continue ' + r.n + '-question set', value: 'c', cls: 'btn-outline' }, { label: 'Close it, start ' + n + ' new', value: 'n' }]).then(function (v) {
+      if (v === 'c') openTest(r.set_id, {}, r.set);
+      else if (v === 'n') again(r.set_id);
+    });
   }
 
   /** Mixed Practice (Minh 13 Nov): only 5 / 10 / 20; the app mixes skills at the student's level for each. */
   var MIXED_LABEL = 'Mixed Practice';
   function mixedCard(r) {
-    var sizes = r.sizes && r.sizes.length ? r.sizes : [5, 10, 20], st = A.mixN = A.mixN || sizes[0];
+    var sizes = r.sizes && r.sizes.length ? r.sizes : [5, 10, 20];
+    A.mixN = A.mixN || (sizes.indexOf(5) >= 0 ? 5 : sizes[0]);                            // #47: 5 by default
     var box = el('section', { class: 'sm-mixcard', id: 'mixed-card' });
-    var open = (r.open || []).some(function (o) { return o.kind === 'mixed'; });
+    var op = openSetOf(r, 'mixed'), fresh = false;
     var draw = function () {
-      box.innerHTML = '<div><b>' + MIXED_LABEL + '</b><span>Questions from several skills, picked for you.</span></div>' +
-        '<div class="sm-mixgo">' + (open ? '' : '<div class="sm-seg" role="group" aria-label="Number of questions">' + sizes.map(function (n) { return '<button type="button" data-mn="' + n + '"' + (n === A.mixN ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>') +
-        '<button type="button" class="hz-btn" id="btn-mixed">' + (open ? 'Continue' : 'Start ' + A.mixN) + '</button></div>';
+      var cont = op && !fresh;
+      box.innerHTML = '<div><b>' + MIXED_LABEL + '</b><span>' + (cont ? 'Unfinished: ' + op.answered + '/' + op.n + ' done.' : 'Questions from several skills, picked for you.') + '</span>' +
+        (cont ? '<button type="button" class="hz-link sm-newmix" id="btn-newmix">Start a new set instead</button>' : fresh ? '<button type="button" class="hz-link sm-newmix" id="btn-keepmix">Keep my unfinished set</button>' : '') + '</div>' +
+        '<div class="sm-mixgo">' + (cont ? '' : '<div class="sm-seg" role="group" aria-label="Number of questions">' + sizes.map(function (n) { return '<button type="button" data-mn="' + n + '"' + (n === A.mixN ? ' class="on"' : '') + '>' + n + '</button>'; }).join('') + '</div>') +
+        '<button type="button" class="hz-btn" id="btn-mixed">' + (cont ? 'Continue ' + op.n + '-question set' : 'Start ' + A.mixN) + '</button></div>';
       $$('[data-mn]', box).forEach(function (b) { b.onclick = function () { A.mixN = +b.getAttribute('data-mn'); draw(); }; });
+      var nb = $('#btn-newmix', box); if (nb) nb.onclick = function () { askNewSet(op).then(function (yes) { if (yes) { fresh = true; draw(); } }); };
+      var kb = $('#btn-keepmix', box); if (kb) kb.onclick = function () { fresh = false; draw(); };
       var go = $('#btn-mixed', box);
       go.onclick = function () {
-        var undo = busyBtn(go, open ? 'Opening…' : 'Mixing your questions…');
-        call('startMixed', A.code, A.mixN, { device: deviceStr() }).then(function (x) { openTest(x.set_id, {}, x.set); })
-          .catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+        if (cont) { busyBtn(go, 'Opening…'); openTest(op.set_id, {}); return; }
+        var n = A.mixN, undo = busyBtn(go, 'Mixing your questions…');
+        var start = function (rep) {
+          call('startMixed', A.code, n, { device: deviceStr(), replace: rep || '' }).then(function (x) {
+            if (x.resumed && x.n && x.n !== n) { undo(); return resumeOrNew(x, n, start); }
+            openTest(x.set_id, {}, x.set);
+          }).catch(function (e) { undo(); modal('Could not start', esc(errMsg(e)), [{ label: 'OK', value: 1 }]); });
+        };
+        start(fresh && op ? op.set_id : '');
       };
     };
     draw();
@@ -2023,6 +2064,14 @@
     '</div><p class="ref-note">A circle has 360 degrees of arc, which equals \\(2\\pi\\) radians.<br>The angles of a triangle add up to 180 degrees.</p>';
 
   /* ---------- reference sheet (SAT-ready) ---------- */
+  // #47: the server says 'sat_math' (sets, viewer) — 'sat' came from Test Zone. Both = the SAT Math reference sheet. Every
+  // part of this app is SAT Math, so a part with reference: true and no own sheet also gets it.
+  var REF_SAT_NAMES = { sat: 1, sat_math: 1 };
+  function refHtml() {
+    var p = A.profile || {};
+    if (REF_SAT_NAMES[String(p.reference_sheet || '').toLowerCase()] || !p.reference_html) return SAT_REF_HTML;
+    return p.reference_html;
+  }
   function initRef() {
     var panel = $('#ref-panel');
     makeFloating(panel, $('#ref-head'), $('#ref-rs'), { def: function () {
@@ -2033,7 +2082,7 @@
       var on = !panel.classList.contains('on');
       if (on) fpOpen(panel); else panel.classList.remove('on');
       $('#tool-ref').classList.toggle('active', on);
-      if (on) { $('#ref-body').innerHTML = A.profile.reference_sheet === 'sat' ? SAT_REF_HTML : (A.profile.reference_html || '<p>No reference sheet for this test.</p>'); typeset($('#ref-body')); }
+      if (on) { $('#ref-body').innerHTML = refHtml(); typeset($('#ref-body')); }
     };
     $('#ref-x').onclick = function () { panel.classList.remove('on'); $('#tool-ref').classList.remove('active'); };
   }
