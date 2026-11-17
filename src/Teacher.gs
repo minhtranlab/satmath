@@ -201,7 +201,7 @@ function classView(code, target, scope) {
   Object.keys(latest).forEach(function (k) {
     var r = latest[k], q = String(r.qid), Q = qrow[q] || {};
     var o = byQ[q] = byQ[q] || { qid: q, code: clean_(Q.code), cb_id: clean_(Q.cb_question_id), skill: clean_(r.skill) || clean_(Q.skill),
-      subskill: clean_(r.subskill) || clean_(Q.subskill), difficulty: String(r.difficulty || Q.difficulty || ''), type: String(Q.type || 'mcq'),
+      subskill: clean_(r.subskill) || clean_(Q.subskill), difficulty: String(Q.difficulty || r.difficulty || ''), type: String(Q.type || 'mcq'),
       n: 0, wrong1: 0, still: 0, asks: 0, extra: 0, slow: 0, slow_right: 0, untagged: 0, students: [] };
     var p = String(r.profile), right1 = Number(r.try1_correct) === 1, best = Number(r.best_correct) === 1, nt = Number(r.n_tries) || 0;
     var ask = !!r.asked && String(r.ask_status) === 'open';
@@ -271,7 +271,7 @@ function questionPanel(code, qid) {
   q.part = 'P'; q.display_no = 1;
   var o = clientQuestion_(q, true), r = questionRows_().filter(function (x) { return String(x.qid) === String(qid); })[0] || {};
   o.code = clean_(r.code) || q.code || '';
-  o.key = keyList_(q); o.rationale_html = q.rationale_html || '';
+  // #50: no key and no CB explanation here any more — "Show answer" (teacherKey) fetches them
   o.cb_id = clean_(r.cb_question_id) || ((q.source || {}).cb_question_id || '');
   o.skill_name = skillName_(clean_(r.skill)); o.subskill_name = subskillName_(clean_(r.subskill)); o.difficulty = String(r.difficulty || ''); o.level = r.level || '';
   var norm = timeNormFor_(q.type, r.difficulty); o.norm_sec = norm ? norm.target : null;

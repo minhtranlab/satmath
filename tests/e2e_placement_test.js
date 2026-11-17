@@ -108,8 +108,10 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     check((await tp.$$('#pl-items tr[data-q]')).length === 15 && /fast|normal/.test(rep) && /Nothing below Strong/.test(rep), 'every question with code, slot, time band; teach first: nothing below Strong');
     await shot(tp, 'e2e_pl_report');
     await tp.click('#pl-items tr[data-q]');
-    await tp.waitForSelector('.t-key');
-    check(/Correct answer/.test(await tp.$eval('.t-key', e => e.textContent)), 'a question of the report opens in the panel with the correct answer (teacher only)');
+    await tp.waitForSelector('#scr-test.going #go-show');
+    check(!(await tp.$('#scr-test .ch.rv-key')) && (await tp.$$('.go-box')).length === 9 && await tp.$('.go-note'), 'a question of the report opens on the test screen: no key, 9 level boxes, the Placement note');
+    await tp.click('#go-show'); await tp.waitForSelector('.go-key');
+    check(/Correct answer/.test(await tp.$eval('#fb-go', e => e.textContent)), 'Show answer → the correct answer (teacher only)');
     await shot(tp, 'e2e_pl_panel');
     englishOnly(E);
   } catch (e) { console.error(e); check(false, 'exception: ' + e.message); }

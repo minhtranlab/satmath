@@ -373,7 +373,7 @@ function placementReport_(s) {
   var list = rows.map(function (r, i) {
     var it = items[i] || {}, m = /PL_(FAST|NORMAL|SLOW)/.exec(String(r.flags || '')), Q = qrow[String(r.qid)] || {};
     return { no: i + 1, qid: String(r.qid), code: clean_(Q.code), dom: it.dom || '', slot: it.slot || '', skill: clean_(r.skill), skill_name: skillName_(clean_(r.skill)),
-             subskill_name: subskillName_(clean_(r.subskill)), difficulty: String(r.difficulty || ''), type: String(Q.type || 'mcq'),
+             subskill_name: subskillName_(clean_(r.subskill)), difficulty: String((qrow[String(r.qid)] || {}).difficulty || r.difficulty || ''), type: String(Q.type || 'mcq'),
              answer: clean_(r.final_answer), right: Number(r.try1_correct) === 1, blank: String(r.profile) === 'BLANK',
              time_s: Math.round(Number(r.time_try1_sec) || 0), band: m ? m[1].toLowerCase() : '', step: it.a || '',
              away_sec: Number(r.away_sec) || 0, away_flag: /LEFT_THEN_RIGHT/.test(String(r.flags || '')) };

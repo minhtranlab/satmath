@@ -28,7 +28,7 @@ function doSet(code, setId, answer, opts = {}) {
 
 console.log('Teacher only');
 ['teacherHome', 'classView', 'asksInbox', 'assignmentTree'].forEach(fn => check(/LOGIN/.test(throws(() => G.call(fn, ['FX-T01']))), fn + ': a student code is refused'));
-check(/LOGIN/.test(throws(() => G.call('questionPanel', ['FX-T01', 'FX1-001']))), 'questionPanel (has the key): a student code is refused');
+check(/LOGIN/.test(throws(() => G.call('questionPanel', ['FX-T01', 'FX1-001']))), 'questionPanel: a student code is refused');
 
 console.log('Students + classes');
 G.fresh();
@@ -127,7 +127,10 @@ check(one.target.kind === 'student' && one.rows.length >= 6, 'one student\'s lis
 console.log('Question panel · tags · asks');
 G.fresh();
 const qp = G.call('questionPanel', [T, order[0]]);
-check(qp.q.key.length >= 1 && qp.q.code === Q[order[0]].code && qp.q.stem_html, 'question panel: question + correct answer (teacher only) + code');
+check(!('key' in qp.q) && !('rationale_html' in qp.q) && qp.q.code === Q[order[0]].code && qp.q.stem_html, 'question panel (#50): question + code, NO key / explanation');
+G.fresh();
+const tk = G.call('teacherKey', [T, order[0]]);
+check(tk.key.length >= 1 && /LOGIN/.test(throws(() => G.call('teacherKey', ['FX-T01', order[0]]))), '#50 teacherKey: the key for the teacher only (a student code is refused)');
 G.fresh();
 const tg = G.call('tagMistake', [T, sb.set_id, order[1], 'Careless Calculation', 'sign']);
 check(tg.ok && tg.review_added === true, 'tag "Careless Calculation" on a RIGHT answer → item added to the student\'s Review');

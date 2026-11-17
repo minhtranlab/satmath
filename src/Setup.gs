@@ -25,6 +25,7 @@ var TABS_ = [
                    'created_at', 'created_in', 'note', 'kind', 'form']],
   ['Skill_Profile', ['skill', 'name', 'allowed', 'weight', 'max_set', 'note']],
   ['Placement_Forms', ['form', 'domain', 'slot', 'level', 'skill', 'code', 'qid', 'note']],
+  ['Item_Overrides', ['qid', 'code', 'difficulty', 'level', 'old_difficulty', 'old_level', 'set_by', 'set_at', 'note', 'log']],
   ['Placements', ['set_id', 'student_code', 'form', 'assignment_id', 'finished_at', 'n_items', 'n_right', 'time_min', 'alg', 'adv', 'psd', 'geo',
                   'skill_levels', 'teach_first', 'path', 'prev_set_id']],
   ['Skill_Summary', ['student_code', 'skill', 'subskill', 'n_seen', 'n_try1', 'n_try1_right', 'try1_pct', 'best_pct', 'last5_pct',

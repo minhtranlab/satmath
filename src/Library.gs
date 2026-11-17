@@ -130,8 +130,31 @@ function figSrc_(f) {
 }
 
 /* ---------------- Questions / Batches rows ---------------- */
-var _qrows = null, _batchLive = null;
-function questionRows_() { if (!_qrows) _qrows = readTable_('Questions').rows; return _qrows; }
+var _qrows = null, _batchLive = null, _ovr = null;
+/** #50 Item_Overrides: {qid: {d: 'M', l: 3, by, at}} — a teacher's (or QK's) level for a question. */
+function itemOverrides_() {
+  if (_ovr) return _ovr;
+  _ovr = {};
+  var rows = []; try { rows = readTable_('Item_Overrides').rows; } catch (e) {}
+  rows.forEach(function (r) {
+    var d = String(r.difficulty || '').replace(/^'/, '').trim().toUpperCase(), q = String(r.qid || '').replace(/^'/, '').trim();
+    if (q && /^[EMH]$/.test(d)) _ovr[q] = { d: d, l: Number(r.level) || '', by: String(r.set_by || ''), at: r.set_at };
+  });
+  return _ovr;
+}
+/** The Questions tab with the overrides on top (difficulty / level); cb_difficulty / cb_level keep the College Board label.
+ *  Everything that picks or shows a difficulty reads this. The library sync and the update read the tab itself. */
+function questionRows_() {
+  if (_qrows) return _qrows;
+  var ov = itemOverrides_();
+  _qrows = readTable_('Questions').rows.map(function (r) {
+    var o = ov[String(r.qid)]; if (!o) return r;
+    var c = {}; Object.keys(r).forEach(function (k) { c[k] = r[k]; });
+    c.cb_difficulty = r.difficulty; c.cb_level = r.level; c.difficulty = o.d; c.level = o.l || r.level; c.overridden = true;
+    return c;
+  });
+  return _qrows;
+}
 function batchLive_() {
   if (_batchLive) return _batchLive;
   _batchLive = {};

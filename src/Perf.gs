@@ -9,8 +9,8 @@ function ping() { return { ok: true, t: Date.now() }; }
 var PERF_TABS_ = ['Settings', 'Students', 'Classes', 'Assignments', 'Sets', 'Responses', 'Tries', 'Levels', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Placements'];
 
 function resetMemo_() {
-  _settings = null; _qrows = null; _batchLive = null; _skillIdx = null; _libIdx = null; _batch = {}; _setQ = {}; _timeNorms = null;
-  _plForms = null; _plLatest = {}; _skProf = null; _asgTitle = null;
+  _settings = null; _qrows = null; _ovr = null; _batchLive = null; _skillIdx = null; _libIdx = null; _batch = {}; _setQ = {}; _timeNorms = null;
+  _plForms = null; _plLatest = {}; _skProf = null; _asgTitle = null; _plItems = null;
   if (typeof _tables !== 'undefined') _tables = {};
   if (typeof _ccache !== 'undefined') _ccache = {};
 }

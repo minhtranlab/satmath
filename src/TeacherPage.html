@@ -217,7 +217,7 @@
     si.onkeydown = function (e) {
       if (e.key !== 'Enter' || !si.value.trim()) return;
       var hit = filtered()[0];
-      if (hit) openPanel(hit.qid); else openPanel(si.value.trim()); // not in this list: open it from the library by its code
+      if (hit) goList(filtered(), hit.qid); else openGo([si.value.trim()], si.value.trim(), { back: 'Back to class' }); // not in this list: from the library by its code
     };
     $$('[data-tab]', body()).forEach(function (b) { b.onclick = function () { T.tab = b.getAttribute('data-tab'); $$('[data-tab]', body()).forEach(function (x) { x.classList.toggle('on', x === b); }); renderTab(); }; });
     renderTab();
@@ -255,8 +255,8 @@
     tb.innerHTML = h;
     bindCopies(tb);
     $$('.t-row', tb).forEach(function (row) {
-      row.onclick = function () { openPanel(row.getAttribute('data-q')); };
-      row.onkeydown = function (e) { if (e.key === 'Enter') openPanel(row.getAttribute('data-q')); };
+      row.onclick = function () { goList(rows, row.getAttribute('data-q')); };
+      row.onkeydown = function (e) { if (e.key === 'Enter') goList(rows, row.getAttribute('data-q')); };
     });
   }
   var GRID_F = [['', 'All'], ['wrong', 'Wrong'], ['slow', 'Slow'], ['rushed', 'Rushed'], ['asked', 'Asked'], ['untagged', 'Untagged'], ['tries', 'Many tries']];
@@ -283,7 +283,7 @@
       }).join('') + '</table></div>';
     tb.innerHTML = h;
     $$('[data-gf]', tb).forEach(function (b) { b.onclick = function () { T.gridF = b.getAttribute('data-gf'); renderGrid(tb, rows); }; });
-    $$('tr[data-q]', tb).forEach(function (tr) { tr.onclick = function () { openPanel(tr.getAttribute('data-q')); }; });
+    $$('tr[data-q]', tb).forEach(function (tr) { tr.onclick = function () { goList(keepRows, tr.getAttribute('data-q')); }; });
   }
   function asgListHtml(list) {
     if (!list.length) return '<div class="empty">No assignments yet.</div>';
@@ -309,58 +309,63 @@
     }; });
   }
 
-  /* ================= question panel ================= */
+  /* ================= #50 go over a question: the test screen (Client goOver); the key only on "Show answer" ================= */
   function closePanel() { var p = $('#t-panel'); if (p) { p.classList.remove('on'); p.setAttribute('aria-hidden', 'true'); } }
-  function openPanel(qid) {
-    var p = $('#t-panel'), pin = $('#t-panel-in');
-    p.classList.add('on'); p.setAttribute('aria-hidden', 'false');
-    var have = cget('qp|' + qid);
-    if (have) { renderPanel(have.q); return; }
-    pin.innerHTML = '<div class="spinner"></div>';
-    call('questionPanel', A.code, qid).then(function (r) { cput('qp|' + qid, r); renderPanel(r.q); }).catch(function (e) { pin.innerHTML = '<p class="empty">' + esc(X.errMsg(e)) + '</p><button class="btn-outline" type="button" onclick="this.closest(\'.t-panel\').classList.remove(\'on\')">Close</button>'; });
+  /** The questions of a class list (What to go over / Grid / search) on the test screen; the list's rows are the side info. */
+  function goList(rows, qid) {
+    var cv = T.cv;
+    openGo(rows.map(function (r) { return r.qid; }), qid, { back: 'Back to class', who: cv ? cv.target.title : '', side: { rows: function () { return Promise.resolve(cv ? cv.rows : []); }, drawer: goDrawerSide } });
   }
-  function renderPanel(q) {
-    var pin = $('#t-panel-in'), row = T.cv ? T.cv.rows.filter(function (x) { return x.qid === q.qid; })[0] : null;
+  function openGo(qids, qid, o) {
+    var i = Math.max(0, qids.indexOf(qid)), a = Math.max(0, Math.min(i - 15, qids.length - 40));
+    qids = qids.slice(a, a + 40);                                         // at most 40 questions in one go-over
+    var key = 'go|' + qids.join(','), view = T.view, have = cget(key);
+    var d = have ? Promise.resolve(have) : call('goOverData', A.code, qids).then(function (r) { cput(key, r); return r; });
+    X.goOver(d, { sid: 'go', qid: qid, backLabel: o.back || 'Back', who: o.who || '', side: o.side || null,
+                  back: function () { X.show('scr-teacher'); X.nav('t-' + (view || 'home')); } });
+  }
+  /** Side info for one class / one student's set: classView rows, fetched only when "Student's answer" or Details is pressed. */
+  function side(target, scope) {
+    var P = null;
+    return { drawer: goDrawerSide, rows: function () {
+      if (P) return P;
+      var k = 'cv|' + target + '|' + (scope || ''), have = cget(k);
+      P = have ? Promise.resolve(have.rows) : call('classView', A.code, target, scope || '').then(function (r) { cput(k, r); return r.rows; });
+      P.catch(function () { P = null; });
+      return P;
+    } };
+  }
+  function plDrawer(q, el, rows) {
+    var row = rows.filter(function (x) { return x.qid === q.qid; })[0], s = row && row.students[0];
+    el.innerHTML = s ? '<h3 class="t-h3">Student</h3><div class="t-ps"><div class="t-pst">Answer: ' + (s.tries.length ? '<span class="' + (s.tries[0].ok ? 'ok' : 'no') + '">' + esc(s.tries[0].a) + '</span>' : '<span class="no">blank</span>') +
+      ' · ' + s.time_s + ' s' + (s.profile ? ' <span class="muted">' + esc(s.profile) + '</span>' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + '</div></div>' : '';
+  }
+  /** The students who did this question (tries, time, Asked note, mistake type + note + Save) — the drawer of the go-over. */
+  function goDrawerSide(q, pin, rows, again) {
+    var row = rows.filter(function (x) { return x.qid === q.qid; })[0];
+    if (!row) { pin.innerHTML = '<p class="muted">Nobody in this list has done this question in the chosen period.</p>'; return; }
     var types = (T.home && T.home.mistake_types) || [], ph = (T.home && T.home.mistake_placeholder) || '— choose a mistake type —';
-    var figs = function (pos) { return q.figures.filter(function (f) { return pos === 'after' ? f.position === 'after_stem' : f.position !== 'after_stem'; }).map(X.figHtml).join(''); };
-    var h = '<div class="t-ph"><div>' + codeHtml(q.code, q.cb_id, true) + '<div class="muted">' + esc(q.subskill_name || q.skill_name) + ' · ' + diffName(q.difficulty) + (q.level ? ' level ' + q.level : '') + (q.norm_sec ? ' · normal time ' + q.norm_sec + ' s' : '') + '</div></div>' +
-      '<button type="button" class="btn-outline" id="t-pclose">Close</button></div>';
-    h += '<div class="t-pq serif">' + figs('before') + '<div class="stem">' + X.noWrapMath(q.stem_html) + '</div>' + figs('after') +
-      (q.type === 'mcq' ? '<div class="t-pch">' + q.choices.map(function (c) { return '<div class="t-pc' + (q.key.indexOf(c.label) >= 0 ? ' key' : '') + '"><b>' + esc(c.label) + '</b><span>' + X.noWrapMath(c.html) + '</span></div>'; }).join('') + '</div>' : '') +
-      '</div><p class="t-key">Correct answer: <b>' + esc(q.key.join(' or ')) + '</b></p>' +
-      (q.rationale_html ? '<details class="t-rat"><summary>College Board explanation (teacher only)</summary>' + q.rationale_html + '</details>' : '');
-    if (row) {
-      h += '<h3 class="t-h3">Students</h3>' + row.students.map(function (s, i) {
-        var tries = s.tries.length ? s.tries.map(function (t) { return '<span class="' + (t.ok ? 'ok' : 'no') + '">' + esc(t.a || '–') + '</span>'; }).join(' → ') : '<span class="no">blank</span>';
-        return '<div class="t-ps" data-i="' + i + '"><div class="t-psh"><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button><span class="muted">' + esc(s.set_title) + ' · ' + esc(s.date) + '</span></div>' +
-          '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · ' + s.time_s + ' s to the answer' + (s.pace ? ' (' + Math.round(s.pace * 100) + '% of normal)' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + (s.badge ? ' ' + X.bdg(s.badge) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
-          (s.asked ? '<div class="t-pask">Asked' + (s.ask_note ? ': “' + esc(s.ask_note) + '”' : '') + ' <button type="button" class="hz-link" data-resolve="' + i + '">' + (s.ask_status === 'resolved' ? 'Open again' : 'Resolve') + '</button>' + (s.ask_status === 'resolved' ? ' <span class="muted">(resolved)</span>' : '') + '</div>' : '') +
-          '<div class="t-ptag"><select class="field" data-tag="' + i + '"><option value="">' + esc(ph) + '</option>' + types.map(function (t) { return '<option' + (t === s.mistake_type ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>' +
-          '<input class="field" data-note="' + i + '" maxlength="300" placeholder="Note (optional)" value="' + esc(s.mistake_note) + '"><button type="button" class="btn-outline" data-save="' + i + '">Save</button></div></div>';
-      }).join('');
-      var idx = T.cv.rows.indexOf(row), next = T.cv.rows[idx + 1];
-      if (next) h += '<p class="t-next"><button type="button" class="btn-blue" id="t-pnext">Next to go over → ' + esc(next.code || next.qid) + '</button></p>';
-    } else h += '<p class="muted">Nobody in this list has done this question in the chosen period.</p>';
-    pin.innerHTML = h; pin.scrollTop = 0;
-    bindCopies(pin);
-    X.typeset(pin);
-    $('#t-pclose').onclick = closePanel;
-    $$('[data-prof]', pin).forEach(function (b) { b.onclick = function () { closePanel(); openProfile(b.getAttribute('data-prof')); }; });
-    var nb = $('#t-pnext'); if (nb) nb.onclick = function () { openPanel(T.cv.rows[T.cv.rows.indexOf(row) + 1].qid); };
-    if (!row) return;
+    pin.innerHTML = '<h3 class="t-h3">Students</h3>' + row.students.map(function (s, i) {
+      var tries = s.tries.length ? s.tries.map(function (t) { return '<span class="' + (t.ok ? 'ok' : 'no') + '">' + esc(t.a || '–') + '</span>'; }).join(' → ') : '<span class="no">blank</span>';
+      return '<div class="t-ps" data-i="' + i + '"><div class="t-psh"><b>' + esc(s.name) + '</b><span class="muted">' + esc(s.set_title) + ' · ' + esc(s.date) + '</span></div>' +
+        '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · ' + s.time_s + ' s to the answer' + (s.pace ? ' (' + Math.round(s.pace * 100) + '% of normal)' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + (s.badge ? ' ' + X.bdg(s.badge) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
+        (s.asked ? '<div class="t-pask">Asked' + (s.ask_note ? ': “' + esc(s.ask_note) + '”' : '') + ' <button type="button" class="hz-link" data-resolve="' + i + '">' + (s.ask_status === 'resolved' ? 'Open again' : 'Resolve') + '</button>' + (s.ask_status === 'resolved' ? ' <span class="muted">(resolved)</span>' : '') + '</div>' : '') +
+        '<div class="t-ptag"><select class="field" data-tag="' + i + '"><option value="">' + esc(ph) + '</option>' + types.map(function (t) { return '<option' + (t === s.mistake_type ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>' +
+        '<input class="field" data-note="' + i + '" maxlength="300" placeholder="Note (optional)" value="' + esc(s.mistake_note) + '"><button type="button" class="btn-outline" data-save="' + i + '">Save</button></div></div>';
+    }).join('');
     $$('[data-save]', pin).forEach(function (b) { b.onclick = function () {
       var i = +b.getAttribute('data-save'), s = row.students[i], type = $('[data-tag="' + i + '"]', pin).value, note = $('[data-note="' + i + '"]', pin).value;
       var old = { t: s.mistake_type, n: s.mistake_note, u: row.untagged };
       save({ fn: 'tagMistake', args: [s.set_id, row.qid, type, note], label: 'Mistake type for ' + s.name,
         apply: function () { s.mistake_type = type; s.mistake_note = note; if (!s.right1 && type && !old.t && row.untagged) row.untagged--; b.textContent = 'Saved ✓'; setTimeout(function () { b.textContent = 'Save'; }, 1500); },
-        undo: function () { s.mistake_type = old.t; s.mistake_note = old.n; row.untagged = old.u; if ($('#t-panel').classList.contains('on')) renderPanel(q); },
+        undo: function () { s.mistake_type = old.t; s.mistake_note = old.n; row.untagged = old.u; again(); },
         done: function (r) { toast(type ? 'Saved: ' + type + (r && r.review_added ? ' · added to ' + s.name.split(/\s+/)[0] + '\'s Review' : '') : 'Tag removed.', 2500); stale(/^(home|cv\||prof\|)/); } });
     }; });
     $$('[data-resolve]', pin).forEach(function (b) { b.onclick = function () {
       var s = row.students[+b.getAttribute('data-resolve')], reopen = s.ask_status === 'resolved', oa = row.asks;
       save({ fn: 'resolveAsk', args: [s.set_id, row.qid, reopen], label: 'Resolve',
-        apply: function () { s.ask_status = reopen ? 'open' : 'resolved'; if (!reopen && row.asks) row.asks--; if (reopen) row.asks++; renderPanel(q); },
-        undo: function () { s.ask_status = reopen ? 'resolved' : 'open'; row.asks = oa; if ($('#t-panel').classList.contains('on')) renderPanel(q); },
+        apply: function () { s.ask_status = reopen ? 'open' : 'resolved'; if (!reopen && row.asks) row.asks--; if (reopen) row.asks++; again(); },
+        undo: function () { s.ask_status = reopen ? 'resolved' : 'open'; row.asks = oa; again(); },
         done: function () { stale(/^(home|asks|cv\||prof\|)/); } });
     }; });
   }
@@ -380,7 +385,7 @@
           '<td><button type="button" class="hz-link" data-open="' + i + '">Open</button> <button type="button" class="hz-link" data-res="' + i + '">Resolve</button></td></tr>';
       }).join('') + '</table>' : '<div class="empty">No open questions. 🎉</div>';
       body().innerHTML = h; bindCopies(body());
-      $$('[data-open]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-open')]; openClass('st:' + a.student_code, 's:' + a.set_id).then(function () { openPanel(a.qid); }); }; });
+      $$('[data-open]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-open')]; openGo([a.qid], a.qid, { back: 'Back to Asked', who: a.student, side: side('st:' + a.student_code, 's:' + a.set_id) }); }; });
       $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
         var i = +b.getAttribute('data-res'), a = r.asks[i];
         save({ fn: 'resolveAsk', args: [a.set_id, a.qid, false], label: 'Resolve',
@@ -702,7 +707,11 @@
       $('#t-back').onclick = function () { if (back) openProfile(back); else showHome(); };
       $('#pl-prof').onclick = function () { openProfile(r.student_code); };
       recBind(r.student_code, { review: 0 });
-      $$('#pl-items tr[data-q]').forEach(function (tr) { tr.onclick = function () { T.cv = null; openPanel(tr.getAttribute('data-q')); }; });
+      // #50: the placement questions in order on the test screen; the student's answer + time as the side info
+      var plRows = r.items.map(function (x) { return { qid: x.qid, students: [{ name: r.student || 'Student', tries: x.blank ? [] : [{ a: x.answer, ok: !!x.right }], time_s: x.time_s, away_s: x.away_sec || 0, set_title: 'Placement test', date: '', profile: x.band || '' }] }; });
+      $$('#pl-items tr[data-q]').forEach(function (tr) { tr.onclick = function () {
+        openGo(r.items.map(function (x) { return x.qid; }), tr.getAttribute('data-q'), { back: 'Back to report', who: r.student || '', side: { rows: function () { return Promise.resolve(plRows); }, drawer: plDrawer } });
+      }; });
     }
   }
 
@@ -712,7 +721,7 @@
     $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openBuilder(''); }; });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
   }
-  window.SMLT = { back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
+  window.SMLT = { side: side, levelChanged: function () { stale(/^(cv\||go\||prof\||tree\||home)/); }, back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
   if (window.SMLX) init();
 })();
 </script>

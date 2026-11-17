@@ -98,9 +98,10 @@
       <div class="view" id="v-wait"></div>
     </main>
 
+    <div id="go-strip" aria-live="polite"></div>
     <div class="dash"></div>
     <footer id="fbar">
-      <div id="fb-left"><div id="fb-name"></div><div id="save-dot"></div></div>
+      <div id="fb-left"><div id="fb-name"></div><div id="save-dot"></div><div id="fb-go"></div></div>
       <div class="fb-center"><button id="btn-nav" type="button"><span id="nav-label">Question 1 of 1</span><svg width="12" height="8" viewBox="0 0 12 8"><path d="M1 7l5-5 5 5" stroke="currentColor" stroke-width="2" fill="none"/></svg></button></div>
       <div class="fb-right"><button class="btn-blue" id="btn-back" type="button">Back</button><button class="btn-blue" id="btn-next" type="button">Next</button></div>
     </footer>
@@ -124,6 +125,7 @@
       <div class="fp-body"><div id="ref-body"></div></div>
       <div class="fp-resize" id="ref-rs"></div>
     </div>
+    <aside id="go-drawer" aria-hidden="true"><div class="gd-head"><b>Details</b><button type="button" id="go-dr-x" aria-label="Close">×</button></div><div id="go-dr-body"></div></aside>
     <div id="hl-toolbar">
       <div class="hl-row">
         <button type="button" class="hl-dot hl-y" data-c="y" aria-label="Yellow"></button>

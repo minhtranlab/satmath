@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.8 (2026-11-16, time to the final answer, leave-window log for the teacher)';
+var APP_VERSION = 'v0.9 (2026-11-17, go over on the test screen — the answer last; level boxes E1–H3; triangle inequality live)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -72,9 +72,9 @@ function sheet_(name) {
 var _tables = {}, _readMode = 'fresh', TAB_CACHE_SEC = 900, TAB_CHUNK = 90000, EPOCH_KEY_ = 'smlv__epoch';
 var _forceFresh = false, _perfAllowInactive = false;                                            // the speed check measures the old way too
 // one CacheService round trip costs ~50 ms: a read-only call fetches the version + first chunk of every usual tab at once
-var PRELOAD_TABS_ = ['Settings', 'Students', 'Classes', 'Assignments', 'Sets', 'Responses', 'Tries', 'Levels', 'Review', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placements', 'Placement_Forms'];
+var PRELOAD_TABS_ = ['Settings', 'Students', 'Classes', 'Assignments', 'Sets', 'Responses', 'Tries', 'Levels', 'Review', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placements', 'Placement_Forms', 'Item_Overrides'];
 var _pre = null;
-var REF_TABS_ = ['Settings', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placement_Forms'];
+var REF_TABS_ = ['Settings', 'Questions', 'Batches', 'Skills', 'Skill_Profile', 'Time_Norms', 'Placement_Forms', 'Item_Overrides'];
 function cachedReads_() { if (_forceFresh) return; _readMode = 'cached'; preloadTabs_(); }
 function preloadTabs_() {
   _pre = null;
@@ -768,7 +768,7 @@ function sprParse_(s) {
 function tagsOf_(qids) {
   var want = {}; qids.forEach(function (q) { want[q] = 1; });
   var out = {};
-  readTable_('Questions').rows.forEach(function (r) {
+  questionRows_().forEach(function (r) {                              // #50: with the teacher's level overrides
     var id = String(r.qid); if (!want[id]) return;
     out[id] = { domain: String(r.domain || ''), skill: String(r.skill || ''), subskill: String(r.subskill || ''),
                 difficulty: String(r.difficulty || 'H'), level: Number(r.level) || '' };
@@ -1127,8 +1127,76 @@ function teacherResult(code, setId) {
 function teacherReview(code, setId) {
   cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = teacherSet_(code, setId), r = reviewData_(s, responsesOf_(setId), true), st = findStudent_(s.student_code);
-  r.student = st ? String(st.name || '') : String(s.student_code);
+  r.student = st ? String(st.name || '') : String(s.student_code); r.student_code = normCode_(s.student_code);
+  // #50: nothing in this payload tells the answer — not the key, and not the student's answer (a right answer = the key);
+  // "Wrong only" needs just wrong / not; the answers come with "Student's answer" (classView), the key with "Show answer" (teacherKey)
+  var rs = {}; responsesOf_(setId).forEach(function (x) { rs[String(x.qid)] = x; });
+  r.questions.forEach(function (q) { q.meta = goMeta_(q.qid); q.wrong = Number((rs[q.qid] || {}).try1_correct) !== 1; delete q.answer; delete q.status; });   // wrong on the first try
   return r;
+}
+/** #50 go-over: what the teacher needs next to a question — never its key. Level (with the override), the CB label,
+ *  the skill's allowed difficulties (Skill_Profile), whether it is a Placement item, normal time. */
+function goMeta_(qid) {
+  var r = questionRows_().filter(function (x) { return String(x.qid) === String(qid); })[0] || {};
+  if (!_plItems) { _plItems = {}; try { var f = plForms_(); Object.keys(f).forEach(function (k) { _plItems[f[k]] = 1; }); } catch (e) {} }
+  var sk = clean_(r.skill), prof = skillProfile_(sk), norm = timeNormFor_(r.type, r.difficulty);
+  return { code: clean_(r.code), cb_id: clean_(r.cb_question_id), skill: sk, skill_name: skillName_(sk), subskill_name: subskillName_(clean_(r.subskill)),
+           difficulty: String(r.difficulty || '').toUpperCase(), level: Number(r.level) || '', cb_difficulty: String(r.cb_difficulty || r.difficulty || '').toUpperCase(),
+           cb_level: Number(r.cb_level || r.level) || '', overridden: !!r.overridden, source: /^CB-/.test(String(qid)) ? 'CB' : String(r.batch || ''),
+           allowed: ['E', 'M', 'H'].filter(function (d) { return prof.allowed[d]; }), placement: !!_plItems[String(qid)], norm_sec: norm ? norm.target : null };
+}
+var _plItems = null;
+/** #50 go-over of any questions (What to go over, the grid, Asked, a Placement report): the test screen content, no key. */
+function goOverData(code, qids) {
+  cachedReads_();
+  requireTeacher_(code);
+  qids = (qids || []).map(function (q) { return String(q || '').trim(); }).filter(String).slice(0, 80);
+  var all = questionRows_(), byCode = {};
+  all.forEach(function (x) { var c = clean_(x.code).toUpperCase(); if (c) byCode[c] = String(x.qid); });
+  qids = qids.map(function (q) { return /^[EMH]\d+(B\d*)?$/i.test(q) && byCode[q.toUpperCase()] ? byCode[q.toUpperCase()] : q; });
+  var lib = libQuestions_(qids), byQ = {}; lib.forEach(function (q) { byQ[q.qid] = q; });
+  var qs = qids.filter(function (q) { return byQ[q]; }).map(function (qid, i) {
+    var q = JSON.parse(JSON.stringify(byQ[qid])); q.part = SET_PART; q.display_no = i + 1;
+    var o = clientQuestion_(q, true); o.meta = goMeta_(qid); o.code = o.meta.code; o.label = 'Q' + (i + 1); return o;
+  });
+  if (!qs.length) throw new Error('FORM: Question not found in the library.');
+  var p = setProfile_({ kind: 'practice', set_id: 'go', n: qs.length }, qs.length).parts[0];
+  return { ok: true, session_id: 'go', form_id: 'go', title: 'Go over', question_font: 'serif', reference_sheet: 'sat_math',
+           parts: [{ part: SET_PART, title: 'Go over', layout: p.layout, spr_layout: p.spr_layout, choices: 4, calculator: true, reference: true, annotate: true, directions_html: '' }],
+           questions: qs, settings: { desmos_api_key: desmosKey_() } };
+}
+/** #50 the key of ONE question (+ the CB explanation) — only when the teacher presses "Show answer". */
+function teacherKey(code, qid) {
+  cachedReads_();
+  requireTeacher_(code);
+  var q = libQuestions_([String(qid)])[0];
+  if (!q) throw new Error('FORM: Question not found in the library.');
+  return { ok: true, qid: q.qid, type: q.type || 'mcq', key: keyList_(q), rationale_html: q.rationale_html || '', cb_id: (q.source || {}).cb_question_id || '' };
+}
+/** #50 the teacher's level for a question (go-over screen): Item_Overrides, one row per qid, last write wins, history in log.
+ *  The Drive files are never edited. Undo = the same call with the old level. */
+function setItemLevel(code, qid, diff, level, note) {
+  requireTeacher_(code);
+  qid = String(qid || '').trim(); diff = String(diff || '').toUpperCase(); level = Number(level) || 0;
+  if (!/^[EMH]$/.test(diff) || [1, 2, 3].indexOf(level) < 0) throw new Error('FORM: Pick E, M or H and a level 1–3.');
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    if (!hasTab_('Item_Overrides')) ensureTabs_();
+    var q = readTable_('Questions').rows.filter(function (x) { return String(x.qid) === qid; })[0];
+    if (!q) throw new Error('FORM: Question not found.');
+    var t = readTableSheet_('Item_Overrides');                         // fresh: the row number is written to
+    var row = t.rows.filter(function (x) { return String(x.qid).replace(/^'/, '') === qid; })[0];
+    var oldD = row ? String(row.difficulty || '').toUpperCase() : String(q.difficulty || '').toUpperCase();
+    var oldL = row ? Number(row.level) || '' : Number(q.level) || '';
+    var at = nowIso_(), line = at.slice(0, 16) + ' teacher: ' + oldD + oldL + ' → ' + diff + level;
+    var f = { qid: txt_(qid), code: txt_(clean_(q.code)), difficulty: diff, level: level, old_difficulty: oldD, old_level: oldL, set_by: 'teacher', set_at: at,
+              note: note ? String(note).slice(0, 200) : (row ? row.note : ''), log: (row && row.log ? String(row.log) + '\n' : '') + line };
+    if (row) updateRow_('Item_Overrides', row._row, f); else appendObjects_('Item_Overrides', [f]);
+    _ovr = null; _qrows = null; _plForms = null;
+    var prof = skillProfile_(clean_(q.skill));
+    return { ok: true, qid: qid, difficulty: diff, level: level, old: { difficulty: oldD, level: oldL }, cb: { difficulty: String(q.difficulty || '').toUpperCase(), level: Number(q.level) || '' },
+             warn: prof.allowed[diff] ? '' : ({ E: 'Easy', M: 'Medium', H: 'Hard' })[diff] + ' is not offered for this skill in practice (Skill_Profile) — saved anyway.' };
+  } finally { lock.releaseLock(); }
 }
 /** The key of ONE question of this set — only when the teacher presses "Show answer". */
 function teacherAnswer(code, setId, qid) {

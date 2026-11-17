@@ -106,20 +106,25 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     check((await page.$$('.t-grid tr[data-q]')).length === 1, 'Grid filter "Asked" → 1 question');
     await page.click('[data-tab="go"]');
 
-    console.log('question panel');
+    console.log('go over a question (#50: the test screen, the key only on Show answer)');
     await page.$eval('.t-row', e => e.click());
-    await page.waitForSelector('.t-panel.on .t-key');
+    await page.waitForSelector('#scr-test.going #go-show');
     await waitMath(page);
-    await sleep(500); // panel slide-in
-    const isMcq = (await page.$$('.t-pc')).length > 0;
-    check(/Correct answer: \S+/.test(await page.$eval('.t-key', e => e.innerText)) && (!isMcq || await page.$('.t-pc.key')), 'panel: question + correct answer' + (isMcq ? ' highlighted' : '') + ' (teacher only)');
-    check((await page.$$('.t-ps')).length === 2 && /Tries:/.test(await page.$eval('.t-ps', e => e.innerText)), 'panel: each student with tries + time');
-    await page.selectOption('.t-ps [data-tag="0"]', 'Concept Gap');
-    await page.$eval('.t-ps [data-save="0"]', e => e.click());
+    check(!(await page.$('#scr-test .ch.rv-key')) && !/Correct answer/.test(await page.$eval('#scr-test', e => e.innerText)), 'go-over opens with no key, no correct mark');
+    await page.click('#go-det');
+    await page.waitForSelector('#go-dr-body .t-ps');
+    await sleep(400); // drawer slide-in
+    check((await page.$$('#go-dr-body .t-ps')).length === 2 && /Tries:/.test(await page.$eval('#go-dr-body .t-ps', e => e.innerText)), 'Details drawer: each student with tries + time');
+    await page.selectOption('#go-dr-body [data-tag="0"]', 'Concept Gap');
+    await page.$eval('#go-dr-body [data-save="0"]', e => e.click());
     await page.waitForFunction(() => /Saved: Concept Gap/.test(document.querySelector('#toast').textContent));
-    check(true, 'mistake type saved ("Concept Gap")');
+    check(true, 'mistake type saved ("Concept Gap") from the drawer');
+    await page.click('#go-show');
+    await page.waitForSelector('.go-key');
+    check(/Correct answer: \S+/.test(await page.$eval('#fb-go', e => e.innerText)), 'Show answer → the correct answer');
     await shot(page, 'e2e_t_panel');
-    await page.$eval('#t-pclose', e => e.click());
+    await page.click('#btn-view-back');
+    await page.waitForSelector('#scr-teacher.on .t-row');
     g.fresh();
     const tagged = C.readTable_('Responses').rows.filter(r => r.mistake_type === 'Concept Gap');
     check(tagged.length === 1 && tagged[0].tagged_in === 'app', 'Responses.mistake_type written');
@@ -139,7 +144,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await shot(page, 'e2e_t_profile');
 
     console.log('payloads');
-    const studentCalls = E.st.rpcLog.filter(r => !/^(teacher|create|edit|save|class|question|tag|resolve|asks|student|assignment|pick|publish|close)/.test(r.fn) && r.fn !== 'login');
+    const studentCalls = E.st.rpcLog.filter(r => !/^(teacher|create|edit|save|class|question|tag|resolve|asks|student|assignment|pick|publish|close|goOver|setItemLevel)/.test(r.fn) && r.fn !== 'login');
     const keyLeak = studentCalls.filter(r => /"key"|"accepted"/.test(r.res));
     check(!keyLeak.length, 'student calls carry no key (' + studentCalls.length + ' checked)');
     englishOnly(E);

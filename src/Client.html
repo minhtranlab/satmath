@@ -135,7 +135,7 @@
   function navUp() {
     var on = ($$('.screen.on')[0] || {}).id;
     if ($('#modal-root').classList.contains('on') || NAV.busy) { navAgain(); return; }
-    if (on === 'scr-test' && A.view) { exitViewer(); return; }
+    if (on === 'scr-test' && (A.view || A.goPend)) { exitViewer(); return; }
     if (on === 'scr-test') { navAgain(); askExit(); return; }
     if (on === 'scr-result') { var b = $('#res-home'); if (b) { NAV.cur = ''; b.click(); } else navAgain(); return; }
     if (on === 'scr-teacher') { if (window.SMLT && window.SMLT.back && window.SMLT.back()) return; navAgain(); return; }
@@ -157,7 +157,7 @@
       [{ label: 'Keep working', value: false, cls: 'btn-outline' }, { label: inSet ? 'Save and leave' : 'Leave', value: true }]).then(function (ok) {
       NAV.busy = false;
       if (!ok) return;
-      if (A.view) { exitViewerHome(); return; }
+      if (A.view) { if (VW && VW.go) exitViewer(); else exitViewerHome(); return; }
       saveLater();
     });
   }
@@ -1598,6 +1598,14 @@
     $('#tb-title').textContent = 'Review'; var vb = $('#view-bar'); if (vb) vb.innerHTML = '';
     show('scr-test'); view('v-wait');
     $('#v-wait').innerHTML = '<div class="page"><div class="spinner"></div><p class="lead center">Loading questions…</p></div>';
+    if (teacher) {                                                       // #50: the teacher goes over it like the real test (the key only on "Show answer")
+      var goT = function (d) { A.goC = A.goC || {}; A.goC[sessionId] = d;
+        goOver(d, { sid: sessionId, qid: qid, wrongOnly: true, backLabel: 'Back to report', who: d.student || '',
+                    side: window.SMLT && window.SMLT.side ? window.SMLT.side('st:' + d.student_code, 's:' + sessionId) : null }); };
+      if (A.goC && A.goC[sessionId]) { goT(A.goC[sessionId]); return; }
+      call('teacherReview', A.code, sessionId).then(goT).catch(function (e) { toast(errMsg(e), 4000); exitViewer(); });
+      return;
+    }
     var go = function (d) { startViewer(d, sessionId, teacher, qid); };
     if (VW && VW.sid === sessionId && VW.teacher === teacher && !VW.fix) { go(VW.d); return; }
     call(teacher ? 'teacherReview' : 'getReview', A.code, sessionId).then(go).catch(function (e) { toast(errMsg(e), 4000); exitViewer(); });
@@ -1725,7 +1733,156 @@
       applyCheck(q, ans, r);
     }).catch(function (e) { btn.disabled = false; toast(errMsg(e), 3000); });
   }
+  /* ================= #50 teacher go-over =================
+     The question as on the test (choices clickable, Desmos, Reference, annotate, zoom, Back / Next). Nothing on open tells
+     the answer: "Student's answer" shows what the student(s) entered, "Show answer" fetches the key (teacherKey) then the
+     CB explanation. The level boxes (E1…H3) save the teacher's level for the question (Item_Overrides) at once, with Undo. */
+  var LV = ['E1', 'E2', 'E3', 'M1', 'M2', 'M3', 'H1', 'H2', 'H3'], DN = { E: 'Easy', M: 'Medium', H: 'Hard' };
+  function goOver(d, o) {
+    o = o || {};
+    if (d && typeof d.then === 'function') {                            // the teacher page: the test screen at once, the questions when they come
+      var sc = $('#scr-test'); sc.classList.add('viewing', 'going'); sc.classList.remove('ro', 'fixing', 'placement'); A.pl = false;
+      $('#tb-title').textContent = 'Go over'; $('#view-bar').innerHTML = ''; $('#fb-go').innerHTML = ''; $('#go-strip').innerHTML = ''; $('#fb-name').textContent = o.who || '';
+      $('#btn-view-back').textContent = o.backLabel || 'Back';
+      show('scr-test'); view('v-wait');
+      $('#v-wait').innerHTML = '<div class="page"><div class="spinner"></div><p class="lead center">Loading questions…</p></div>';
+      var tok = A.goTok = (A.goTok || 0) + 1; A.goPend = o; VW = null; A.view = null;
+      d.then(function (x) { if (tok === A.goTok && $('#scr-test').classList.contains('going')) goOver(x, o); })
+       .catch(function (e) { toast(errMsg(e), 4000); sc.classList.remove('viewing', 'going'); if (o.back) o.back(); });
+      return;
+    }
+    var stu = {}, all = d.questions.map(function (q) {
+      var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; });
+      stu[c.qid] = { wrong: c.wrong };
+      ['answer', 'status', 'wrong', 'badge', 'time_s', 'asked', 'ask_note'].forEach(function (k) { delete c[k]; });
+      return c;
+    });
+    A.goPend = null;
+    var G = { d: d, all: all, stu: stu, o: o, keys: {}, shown: {}, rows: o.rows || null, drawer: false, undo: null,
+              filter: typeof o.wrongOnly === 'boolean', wrong: o.wrongOnly === true };
+    if (G.wrong && (!all.some(function (q) { return stu[q.qid].wrong; }) || (o.qid && stu[o.qid] && stu[o.qid].wrong === false))) G.wrong = false;
+    var scr = $('#scr-test'); scr.classList.add('viewing', 'going'); scr.classList.remove('ro', 'fixing');
+    show('scr-test');
+    goShow(G, o.qid);
+  }
+  function goShow(G, qid) {
+    var n = {}, qs = (G.wrong ? G.all.filter(function (q) { return G.stu[q.qid].wrong; }) : G.all).map(function (q) {
+      var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; }); n[c.part] = (n[c.part] || 0) + 1; c.display_no = n[c.part]; return c;
+    });
+    var d2 = {}; Object.keys(G.d).forEach(function (k) { d2[k] = G.d[k]; }); d2.questions = qs;
+    var start = qs.some(function (q) { return q.qid === qid; }) ? qid : (qs[0] || {}).qid;
+    try { hideCalc(true); } catch (e) {}
+    startViewer(d2, G.o.sid || 'go', true, start);
+    VW.go = G;
+    $('#scr-test').classList.add('going');
+    $('#fb-name').textContent = G.o.who || '';
+    $('#btn-view-back').textContent = G.o.backLabel || 'Back';
+    goDrawer(G.drawer);
+  }
+  function goWho(G, q) {                                             // [{name, tries:[{a, ok}], time_s, badge, away_s}] or null while loading
+    if (!G.rows) return null;
+    var row = G.rows.filter(function (r) { return r.qid === q.qid; })[0];
+    return row ? row.students || [] : [];
+  }
+  function goBar(q) {
+    var G = VW.go, m = q.meta || null, cur = m ? m.difficulty + m.level : '', k = G.keys[q.qid], sh = !!G.shown[q.qid];
+    var h = '<span class="go-id"><b>' + esc(q.label || '') + '</b>' + (q.code ? ' <span class="muted">' + esc(q.code) + '</span>' : '') + '</span>';
+    if (m) {
+      h += '<span class="go-lv" role="group" aria-label="Level of this question">' + LV.map(function (x, i) {
+        return (i && i % 3 === 0 ? '<i class="go-sep">·</i>' : '') + '<label class="go-box' + (x === cur ? ' on' : '') + '" title="' + DN[x[0]] + ' ' + x[1] + '"><input type="checkbox" data-lv="' + x + '"' + (x === cur ? ' checked' : '') + '>' + x + '</label>';
+      }).join('') + '</span>';
+      if (m.cb_difficulty) h += '<span class="go-cb muted">' + (m.source === 'CB' ? 'CB: ' : 'Label: ') + (DN[m.cb_difficulty] || m.cb_difficulty) + (m.overridden && m.cb_difficulty + m.cb_level !== cur ? ' · changed' : '') + '</span>';
+      if (G.undo && G.undo.qid === q.qid) h += '<button type="button" class="hz-link" id="go-undo">Undo</button>';
+    }
+    if (G.filter) h += '<label class="go-wo"><input type="checkbox" id="go-wrong"' + (G.wrong ? ' checked' : '') + '> Wrong only</label>';
+    h += '<button type="button" class="btn-outline go-det" id="go-det">' + (G.drawer ? 'Hide details' : 'Details') + '</button>';
+    var notes = [];
+    if (m && m.placement) notes.push('Placement test item: the Placement forms keep their own levels — this level is for practice, Mixed and assignments.');
+    if (m && m.allowed && m.allowed.length && m.allowed.indexOf(m.difficulty) < 0) notes.push('<span class="warn">⚠ ' + DN[m.difficulty] + ' is not offered for this skill in practice (Skill_Profile) — saved anyway.</span>');
+    if (notes.length) h += '<span class="go-note">' + notes.join(' ') + '</span>';
+    $('#view-bar').innerHTML = h;
+    $('#fb-go').innerHTML = '<button type="button" class="btn-outline" id="go-stu" aria-pressed="' + sh + '">Student\'s answer</button>' +
+      (k ? '<span class="go-key">Correct answer: <b>' + esc(k.key.join(' or ')) + '</b></span>' + (k.rationale_html ? '<button type="button" class="hz-link" id="go-rat">CB explanation</button>' : '')
+         : '<button type="button" class="btn-blue" id="go-show">Show answer</button>');
+    // the strip above the bottom bar: what the student(s) entered (after "Student's answer")
+    var box = qBox(q.qid), who = sh ? goWho(G, q) : null, picks = {};
+    var strip = '';
+    if (sh) {
+      if (!who) strip = '<span class="muted">Loading the answers…</span>';
+      else if (!who.length) strip = '<span class="muted">No answer recorded for this question here.</span>';
+      else strip = who.map(function (s) {
+        var tries = s.tries || [], fin = tries.length ? tries[tries.length - 1].a : '';
+        if (fin) { var f = String(fin).toUpperCase(); (picks[f] = picks[f] || []).push(String(s.name || 'Student').split(/\s+/)[0]); }
+        var path = tries.length ? tries.map(function (t) { return esc(t.a || '–') + (k ? (t.ok ? ' <span class="ok">✓</span>' : ' <span class="no">✗</span>') : ''); }).join(' → ') : 'blank';
+        return '<span class="gs-one"><b>' + esc(s.name || 'Student') + '</b>: ' + path + (tries.length > 1 ? ' <span class="muted">(' + tries.length + ' tries)</span>' : '') +
+          ' · ' + fmtTime(s.time_s) + (s.away_s ? ' · left the window ' + durStr(s.away_s) : '') + (s.badge ? ' · ' + (s.badge === 'S' ? 'slow' : s.badge === 'R' ? 'rushed' : esc(s.badge)) : '') + '</span>';
+      }).join('');
+    }
+    $('#go-strip').innerHTML = strip;
+    if (box) {
+      $$('.ch', box).forEach(function (c) { c.classList.remove('rv-key'); });
+      $$('.ch-row', box).forEach(function (row) {
+        var L = row.getAttribute('data-l'), p = picks[L];
+        row.classList.toggle('stu-pick', !!p); if (p) row.setAttribute('data-stu', p.length > 3 ? p.slice(0, 3).join(', ') + ' +' + (p.length - 3) : p.join(', ')); else row.removeAttribute('data-stu');
+        if (k && k.key.indexOf(L) >= 0) $('.ch', row).classList.add('rv-key');
+      });
+    }
+    $$('[data-lv]', $('#view-bar')).forEach(function (b) { b.onchange = function () { goLevel(q, b.getAttribute('data-lv')); }; });
+    var u = $('#go-undo'); if (u) u.onclick = function () { goLevel(q, G.undo.back, true); };
+    var w = $('#go-wrong'); if (w) w.onchange = function () { G.wrong = w.checked; goShow(G, q.qid); };
+    $('#go-det').onclick = function () { goDrawer(!G.drawer); };
+    $('#go-stu').onclick = function () {
+      G.shown[q.qid] = !G.shown[q.qid];
+      if (G.shown[q.qid] && !G.rows && G.o.side) G.o.side.rows().then(function (r) { G.rows = r || []; goRefresh(); }).catch(function (e) { G.rows = []; toast(errMsg(e)); goRefresh(); });
+      goBar(q);
+    };
+    var sb = $('#go-show'); if (sb) sb.onclick = function () {
+      sb.disabled = true; sb.textContent = 'Loading…';
+      call('teacherKey', A.code, q.qid).then(function (r) { G.keys[q.qid] = r; goRefresh(); }).catch(function (e) { sb.disabled = false; sb.textContent = 'Show answer'; toast(errMsg(e)); });
+    };
+    var rb = $('#go-rat'); if (rb) rb.onclick = function () { goDrawer(true, true); };
+    if (G.drawer) goDrawerFill(q);
+  }
+  function goRefresh() { if (VW && VW.go && A.view) { var c = curQ(); if (c) goBar(c); } }
+  function goLevel(q, x, isUndo) {
+    var G = VW.go, m = q.meta, old = m.difficulty + m.level;
+    if (!m || old === x) { goBar(q); return; }
+    var put = function (v) { m.difficulty = v[0]; m.level = +v[1]; m.overridden = true; if (VW && VW.go === G) goRefresh(); };
+    G.undo = isUndo ? null : { qid: q.qid, back: old };
+    put(x);
+    toast((isUndo ? 'Undone: ' : 'Saved: ') + old + ' → ' + x, 2600);
+    enqueue({ fn: 'setItemLevel', args: [A.code, q.qid, x[0], +x[1], ''], label: 'Level of ' + (m.code || q.qid) + ' (' + old + ' → ' + x + ')',
+      undo: function () { put(old); if (G.undo && G.undo.qid === q.qid) G.undo = null; },
+      done: function () { if (window.SMLT && window.SMLT.levelChanged) window.SMLT.levelChanged(q.qid); } });
+  }
+  function goDrawer(on, toRat) {
+    var G = VW && VW.go, dr = $('#go-drawer'); if (!dr) return;
+    if (G) G.drawer = !!on;
+    dr.classList.toggle('on', !!on); dr.setAttribute('aria-hidden', on ? 'false' : 'true');
+    dr.style.top = ($('#tmain').offsetTop || 0) + 'px'; dr.style.bottom = (($('#fbar').offsetHeight || 0) + 4) + 'px';
+    var b = $('#go-det'); if (b) b.textContent = on ? 'Hide details' : 'Details';
+    if (on && G) {
+      var q = curQ();
+      if (!G.rows && G.o.side) G.o.side.rows().then(function (r) { G.rows = r || []; if (G.drawer) goDrawerFill(curQ()); }).catch(function () { G.rows = []; });
+      goDrawerFill(q, toRat);
+    }
+  }
+  function goDrawerFill(q, toRat) {
+    var G = VW.go, el = $('#go-dr-body'), m = q.meta || {}, k = G.keys[q.qid];
+    var h = '<p class="gd-meta">' + esc(m.subskill_name || m.skill_name || '') + (m.difficulty ? ' · ' + DN[m.difficulty] + ' ' + m.level : '') +
+      (m.norm_sec ? ' · normal time ' + m.norm_sec + ' s' : '') + (m.cb_id ? ' · CB id ' + esc(m.cb_id) : '') + '</p><div id="gd-side"></div>' +
+      (k && k.rationale_html ? '<details class="gd-rat"' + (toRat ? ' open' : '') + '><summary><b>College Board explanation</b> (teacher only)</summary>' + k.rationale_html + '</details>' : '');
+    el.innerHTML = h;
+    var side = $('#gd-side');
+    if (G.o.side && G.o.side.drawer) {
+      if (!G.rows) side.innerHTML = '<div class="spinner"></div>';
+      else G.o.side.drawer(q, side, G.rows, function () { if (G.drawer && VW && VW.go === G) goDrawerFill(curQ()); });
+    }
+    typeset(el);
+    if (toRat) { var r = $('.gd-rat', el); if (r) setTimeout(function () { r.scrollIntoView({ block: 'start' }); }, 50); }
+  }
   function viewBar(q) {
+    if (VW.go) { goBar(q); return; }
     if (VW.fix) { fixBar(q); return; }
     var bar = $('#view-bar'), rq = q, key = VW.keys[q.qid];
     var st = rq.status === 'right' ? '<span class="rv-st right">✓ Correct</span>' : rq.status === 'wrong' ? '<span class="rv-st wrong">✗ Incorrect</span>' : '<span class="rv-st blank">– Not answered</span>';
@@ -1749,11 +1906,25 @@
   }
   function exitViewerHome() { exitViewer(true); }
   function exitViewer(toHome) {
+    if (!(VW && VW.go) && A.goPend) {                                   // #50: Back while the go-over is still loading
+      var po = A.goPend; A.goPend = null; A.goTok = (A.goTok || 0) + 1;
+      $('#scr-test').classList.remove('viewing', 'going'); $('#fb-go').innerHTML = ''; $('#go-strip').innerHTML = '';
+      if (po.back) po.back(); else show('scr-result');
+      return;
+    }
     try { hideCalc(true); } catch (e) {}
     $('#ref-panel').classList.remove('on'); closePops(); hideHlToolbar();
     if (A.st) A.viewZoom = A.st.zoom;
-    var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing');
-    var wasFix = VW && VW.fix, sid = VW && VW.sid;
+    var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing', 'going');
+    var wasFix = VW && VW.fix, sid = VW && VW.sid, g = VW && VW.go;
+    if (g) {                                                            // #50: back where the go-over was opened
+      var dr = $('#go-drawer'); if (dr) { dr.classList.remove('on'); dr.setAttribute('aria-hidden', 'true'); }
+      $('#fb-go').innerHTML = ''; $('#go-strip').innerHTML = ''; VW = null;
+      A.view = null; A.st = null; A.test = null; A.profile = null; built = null;
+      if (g.o.back) { g.o.back(); return; }
+      show('scr-result'); var s0 = A.resScroll || [0, 0]; $('#scr-result').scrollTop = s0[0]; if (s0[1]) window.scrollTo(0, s0[1]);
+      return;
+    }
     A.view = null; A.st = null; A.test = null; A.profile = null; built = null;
     if (toHome === true) { if (wasFix) { VW = null; if (A.resC) delete A.resC[sid]; } A.homeAt = 0; showHome(); return; }
     if (wasFix) {                                                       // #43: the result at once with the new Best Score; exact after the tries are saved
@@ -1771,14 +1942,18 @@
     $('#scr-result').scrollTop = sc[0]; if (sc[1]) window.scrollTo(0, sc[1]);
   }
   function fmtTime(s) { s = Math.round(s || 0); var m = Math.floor(s / 60), r = s % 60; return m ? m + ' min ' + r + ' s' : r + ' s'; }
-  function initReview() { $('#btn-view-back').onclick = function () { exitViewer(); }; $('#btn-exit').onclick = askExit; }
+  function initReview() {
+    $('#btn-view-back').onclick = function () { exitViewer(); };
+    $('#btn-exit').onclick = function () { if ((A.view && VW && VW.go) || A.goPend) exitViewer(); else askExit(); };   // #50 the teacher's go-over: no "Leave?" question
+    $('#go-dr-x').onclick = function () { goDrawer(false); };
+  }
 
   /* ================= teacher page: TeacherPage.html (window.SMLT) ================= */
   function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
   function initTeacher() {
     // the teacher page (TeacherPage.html) uses these helpers of the student client
     window.SMLX = { durStr: durStr, awayLine: awayLine, nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
-                    figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell };
+                    figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell, goOver: goOver };
     if (window.SMLT) window.SMLT.init();
   }
 
