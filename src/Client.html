@@ -1753,7 +1753,7 @@
     }
     var stu = {}, all = d.questions.map(function (q) {
       var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; });
-      stu[c.qid] = { wrong: c.wrong };
+      stu[c.qid] = { wrong: c.wrong !== undefined ? c.wrong : (o.wrongSet ? !!o.wrongSet[c.qid] : undefined) };
       ['answer', 'status', 'wrong', 'badge', 'time_s', 'asked', 'ask_note'].forEach(function (k) { delete c[k]; });
       return c;
     });

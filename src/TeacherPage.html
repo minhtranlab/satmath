@@ -289,12 +289,12 @@
     if (!list.length) return '<div class="empty">No assignments yet.</div>';
     return list.slice().reverse().map(function (a) {
       if (a.kind === 'placement') return '<div class="t-asg t-asgpl"><div><b>' + esc(a.title) + '</b> <span class="muted">Placement test · form ' + esc(a.form === 'auto' ? 'auto (A first time, B retake)' : a.form) + ' · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
-        '<div class="t-asgst">' + a.students.map(function (s) { return s.state === 'done' ? '<button type="button" class="t-mini right" data-plrep="' + esc(s.set_id) + '">' + esc(s.name) + ': report</button>' : '<span class="t-mini ' + (s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + esc(s.state) + (s.state === 'in progress' ? ' (' + Math.max(0, s.n - 1) + ' answered)' : '') + '</span>'; }).join('') + '</div>' +
+        '<div class="t-asgst">' + a.students.map(function (s) { return s.state === 'done' ? '<button type="button" class="t-mini right" data-plrep="' + esc(s.set_id) + '">' + esc(s.name) + ': result</button>' : '<span class="t-mini ' + (s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + esc(s.state) + (s.state === 'in progress' ? ' (' + Math.max(0, s.n - 1) + ' answered)' : '') + '</span>'; }).join('') + '</div>' +
         '<div class="t-asgbtn">' + (a.status === 'published' ? '<button type="button" class="hz-link" data-aclose="' + esc(a.assignment_id) + '">Close</button>' : '') + '</div></div>';
       return '<div class="t-asg"><div><b>' + esc(a.title) + '</b> <span class="muted">' + a.n + ' questions · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
         '<div class="t-asgst">' + a.students.map(function (s) { return '<span class="t-mini ' + (s.state === 'done' ? 'right' : s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + (s.state === 'done' ? s.first_try + '/' + a.n + ' → ' + s.best + '/' + a.n : s.state) + '</span>'; }).join('') + '</div>' +
-        '<div class="t-asgbtn"><button type="button" class="hz-link" data-ascope="' + esc(a.assignment_id) + '">What to go over</button>' +
-        (a.status === 'published' ? '<button type="button" class="hz-link" data-aclose="' + esc(a.assignment_id) + '">Close</button>' : '') + '</div></div>';
+        '<div class="t-asgbtn t-rowbtns">' + (a.status === 'published' ? '<button type="button" class="t-sb" data-aclose="' + esc(a.assignment_id) + '">Close</button>' : '') +
+        '<button type="button" class="t-sb go" data-ascope="' + esc(a.assignment_id) + '">What to go over</button></div></div>';
     }).join('');
   }
   function bindAsg(tb) {
@@ -309,6 +309,25 @@
     }; });
   }
 
+  /** #63 two row buttons far apart: Result (outline) … Go over (blue) — hard to tap the wrong one on an iPad. */
+  function rowBtns(resAttr, goAttr) { return '<span class="t-rowbtns"><button type="button" class="t-sb" ' + resAttr + '>Result</button><button type="button" class="t-sb go" ' + goAttr + '>Go over</button></span>'; }
+  /** #63 Placement "Go over": its questions in order on the test screen, Wrong only ON; the student's answer + time as side info. */
+  function goPlacement(setId, who) {
+    var k = 'pl|' + setId, have = cget(k);
+    var p = have ? Promise.resolve(have) : call('placementReport', A.code, setId).then(function (r) { cput(k, r); return r; });
+    p.then(function (r) {
+      var rows = plSide(r), wrong = {}; r.items.forEach(function (x) { wrong[x.qid] = !x.right; });
+      var qids = r.items.map(function (x) { return x.qid; }), first = (r.items.filter(function (x) { return !x.right; })[0] || r.items[0] || {}).qid;
+      openGo(qids, first, { back: 'Back', who: r.student || who || '', wrongOnly: true, wrongSet: wrong, side: { rows: function () { return Promise.resolve(rows); }, drawer: plDrawer } });
+    }).catch(function (e) { toast(X.errMsg(e)); });
+  }
+  function goSet(code, setId, who) {
+    var view = T.view;
+    X.goOver(call('teacherReview', A.code, setId), { sid: setId, wrongOnly: true, backLabel: 'Back', who: who || '', side: side('st:' + code, 's:' + setId),
+                                                     back: function () { X.show('scr-teacher'); X.nav('t-' + (view || 'home')); } });
+  }
+  function plSide(r) { return r.items.map(function (x) { return { qid: x.qid, students: [{ name: r.student || 'Student', tries: x.blank ? [] : [{ a: x.answer, ok: !!x.right }], time_s: x.time_s, away_s: x.away_sec || 0, set_title: 'Placement test', date: '', profile: x.band || '' }] }; }); }
+
   /* ================= #50 go over a question: the test screen (Client goOver); the key only on "Show answer" ================= */
   function closePanel() { var p = $('#t-panel'); if (p) { p.classList.remove('on'); p.setAttribute('aria-hidden', 'true'); } }
   /** The questions of a class list (What to go over / Grid / search) on the test screen; the list's rows are the side info. */
@@ -322,7 +341,7 @@
     var key = 'go|' + qids.join(','), view = T.view, have = cget(key);
     var d = have ? Promise.resolve(have) : call('goOverData', A.code, qids).then(function (r) { cput(key, r); return r; });
     var hs = 0; key.split('').forEach(function (ch) { hs = (hs * 31 + ch.charCodeAt(0)) | 0; });   // #62 one notes pad per list of questions
-    X.goOver(d, { sid: 'go', qid: qid, backLabel: o.back || 'Back', who: o.who || '', side: o.side || null, notesKey: 'list:' + (hs >>> 0).toString(36),
+    X.goOver(d, { sid: 'go', qid: qid, backLabel: o.back || 'Back', who: o.who || '', side: o.side || null, wrongOnly: o.wrongOnly, wrongSet: o.wrongSet || null, notesKey: 'list:' + (hs >>> 0).toString(36),
                   back: function () { X.show('scr-teacher'); X.nav('t-' + (view || 'home')); } });
   }
   /** Side info for one class / one student's set: classView rows, fetched only when "Student's answer" or Details is pressed. */
@@ -383,7 +402,7 @@
       var h = '<h1>Asked</h1><p class="sub">Questions students asked you about. Open one to see it with the student\'s tries; Resolve when you have gone over it.</p>';
       h += r.asks.length ? '<table class="t-table"><tr><th>Question</th><th>Student</th><th>Note</th><th>Set</th><th></th></tr>' + r.asks.map(function (a, i) {
         return '<tr><td>' + codeHtml(a.code) + '</td><td>' + esc(a.student) + '</td><td>' + (a.note ? '“' + esc(a.note) + '”' : '<span class="muted">(no note)</span>') + '</td><td class="muted">' + esc(a.set_title) + ' · ' + esc(a.date) + ' · ' + (a.right1 ? 'right' : a.best ? 'fixed later' : 'wrong') + '</td>' +
-          '<td><button type="button" class="hz-link" data-open="' + i + '">Open</button> <button type="button" class="hz-link" data-res="' + i + '">Resolve</button></td></tr>';
+          '<td class="t-rbtd"><span class="t-rowbtns"><button type="button" class="t-sb" data-res="' + i + '">Resolve</button><button type="button" class="t-sb go" data-open="' + i + '">Go over</button></span></td></tr>';
       }).join('') + '</table>' : '<div class="empty">No open questions. 🎉</div>';
       body().innerHTML = h; bindCopies(body());
       $$('[data-open]', body()).forEach(function (b) { b.onclick = function () { var a = r.asks[+b.getAttribute('data-open')]; openGo([a.qid], a.qid, { back: 'Back to Asked', who: a.student, side: side('st:' + a.student_code, 's:' + a.set_id) }); }; });
@@ -419,7 +438,7 @@
         h += '<h2 class="t-h2">Placement tests</h2><table class="t-table t-plsum"><tr><th>Date</th><th>Form</th>' + PL_DOMS.map(function (d) { return '<th>' + esc(PL_SHORT[d]) + '</th>'; }).join('') + '<th></th></tr>' +
           r.placements.map(function (p) {
             return '<tr><td class="muted">' + esc(p.date) + '</td><td>' + esc(p.form) + '</td>' + p.domains.map(function (d) { return '<td>' + plLvl(d.level) + '</td>'; }).join('') +
-              '<td><button type="button" class="hz-link" data-plrep="' + esc(p.set_id) + '">Report</button></td></tr>';
+              '<td class="t-rbtd">' + rowBtns('data-plrep="' + esc(p.set_id) + '"', 'data-plgo="' + esc(p.set_id) + '"') + '</td></tr>';
           }).join('') + '</table>';
       }
       h += '<div class="t-h2row"><h2 class="t-h2">Level per skill</h2><span class="t-multi"><span class="muted" id="t-lv-cnt">Tick skills to give them in one assignment.</span><button type="button" class="btn-outline" id="t-lv-asg" disabled>Assign ticked skills</button></span></div>' +
@@ -433,8 +452,7 @@
         return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td>' +
           '<td>' + (x.time_min ? x.time_min + ' min' : '') + (x.done && x.answer_min !== null ? '<div class="muted t-small">answering ' + x.answer_min + ' min</div>' : '') + '</td>' +
           '<td class="t-away">' + (x.done && x.answer_min !== null ? (x.away_n ? x.away_n + '× · ' + X.durStr(x.away_sec) + (x.away_at ? '<div class="muted t-small">at ' + esc(x.away_at) + '</div>' : '') : '<span class="muted">—</span>') : '') + '</td>' +
-          '<td>' + (x.done && x.kind === 'placement' ? '<button type="button" class="hz-link" data-plrep="' + esc(x.set_id) + '">Report</button>'
-            : x.done ? '<button type="button" class="hz-link" data-res="' + i + '">Result</button> <button type="button" class="hz-link" data-sgo="' + i + '">Go over</button>' : '') + '</td></tr>';
+          '<td class="t-rbtd">' + (x.done ? rowBtns(x.kind === 'placement' ? 'data-plrep="' + esc(x.set_id) + '"' : 'data-res="' + i + '"', x.kind === 'placement' ? 'data-plgo="' + esc(x.set_id) + '"' : 'data-sgo="' + i + '"') : '') + '</td></tr>';
       }).join('') + '</table></div>' : '<div class="empty">No sets yet.</div>');
       body().innerHTML = h; bindCopies(body());
       $('#t-back').onclick = showHome;
@@ -455,11 +473,13 @@
       cks.forEach(function (c) { c.onchange = upd; });
       multi.onclick = function () { var t = cks.filter(function (c) { return c.checked; }).map(function (c) { return topicOf(r.skills[+c.getAttribute('data-k')]); }); if (t.length) openBuilder('st:' + s.code, { topics: t }); };
       $$('[data-plrep]', body()).forEach(function (b) { b.onclick = function () { openPlacement(b.getAttribute('data-plrep')); }; });
+      $$('[data-plgo]', body()).forEach(function (b) { b.onclick = function () { goPlacement(b.getAttribute('data-plgo'), s.name); }; });
       $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
         var x = r.sets[+b.getAttribute('data-res')];
         call('teacherResult', A.code, x.set_id).then(X.renderResult).catch(function (e) { toast(X.errMsg(e)); });
       }; });
-      $$('[data-sgo]', body()).forEach(function (b) { b.onclick = function () { openClass('st:' + s.code, 's:' + r.sets[+b.getAttribute('data-sgo')].set_id); }; });
+      // #63: "Go over" opens the test screen for every kind of set (Wrong only ON), like Placement
+      $$('[data-sgo]', body()).forEach(function (b) { b.onclick = function () { goSet(s.code, r.sets[+b.getAttribute('data-sgo')].set_id, s.name); }; });
     }
   }
   /** Turn a student on / off or rename: the profile and the lists change at once; saved in the background. */
@@ -709,7 +729,7 @@
       $('#pl-prof').onclick = function () { openProfile(r.student_code); };
       recBind(r.student_code, { review: 0 });
       // #50: the placement questions in order on the test screen; the student's answer + time as the side info
-      var plRows = r.items.map(function (x) { return { qid: x.qid, students: [{ name: r.student || 'Student', tries: x.blank ? [] : [{ a: x.answer, ok: !!x.right }], time_s: x.time_s, away_s: x.away_sec || 0, set_title: 'Placement test', date: '', profile: x.band || '' }] }; });
+      var plRows = plSide(r);
       $$('#pl-items tr[data-q]').forEach(function (tr) { tr.onclick = function () {
         openGo(r.items.map(function (x) { return x.qid; }), tr.getAttribute('data-q'), { back: 'Back to report', who: r.student || '', side: { rows: function () { return Promise.resolve(plRows); }, drawer: plDrawer } });
       }; });

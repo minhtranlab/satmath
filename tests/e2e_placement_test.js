@@ -113,6 +113,46 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await tp.click('#go-show'); await tp.waitForSelector('.go-key');
     check(/Correct answer/.test(await tp.$eval('#fb-go', e => e.textContent)), 'Show answer → the correct answer (teacher only)');
     await shot(tp, 'e2e_pl_panel');
+    await tp.click('#btn-view-back'); await tp.waitForSelector('#pl-items');
+
+    console.log('#63 Sets list: Result … Go over, Placement too');
+    { // a practice set too, so the list has both kinds
+      const g = G(); g.fresh(); const sp = g.call('startPractice', ['FX-T01', 'H.B', 5]); g.fresh();
+      const t = g.call('getSet', ['FX-T01', sp.set_id, {}]), ans = {}, evs = [{ part: 'P', t_ms: 0, qid: null, type: 'part_start', value: 'P' }]; let tt = 0;
+      t.questions.forEach((q, i) => { evs.push({ part: 'P', t_ms: tt, qid: q.qid, type: 'q_enter', value: i + 1 }); tt += 30000; ans[q.qid] = i ? key(q.qid) : (Q[q.qid].type === 'spr' ? '999' : ['A', 'B', 'C', 'D'].find(l => l !== key(q.qid))); evs.push({ part: 'P', t_ms: tt - 500, qid: q.qid, type: 'select', value: ans[q.qid] }); evs.push({ part: 'P', t_ms: tt, qid: q.qid, type: 'q_leave', value: null }); });
+      g.fresh(); g.call('submit', ['FX-T01', sp.set_id, { state: { v: 1, current_part: 'P', phase: 'review', part_starts: { P: Date.now() - 300000 }, ended: {}, parts: { P: { cur: 0, ans, elim: {}, mark: {}, ask: {}, hl: {} } } }, events: evs, ev_from: 0, copy: t.copy }]); g.fresh();
+    }
+    await tp.click('#pl-prof'); await tp.waitForSelector('#t-sets');
+    await tp.click('.t-nav [data-go="home"]'); await tp.waitForSelector('#t-students'); await tp.click('#t-students [data-prof="FX-T01"]');
+    await tp.waitForFunction(() => document.querySelectorAll('#t-sets [data-sgo]').length >= 1 && document.querySelectorAll('#t-sets [data-plgo]').length >= 1, null, { timeout: 20000 });
+    const gap = await tp.evaluate(() => { const one = (a, b) => { const x = document.querySelector(a).getBoundingClientRect(), y = document.querySelector(b).getBoundingClientRect(); return { gap: Math.round(y.left - x.right), h: Math.round(x.height) }; };
+      return { practice: one('#t-sets [data-res]', '#t-sets [data-sgo]'), placement: one('#t-sets [data-plrep]', '#t-sets [data-plgo]'), labels: [...document.querySelectorAll('#t-sets .t-rowbtns')].map(e => e.innerText.replace(/\s+/g, ' ')) }; });
+    check(gap.practice.gap >= 20 && gap.placement.gap >= 20 && gap.practice.h >= 34 && gap.labels.every(l => l === 'Result Go over'), 'Sets list: "Result" and "Go over" are two buttons ' + gap.practice.gap + ' px apart, ' + gap.practice.h + ' px tall — practice AND placement rows (' + JSON.stringify(gap.labels) + ')');
+    await tp.$eval('#t-sets', e => e.scrollIntoView({ block: 'center' })); await sleep(200);
+    await shot(tp, 'go63_sets_laptop');
+    await tp.$eval('#t-sets [data-plrep]', e => e.click()); await tp.waitForSelector('#pl-items');
+    check(/Placement test/.test(await tp.$eval('#t-body h1', e => e.textContent)), 'Placement "Result" → the placement report (2×2 areas, unchanged)');
+    await tp.click('#pl-prof'); await tp.waitForSelector('#t-sets [data-plgo]');
+    E.st.rpcLog = [];
+    await tp.$eval('#t-sets [data-plgo]', e => e.click());
+    await tp.waitForSelector('#scr-test.going #go-show'); await waitMath(tp);
+    check(/of 15/.test(await tp.$eval('#nav-label', e => e.textContent)) && !!(await tp.$('#go-wrong')) && !(await tp.$('#scr-test .ch.rv-key')), 'Placement "Go over" → the test screen over its 15 questions in order (Wrong only box; nothing wrong here → all), no key on screen');
+    await tp.click('#go-stu'); await tp.waitForFunction(() => /\d+ s/.test(document.querySelector('#go-strip').innerText));
+    await tp.click('#go-show'); await tp.waitForSelector('.go-key');
+    check(true, 'Student\'s answer + Show answer work on Placement questions');
+    await tp.click('#btn-view-back'); await tp.waitForSelector('#t-sets');
+    check(true, 'Back → the profile');
+    await tp.$eval('#t-sets [data-sgo]', e => e.click());
+    await tp.waitForSelector('#scr-test.going #go-show');
+    check(await tp.$eval('#go-wrong', e => e.checked) && /of 1\b/.test(await tp.$eval('#nav-label', e => e.textContent)), 'Practice "Go over" → the test screen too, Wrong only ON (1 wrong of 5)');
+    await tp.click('#btn-view-back'); await tp.waitForSelector('#t-sets');
+    const ip = (await E.newPage('ipad')).page;
+    await login(ip, E.url, 'TEACH-FX-9'); await ip.waitForSelector('#t-students'); await ip.tap('#t-students [data-prof="FX-T01"]');
+    await ip.waitForSelector('#t-sets [data-plgo]'); await ip.$eval('#t-sets', e => e.scrollIntoView({ block: 'center' })); await sleep(300);
+    const ipFit = await ip.evaluate(() => { const b = document.querySelector('#t-sets [data-sgo]').getBoundingClientRect(); return b.right <= innerWidth + 1 && b.height >= 34; });
+    check(ipFit, 'iPad: the two buttons fit and are ≥ 34 px tall');
+    await shot(ip, 'go63_sets_ipad');
+    await ip.context().close();
     englishOnly(E);
   } catch (e) { console.error(e); check(false, 'exception: ' + e.message); }
   await E.close();
