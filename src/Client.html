@@ -1891,10 +1891,12 @@
      images) + plain text. Nothing here is sent to the server. */
   var PEN = { on: false, color: 'blue', w: 1, tool: 'pen', strokes: [], hist: [], cv: null, host: null, qid: null };
   var PEN_C = { blue: '#1f5fd6', red: '#d0263c', green: '#1f8a4c', yellow: 'rgba(245,196,0,0.38)' };
-  function penHost() {
+  function penHost() {                                                    // Minh 17/11: the whole width (the white margins too), not only the question column
     var q = curQ(), b = q && qBox(q.qid); if (!b) return null;
-    return b.classList.contains('split') ? ($('.q-side', b) || b) : b;
+    PEN.full = !b.classList.contains('split');
+    return PEN.full ? $('#tmain') : ($('.q-side', b) || b);
   }
+  function penRemove() { if (PEN.cv && PEN.cv.parentNode) PEN.cv.parentNode.removeChild(PEN.cv); PEN.cv = null; PEN.host = null; PEN.strokes = []; PEN.hist = []; }
   function penCanvas() {
     var h = penHost(); if (!h) return null;
     if (PEN.host !== h || !PEN.cv || !h.contains(PEN.cv)) {
@@ -1906,7 +1908,7 @@
   }
   function penSize() {
     var h = PEN.host, c = PEN.cv; if (!h || !c) return;
-    c.style.display = 'none'; var w = h.scrollWidth, ht = h.scrollHeight; c.style.display = '';
+    c.style.display = 'none'; var w = PEN.full ? h.clientWidth : h.scrollWidth, ht = Math.max(h.scrollHeight, h.clientHeight); c.style.display = '';
     if (c._w === w && c._h === ht) return;
     var r = window.devicePixelRatio || 1;
     c._w = w; c._h = ht; c.style.width = w + 'px'; c.style.height = ht + 'px'; c.width = Math.round(w * r); c.height = Math.round(ht * r);
@@ -1917,7 +1919,7 @@
     var g = c.getContext('2d'), r = window.devicePixelRatio || 1;
     g.setTransform(r, 0, 0, r, 0, 0); g.clearRect(0, 0, c._w, c._h);
     PEN.strokes.forEach(function (s) {
-      var k = c._w / s.W, p = s.pts, hl = s.c === 'yellow';
+      var k = PEN.full ? 1 : c._w / s.W, p = s.pts, hl = s.c === 'yellow';
       g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = PEN_C[s.c];
       g.lineWidth = (hl ? (s.w === 2 ? 28 : 16) : (s.w === 2 ? 5 : 2.5)) * k;
       g.beginPath(); g.moveTo(p[0][0] * k, p[0][1] * k);
@@ -1930,7 +1932,7 @@
     var cur = null;
     var at = function (e) { var b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
     var erase = function (p) {
-      var hit = PEN.strokes.filter(function (s) { var k = c._w / s.W; return s.pts.some(function (q) { return Math.abs(q[0] * k - p[0]) < 12 && Math.abs(q[1] * k - p[1]) < 12; }); });
+      var hit = PEN.strokes.filter(function (s) { var k = PEN.full ? 1 : c._w / s.W; return s.pts.some(function (q) { return Math.abs(q[0] * k - p[0]) < 12 && Math.abs(q[1] * k - p[1]) < 12; }); });
       if (!hit.length) return;
       if (!cur.saved) { PEN.hist.push(PEN.strokes.slice()); cur.saved = true; }
       PEN.strokes = PEN.strokes.filter(function (s) { return hit.indexOf(s) < 0; }); penDraw();
@@ -2271,7 +2273,7 @@
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing', 'going');
     var wasFix = VW && VW.fix, sid = VW && VW.sid, g = VW && VW.go;
     if (g) {                                                            // #50: back where the go-over was opened
-      penSet(false); PEN.qid = null; notesOpen(false);
+      penSet(false); penRemove(); PEN.qid = null; notesOpen(false);
       var dr = $('#go-drawer'); if (dr) { dr.classList.remove('on'); dr.setAttribute('aria-hidden', 'true'); }
       $('#fb-go').innerHTML = ''; $('#go-strip').innerHTML = ''; VW = null;
       A.view = null; A.st = null; A.test = null; A.profile = null; built = null;
