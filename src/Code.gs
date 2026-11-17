@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.9 (2026-11-17, go over on the test screen — the answer last; level boxes E1–H3; triangle inequality live)';
+var APP_VERSION = 'v0.10 (2026-11-17, teacher go-over: Notes pad with math, pen on the question, instant Show answer)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -1132,7 +1132,14 @@ function teacherReview(code, setId) {
   // "Wrong only" needs just wrong / not; the answers come with "Student's answer" (classView), the key with "Show answer" (teacherKey)
   var rs = {}; responsesOf_(setId).forEach(function (x) { rs[String(x.qid)] = x; });
   r.questions.forEach(function (q) { q.meta = goMeta_(q.qid); q.wrong = Number((rs[q.qid] || {}).try1_correct) !== 1; delete q.answer; delete q.status; });   // wrong on the first try
+  r.keys = goKeys_(r.questions.map(function (q) { return q.qid; }));   // #62 (Minh's call): teacher only, kept in memory, shown on "Show answer" at once
   return r;
+}
+/** #62 the keys (+ accepted forms, CB explanation) of a go-over set — ONLY in the teacher's go-over payloads (requireTeacher_ first). */
+function goKeys_(qids) {
+  var out = {};
+  libQuestions_(qids).forEach(function (q) { out[q.qid] = { key: keyList_(q), type: q.type || 'mcq', rationale_html: q.rationale_html || '', cb_id: (q.source || {}).cb_question_id || '' }; });
+  return out;
 }
 /** #50 go-over: what the teacher needs next to a question — never its key. Level (with the override), the CB label,
  *  the skill's allowed difficulties (Skill_Profile), whether it is a Placement item, normal time. */
@@ -1161,7 +1168,7 @@ function goOverData(code, qids) {
   });
   if (!qs.length) throw new Error('FORM: Question not found in the library.');
   var p = setProfile_({ kind: 'practice', set_id: 'go', n: qs.length }, qs.length).parts[0];
-  return { ok: true, session_id: 'go', form_id: 'go', title: 'Go over', question_font: 'serif', reference_sheet: 'sat_math',
+  return { ok: true, session_id: 'go', form_id: 'go', title: 'Go over', keys: goKeys_(qs.map(function (q) { return q.qid; })), question_font: 'serif', reference_sheet: 'sat_math',
            parts: [{ part: SET_PART, title: 'Go over', layout: p.layout, spr_layout: p.spr_layout, choices: 4, calculator: true, reference: true, annotate: true, directions_html: '' }],
            questions: qs, settings: { desmos_api_key: desmosKey_() } };
 }

@@ -1758,7 +1758,7 @@
       return c;
     });
     A.goPend = null;
-    var G = { d: d, all: all, stu: stu, o: o, keys: {}, shown: {}, rows: o.rows || null, drawer: false, undo: null,
+    var G = { d: d, all: all, stu: stu, o: o, keys: {}, pre: d.keys || {}, shown: {}, rows: o.rows || null, drawer: false, undo: null,
               filter: typeof o.wrongOnly === 'boolean', wrong: o.wrongOnly === true };
     if (G.wrong && (!all.some(function (q) { return stu[q.qid].wrong; }) || (o.qid && stu[o.qid] && stu[o.qid].wrong === false))) G.wrong = false;
     var scr = $('#scr-test'); scr.classList.add('viewing', 'going'); scr.classList.remove('ro', 'fixing');
@@ -1769,12 +1769,13 @@
     var n = {}, qs = (G.wrong ? G.all.filter(function (q) { return G.stu[q.qid].wrong; }) : G.all).map(function (q) {
       var c = {}; Object.keys(q).forEach(function (k) { c[k] = q[k]; }); n[c.part] = (n[c.part] || 0) + 1; c.display_no = n[c.part]; return c;
     });
-    var d2 = {}; Object.keys(G.d).forEach(function (k) { d2[k] = G.d[k]; }); d2.questions = qs;
+    var d2 = {}; Object.keys(G.d).forEach(function (k) { if (k !== 'keys') d2[k] = G.d[k]; }); d2.questions = qs;
     var start = qs.some(function (q) { return q.qid === qid; }) ? qid : (qs[0] || {}).qid;
     try { hideCalc(true); } catch (e) {}
     startViewer(d2, G.o.sid || 'go', true, start);
-    VW.go = G;
+    VW.go = G; PEN.qid = null;
     $('#scr-test').classList.add('going');
+    notesSync();
     $('#fb-name').textContent = G.o.who || '';
     $('#btn-view-back').textContent = G.o.backLabel || 'Back';
     goDrawer(G.drawer);
@@ -1785,6 +1786,7 @@
     return row ? row.students || [] : [];
   }
   function goBar(q) {
+    if (PEN.qid !== q.qid) penNewQuestion(q.qid);                       // #62: a drawing belongs to one question only
     var G = VW.go, m = q.meta || null, cur = m ? m.difficulty + m.level : '', k = G.keys[q.qid], sh = !!G.shown[q.qid];
     var h = '<span class="go-id"><b>' + esc(q.label || '') + '</b>' + (q.code ? ' <span class="muted">' + esc(q.code) + '</span>' : '') + '</span>';
     if (m) {
@@ -1837,6 +1839,7 @@
       goBar(q);
     };
     var sb = $('#go-show'); if (sb) sb.onclick = function () {
+      if (G.pre[q.qid]) { G.keys[q.qid] = G.pre[q.qid]; goRefresh(); return; }   // #62: loaded with the set (teacher only) → at once
       sb.disabled = true; sb.textContent = 'Loading…';
       call('teacherKey', A.code, q.qid).then(function (r) { G.keys[q.qid] = r; goRefresh(); }).catch(function (e) { sb.disabled = false; sb.textContent = 'Show answer'; toast(errMsg(e)); });
     };
@@ -1881,6 +1884,356 @@
     typeset(el);
     if (toRat) { var r = $('.gd-rat', el); if (r) setTimeout(function () { r.scrollIntoView({ block: 'start' }); }, 50); }
   }
+  /* ================= #62 teacher tools in the go-over: pen on the question + Notes pad =================
+     Pen: a transparent canvas over the question (stem, figure, choices) — it scrolls with it; 4 colours (yellow = highlighter),
+     2 widths, eraser, Undo, Clear. The drawing belongs to the question on screen and is gone when another question opens.
+     Notes: one pad per set (this browser only, localStorage), text + MathQuill math fields; Copy = rich HTML (math as
+     images) + plain text. Nothing here is sent to the server. */
+  var PEN = { on: false, color: 'blue', w: 1, tool: 'pen', strokes: [], hist: [], cv: null, host: null, qid: null };
+  var PEN_C = { blue: '#1f5fd6', red: '#d0263c', green: '#1f8a4c', yellow: 'rgba(245,196,0,0.38)' };
+  function penHost() {
+    var q = curQ(), b = q && qBox(q.qid); if (!b) return null;
+    return b.classList.contains('split') ? ($('.q-side', b) || b) : b;
+  }
+  function penCanvas() {
+    var h = penHost(); if (!h) return null;
+    if (PEN.host !== h || !PEN.cv || !h.contains(PEN.cv)) {
+      if (PEN.cv && PEN.cv.parentNode) PEN.cv.parentNode.removeChild(PEN.cv);
+      var c = document.createElement('canvas'); c.className = 'pen-cv'; h.classList.add('pen-host'); h.appendChild(c);
+      PEN.host = h; PEN.cv = c; penBind(c);
+    }
+    penSize(); return PEN.cv;
+  }
+  function penSize() {
+    var h = PEN.host, c = PEN.cv; if (!h || !c) return;
+    c.style.display = 'none'; var w = h.scrollWidth, ht = h.scrollHeight; c.style.display = '';
+    if (c._w === w && c._h === ht) return;
+    var r = window.devicePixelRatio || 1;
+    c._w = w; c._h = ht; c.style.width = w + 'px'; c.style.height = ht + 'px'; c.width = Math.round(w * r); c.height = Math.round(ht * r);
+    penDraw();
+  }
+  function penDraw() {
+    var c = PEN.cv; if (!c || !c._w) return;
+    var g = c.getContext('2d'), r = window.devicePixelRatio || 1;
+    g.setTransform(r, 0, 0, r, 0, 0); g.clearRect(0, 0, c._w, c._h);
+    PEN.strokes.forEach(function (s) {
+      var k = c._w / s.W, p = s.pts, hl = s.c === 'yellow';
+      g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = PEN_C[s.c];
+      g.lineWidth = (hl ? (s.w === 2 ? 28 : 16) : (s.w === 2 ? 5 : 2.5)) * k;
+      g.beginPath(); g.moveTo(p[0][0] * k, p[0][1] * k);
+      if (p.length === 1) g.lineTo(p[0][0] * k + 0.1, p[0][1] * k);
+      for (var i = 1; i < p.length; i++) g.lineTo(p[i][0] * k, p[i][1] * k);
+      g.stroke(); g.restore();
+    });
+  }
+  function penBind(c) {
+    var cur = null;
+    var at = function (e) { var b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+    var erase = function (p) {
+      var hit = PEN.strokes.filter(function (s) { var k = c._w / s.W; return s.pts.some(function (q) { return Math.abs(q[0] * k - p[0]) < 12 && Math.abs(q[1] * k - p[1]) < 12; }); });
+      if (!hit.length) return;
+      if (!cur.saved) { PEN.hist.push(PEN.strokes.slice()); cur.saved = true; }
+      PEN.strokes = PEN.strokes.filter(function (s) { return hit.indexOf(s) < 0; }); penDraw();
+    };
+    c.addEventListener('pointerdown', function (e) {
+      if (!PEN.on || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      e.preventDefault(); penSize();
+      try { c.setPointerCapture(e.pointerId); } catch (x) {}
+      var p = at(e);
+      if (PEN.tool === 'eraser') { cur = { erase: true }; erase(p); return; }
+      PEN.hist.push(PEN.strokes.slice());
+      cur = { c: PEN.color, w: PEN.w, W: c._w, pts: [p] }; PEN.strokes = PEN.strokes.concat([cur]); penDraw();
+    });
+    c.addEventListener('pointermove', function (e) {
+      if (!cur) return; e.preventDefault();
+      var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs.length) evs = [e];
+      if (cur.erase) { erase(at(e)); return; }
+      evs.forEach(function (x) { cur.pts.push(at(x)); }); penDraw();
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { c.addEventListener(t, function () { cur = null; }); });
+  }
+  function penNewQuestion(qid) {
+    PEN.strokes = []; PEN.hist = []; PEN.qid = qid;
+    if (PEN.cv && PEN.cv.parentNode) PEN.cv.parentNode.removeChild(PEN.cv);
+    PEN.cv = null; PEN.host = null;
+    if (PEN.on) setTimeout(function () { if (PEN.on) penCanvas(); }, 0);
+  }
+  function penSet(on) {
+    PEN.on = !!on;
+    $('#scr-test').classList.toggle('pen-on', PEN.on);
+    $('#pen-bar').hidden = !PEN.on; $('#tool-pen').classList.toggle('active', PEN.on);
+    if (PEN.on) { hideHlToolbar(); penCanvas(); }
+  }
+  function penBarSync() {
+    $$('#pen-bar [data-pc]').forEach(function (b) { b.classList.toggle('on', PEN.tool === 'pen' && b.getAttribute('data-pc') === PEN.color); });
+    $$('#pen-bar [data-pw]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-pw') === PEN.w); });
+    $('#pen-bar [data-pt="eraser"]').classList.toggle('on', PEN.tool === 'eraser');
+  }
+  function initPen() {
+    $('#tool-pen').onclick = function () { penSet(!PEN.on); };
+    $$('#pen-bar [data-pc]').forEach(function (b) { b.onclick = function () { PEN.color = b.getAttribute('data-pc'); PEN.tool = 'pen'; penBarSync(); }; });
+    $$('#pen-bar [data-pw]').forEach(function (b) { b.onclick = function () { PEN.w = +b.getAttribute('data-pw'); if (PEN.tool === 'eraser') PEN.tool = 'pen'; penBarSync(); }; });
+    $$('#pen-bar [data-pt]').forEach(function (b) { b.onclick = function () {
+      var t = b.getAttribute('data-pt');
+      if (t === 'eraser') PEN.tool = PEN.tool === 'eraser' ? 'pen' : 'eraser';
+      else if (t === 'undo') { if (PEN.hist.length) { PEN.strokes = PEN.hist.pop(); penDraw(); } }
+      else if (t === 'clear') { if (PEN.strokes.length) { PEN.hist.push(PEN.strokes.slice()); PEN.strokes = []; penDraw(); } }
+      else if (t === 'off') penSet(false);
+      penBarSync();
+    }; });
+    window.addEventListener('resize', function () { if (PEN.cv) penSize(); });
+  }
+
+  var NT = { key: null, mq: null, loading: null, t: 0, svgDoc: null };
+  var MQ_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/', JQ_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js';
+  function loadJs(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { no(new Error('Could not load ' + src)); }; document.head.appendChild(s); }); }
+  function loadMQ() {
+    if (NT.mq) return Promise.resolve(NT.mq);
+    if (NT.loading) return NT.loading;
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = MQ_URL + 'mathquill.min.css'; document.head.appendChild(l);
+    var had$ = window.$, hadJ = window.jQuery;
+    NT.loading = loadJs(JQ_URL).then(function () { return loadJs(MQ_URL + 'mathquill.min.js'); }).then(function () {
+      NT.mq = window.MathQuill.getInterface(2);
+      try { window.jQuery.noConflict(true); } catch (e) {}                   // MathQuill keeps its own copy; the page's $ stays ours
+      if (had$ !== undefined) window.$ = had$; if (hadJ !== undefined) window.jQuery = hadJ;
+      return NT.mq;
+    });
+    NT.loading.catch(function () { NT.loading = null; });
+    return NT.loading;
+  }
+  function notesKey() { var G = VW && VW.go; return G ? 'sml_notes_' + (G.o.notesKey || ('set:' + (G.o.sid || 'go'))) : null; }
+  function inMq(n) { while (n && n.id !== 'nt-ed') { if (n.classList && n.classList.contains('mq')) return n; n = n.parentNode; } return null; }
+  function caretBy(sp, after) {
+    var ed = $('#nt-ed'); ed.focus();
+    var r = document.createRange(); if (after) r.setStartAfter(sp); else r.setStartBefore(sp); r.collapse(true);
+    var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  function mqField(sp, latex) {
+    var f = NT.mq.MathField(sp, { spaceBehavesLikeTab: false, autoCommands: 'pi theta sqrt pm', autoOperatorNames: 'sin cos tan log ln',
+      handlers: {
+        edit: function () { notesSaveSoon(); },
+        enter: function () { caretBy(sp, true); },
+        moveOutOf: function (dir) { caretBy(sp, dir === NT.mq.R); },
+        upOutOf: function () { caretBy(sp, false); }, downOutOf: function () { caretBy(sp, true); },
+        deleteOutOf: function (dir) { if (!f.latex()) { caretBy(sp, false); sp.parentNode.removeChild(sp); notesSaveSoon(); } else caretBy(sp, dir === NT.mq.R); }
+      } });
+    if (latex) f.latex(latex);
+    sp._mq = f; sp.setAttribute('contenteditable', 'false');
+    sp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); caretBy(sp, true); } });
+    return f;
+  }
+  function insertMath() {
+    return loadMQ().then(function () {
+      var ed = $('#nt-ed'), sel = getSelection(), r = null;
+      if (sel.rangeCount && ed.contains(sel.getRangeAt(0).startContainer) && !inMq(sel.getRangeAt(0).startContainer)) r = sel.getRangeAt(0);
+      else { r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); }
+      r.deleteContents();
+      var sp = document.createElement('span'); sp.className = 'mq';
+      r.insertNode(document.createTextNode(' ')); r.insertNode(sp);
+      var f = mqField(sp, ''); f.focus(); notesSaveSoon(); return f;
+    }).catch(function (e) { toast('The math editor did not load: ' + errMsg(e)); });
+  }
+  function notesSerial() {
+    var ed = $('#nt-ed'), c = ed.cloneNode(true), real = $$('.mq', ed);
+    $$('.mq', c).forEach(function (sp, i) { var n = document.createElement('span'); n.className = 'mq'; n.setAttribute('data-latex', real[i] && real[i]._mq ? real[i]._mq.latex() : (sp.getAttribute('data-latex') || '')); sp.parentNode.replaceChild(n, sp); });
+    return c.innerHTML;
+  }
+  function notesSaveSoon() { clearTimeout(NT.t); NT.t = setTimeout(notesSaveNow, 400); }
+  function notesSaveNow() {
+    clearTimeout(NT.t); if (!NT.key) return;
+    var h = notesSerial();
+    try { if (h.replace(/<br>|\s|&nbsp;/g, '')) localStorage.setItem(NT.key, h); else localStorage.removeItem(NT.key); } catch (e) {}
+  }
+  function notesLoad(key) {
+    var ed = $('#nt-ed'), h = ''; NT.key = key;
+    try { h = localStorage.getItem(key) || ''; } catch (e) {}
+    ed.innerHTML = h;
+    var mqs = $$('.mq', ed); if (!mqs.length) return;
+    loadMQ().then(function () { if (NT.key !== key) return; mqs.forEach(function (sp) { var lx = sp.getAttribute('data-latex') || ''; sp.textContent = ''; mqField(sp, lx); }); })
+      .catch(function () { mqs.forEach(function (sp) { sp.textContent = sp.getAttribute('data-latex') || ''; }); });
+  }
+  function notesSync() { var k = notesKey(); if (k && NT.key !== k) { if (NT.key) notesSaveNow(); notesLoad(k); } }
+  function notesOpen(on) {
+    var panel = $('#notes-panel');
+    if (!on) { if (panel.classList.contains('on')) notesSaveNow(); panel.classList.remove('on'); $('#tool-notes').classList.remove('active'); return; }
+    notesSync(); fpOpen(panel); $('#tool-notes').classList.add('active');
+    loadMQ().catch(function () {});
+    setTimeout(function () { var ed = $('#nt-ed'); if (!ed.contains(document.activeElement)) { ed.focus(); var r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } }, 30);
+  }
+  function notesCmd(cmd, val) {
+    var ed = $('#nt-ed'), sel = getSelection();
+    if (!sel.rangeCount || !ed.contains(sel.getRangeAt(0).startContainer)) { ed.focus(); }
+    try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
+    document.execCommand(cmd, false, val); notesSaveSoon();
+  }
+  /** LaTeX from MathQuill → readable text: \frac{3}{4}x → (3/4)x · x^{2} → x^2 · \sqrt{5} → √5. */
+  function texText(src) {
+    var SYM = { cdot: '·', times: '×', div: '÷', pm: '±', le: '≤', leq: '≤', ge: '≥', geq: '≥', ne: '≠', neq: '≠', pi: 'π', theta: 'θ', alpha: 'α', beta: 'β',
+                infty: '∞', approx: '≈', angle: '∠', triangle: '△', degree: '°', circ: '°', lt: '<', gt: '>', parallel: '∥', perp: '⊥', cong: '≅', sim: '∼' };
+    var wrap = function (x) { return /^([0-9.]+|[A-Za-zα-ωπθ])$/.test(x) ? x : '(' + x + ')'; };
+    var T = function (s) {
+      var i = 0, out = '';
+      var grp = function () {
+        while (s[i] === ' ') i++;
+        if (s[i] === '{') { var d = 0, st = i; for (; i < s.length; i++) { if (s[i] === '{') d++; else if (s[i] === '}' && !--d) { i++; return T(s.slice(st + 1, i - 1)); } } return T(s.slice(st + 1)); }
+        if (s[i] === '\\') { var m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length; return cmd(m[1]); }
+        return s[i++] || '';
+      };
+      var cmd = function (c) {
+        if (c === 'frac' || c === 'dfrac' || c === 'tfrac') { var a = grp(), b = grp(); return wrap(a) + '/' + wrap(b); }
+        if (c === 'sqrt') { var n = ''; if (s[i] === '[') { var e = s.indexOf(']', i); n = T(s.slice(i + 1, e)); i = e + 1; } var x = grp(); return (n ? n : '') + '√' + wrap(x); }
+        if (c === 'left' || c === 'right') { var nx = grp(); return nx === '.' ? '' : nx; }
+        if (c === 'text' || c === 'mathrm' || c === 'operatorname' || c === 'mathbf') return grp();
+        if (c === ' ' || c === ',' || c === ';' || c === ':') return ' ';
+        if (c === '{' || c === '}' || c === '%' || c === '$' || c === '_' || c === '&') return c;
+        return SYM[c] !== undefined ? SYM[c] : c;
+      };
+      while (i < s.length) {
+        var ch = s[i];
+        if (ch === '^' || ch === '_') { i++; var g = grp(); out += ch + (g.length === 1 ? g : '(' + g + ')'); }
+        else if (ch === '{' || ch === '\\') out += grp();
+        else if (ch === '}') i++;
+        else { out += ch; i++; }
+      }
+      return out;
+    };
+    return T(String(src || '')).replace(/\s+/g, ' ').trim();
+  }
+  function notesPlain(root) {
+    var out = '';
+    var walk = function (n) {
+      if (n.nodeType === 3) { out += n.nodeValue.replace(/ /g, ' ').replace(/​/g, ''); return; }
+      if (n.nodeType !== 1) return;
+      if (n.classList.contains('mq')) { out += texText(n._mq ? n._mq.latex() : n.getAttribute('data-latex')); return; }
+      var tag = n.tagName, block = /^(DIV|P|LI|UL|OL)$/.test(tag);
+      if (tag === 'BR') { out += '\n'; return; }
+      if (block && out && !/\n$/.test(out)) out += '\n';
+      if (tag === 'LI') out += '• ';
+      Array.prototype.forEach.call(n.childNodes, walk);
+      if (block && !/\n$/.test(out)) out += '\n';
+    };
+    Array.prototype.forEach.call(root.childNodes, walk);
+    return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  /** MathJax (already on the page) → SVG → PNG, so pasted notes keep their fractions in Google Docs / Mail. */
+  function mjSvgDoc() {                                                  // a hidden frame with MathJax's SVG output (the page itself uses CHTML)
+    if (NT.svgDoc) return NT.svgDoc;
+    NT.svgDoc = new Promise(function (ok, no) {
+      var f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+      f.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:0;border:0;visibility:hidden';
+      f.srcdoc = '<!doctype html><meta charset="utf-8"><script>window.MathJax={svg:{fontCache:"none"},startup:{typeset:false}};<\/script>' +
+                 '<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"><\/script>';
+      var tm = setTimeout(function () { no(new Error('MathJax SVG did not load')); }, 20000);
+      f.onload = function () {
+        var w = f.contentWindow, n = 0;
+        (function wait() {
+          if (w.MathJax && w.MathJax.startup && w.MathJax.startup.promise && w.MathJax.tex2svg) w.MathJax.startup.promise.then(function () { clearTimeout(tm); ok({ convert: function (tex) { return w.MathJax.tex2svg(tex, { display: false }); } }); });
+          else if (++n > 200) no(new Error('MathJax SVG missing')); else setTimeout(wait, 100);
+        })();
+      };
+      document.body.appendChild(f);
+    });
+    NT.svgDoc.catch(function () { NT.svgDoc = null; });
+    return NT.svgDoc;
+  }
+  function texPng(doc, tex) {
+    return new Promise(function (ok, no) {
+      var node = doc.convert(tex || '\\,'), svg = node.querySelector('svg');
+      if (!svg) { no(new Error('no svg')); return; }
+      var ex = 9.5, w = parseFloat(svg.getAttribute('width')) * ex, h = parseFloat(svg.getAttribute('height')) * ex, va = parseFloat(svg.style.verticalAlign || '0') * ex;
+      svg.setAttribute('width', w + 'px'); svg.setAttribute('height', h + 'px'); svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      var xml = new XMLSerializer().serializeToString(svg).replace(/currentColor/g, '#1b2a4a');
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'), k = 2; c.width = Math.ceil(w * k); c.height = Math.ceil(h * k);
+        var g = c.getContext('2d'); g.scale(k, k); g.drawImage(img, 0, 0, w, h);
+        try { ok({ src: c.toDataURL('image/png'), w: Math.round(w), h: Math.round(h), va: Math.round(va * 10) / 10 }); } catch (e) { no(e); }
+      };
+      img.onerror = function () { no(new Error('svg image')); };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+    });
+  }
+  function notesRich() {
+    var ed = $('#nt-ed'), c = ed.cloneNode(true), real = $$('.mq', ed), lx = real.map(function (sp) { return sp._mq ? sp._mq.latex() : (sp.getAttribute('data-latex') || ''); });
+    c.removeAttribute('contenteditable'); c.removeAttribute('id');
+    var fill = function (imgs) {
+      $$('.mq', c).forEach(function (sp, i) {
+        var t = texText(lx[i]), im = imgs && imgs[i], n;
+        if (im) { n = document.createElement('img'); n.src = im.src; n.alt = t; n.setAttribute('width', im.w); n.setAttribute('height', im.h); n.style.verticalAlign = im.va + 'px'; }
+        else { n = document.createElement('span'); n.style.fontFamily = 'Cambria Math, Times New Roman, serif'; n.style.fontStyle = 'italic'; n.textContent = t; }
+        sp.parentNode.replaceChild(n, sp);
+      });
+      return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1b2a4a">' + c.innerHTML + '</div>';
+    };
+    if (!lx.length) return Promise.resolve(fill(null));
+    return mjSvgDoc().then(function (doc) { return Promise.all(lx.map(function (t) { return texPng(doc, t).catch(function () { return null; }); })); })
+      .then(fill, function () { return fill(null); });
+  }
+  function notesCopy() {
+    notesSaveNow();
+    var plain = notesPlain($('#nt-ed')), htmlP = notesRich();
+    if (!plain) { toast('Nothing to copy yet.'); return Promise.resolve(false); }
+    var viaEvent = function () {
+      return htmlP.then(function (h) {
+        var fn = function (e) { e.clipboardData.setData('text/html', h); e.clipboardData.setData('text/plain', plain); e.preventDefault(); };
+        document.addEventListener('copy', fn); var ok = false; try { ok = document.execCommand('copy'); } catch (x) {}
+        document.removeEventListener('copy', fn);
+        toast(ok ? 'Copied the notes (text + math).' : 'Copy was blocked: select the notes and press Ctrl+C.', 2500); return ok;
+      });
+    };
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+      var item = new ClipboardItem({ 'text/html': htmlP.then(function (h) { return new Blob([h], { type: 'text/html' }); }), 'text/plain': new Blob([plain], { type: 'text/plain' }) });
+      return navigator.clipboard.write([item]).then(function () { toast('Copied the notes (text + math).', 2000); return true; }).catch(viaEvent);
+    }
+    return viaEvent();
+  }
+  function notesClear(andEnd) {
+    modal(andEnd ? 'End and clear the notes?' : 'Clear the notes?', andEnd ? 'The go-over closes and the notes of this set are deleted.' : 'The notes of this set are deleted.',
+      [{ label: 'Cancel', value: false, cls: 'btn-outline' }, { label: andEnd ? 'End & clear' : 'Clear', value: true }]).then(function (ok) {
+      if (!ok) return;
+      $('#nt-ed').innerHTML = ''; try { if (NT.key) localStorage.removeItem(NT.key); } catch (e) {}
+      if (andEnd) exitViewer(); else $('#nt-ed').focus();
+    });
+  }
+  function adjMq(ed, dir) {                                               // the math field right next to the caret (→ / ←)
+    var sel = getSelection(); if (!sel.rangeCount || !sel.isCollapsed) return null;
+    var r = sel.getRangeAt(0), n = r.startContainer, o = r.startOffset, x = null;
+    if (n.nodeType === 3) { if (dir > 0 && o >= n.nodeValue.length) x = n.nextSibling; else if (dir < 0 && o === 0) x = n.previousSibling; }
+    else x = dir > 0 ? n.childNodes[o] : n.childNodes[o - 1];
+    return x && x.nodeType === 1 && x.classList.contains('mq') && x._mq ? x : null;
+  }
+  function initNotes() {
+    var panel = $('#notes-panel'), ed = $('#nt-ed');
+    makeFloating(panel, $('#notes-head'), $('#notes-rs'), { def: function () {
+      var H = hostRect(), w = Math.round(Math.max(360, Math.min(500, H.w * 0.38)));
+      return { x: H.w - w - 16, y: H.top + 8, w: w, h: Math.max(300, Math.min(520, H.h - 16)) };
+    } });
+    $('#tool-notes').onclick = function () { notesOpen(!panel.classList.contains('on')); };
+    $('#notes-x').onclick = function () { notesOpen(false); };
+    $$('#nt-tools button').forEach(function (b) {
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });   // keep the selection in the notes
+      b.onclick = function () {
+        var t = b.getAttribute('data-nt');
+        if (t === 'bold') notesCmd('bold'); else if (t === 'c') notesCmd('foreColor', b.getAttribute('data-c'));
+        else if (t === 'hl') notesCmd('hiliteColor', '#fde68a'); else if (t === 'ul') notesCmd('insertUnorderedList');
+        else if (t === 'math') insertMath(); else if (t === 'copy') notesCopy();
+        else if (t === 'clear') notesClear(false); else if (t === 'end') notesClear(true);
+      };
+    });
+    ed.addEventListener('keydown', function (e) {
+      if (inMq(e.target) && e.target !== ed) return;
+      var k = e.key, mod = e.ctrlKey || e.metaKey;
+      if (k === '$' || (e.ctrlKey && (k === 'm' || k === 'M'))) { e.preventDefault(); insertMath(); return; }
+      if (mod && (k === 'e' || k === 'E')) { e.preventDefault(); notesCmd('hiliteColor', '#fde68a'); return; }
+      if (mod && (k === 'b' || k === 'B')) { e.preventDefault(); notesCmd('bold'); return; }
+      if (k === 'ArrowRight' || k === 'ArrowLeft') {
+        var sp = adjMq(ed, k === 'ArrowRight' ? 1 : -1);
+        if (sp) { e.preventDefault(); sp._mq.focus(); if (k === 'ArrowRight') sp._mq.moveToLeftEnd(); else sp._mq.moveToRightEnd(); }
+      }
+    });
+    ed.addEventListener('input', notesSaveSoon);
+    window.addEventListener('beforeunload', notesSaveNow);
+  }
   function viewBar(q) {
     if (VW.go) { goBar(q); return; }
     if (VW.fix) { fixBar(q); return; }
@@ -1918,6 +2271,7 @@
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing', 'going');
     var wasFix = VW && VW.fix, sid = VW && VW.sid, g = VW && VW.go;
     if (g) {                                                            // #50: back where the go-over was opened
+      penSet(false); PEN.qid = null; notesOpen(false);
       var dr = $('#go-drawer'); if (dr) { dr.classList.remove('on'); dr.setAttribute('aria-hidden', 'true'); }
       $('#fb-go').innerHTML = ''; $('#go-strip').innerHTML = ''; VW = null;
       A.view = null; A.st = null; A.test = null; A.profile = null; built = null;
@@ -1994,7 +2348,7 @@
       if (!e.target.closest('#nav-pop, #btn-nav, #dir-pop, #btn-dir, #more-menu, #tool-more')) closePops();
       if (!e.target.closest('#hl-toolbar, .hl, #tool-annot')) hideHlToolbar();
     });
-    initCalc(); initRef(); initAnnotate(); initReader();
+    initCalc(); initRef(); initAnnotate(); initReader(); initPen(); initNotes();
     window.addEventListener('pagehide', function () {
       if (A.st && A.st.phase === 'test') { var q = curQ(); if (q) log('q_leave', q.qid, 'pagehide'); persist(); }
     });
@@ -2036,7 +2390,7 @@
   function setZoom(z) {
     A.st.zoom = Math.round(Math.max(0.8, Math.min(1.8, z)) * 10) / 10; persist(); applyZoom();
   }
-  function applyZoom() { var z = (A.st && A.st.zoom) || 1; document.documentElement.style.setProperty('--z', z); $('#zoom-val').textContent = Math.round(z * 100) + '%'; }
+  function applyZoom() { var z = (A.st && A.st.zoom) || 1; document.documentElement.style.setProperty('--z', z); $('#zoom-val').textContent = Math.round(z * 100) + '%'; if (PEN.cv) setTimeout(penSize, 60); }
   function showHelp() {
     modal('Help', '<ul style="padding-left:18px;margin:0">' +
       '<li><b>Timer</b> — top centre. <i>Hide</i> hides it (it keeps running). It turns red and stays visible in the last 5 minutes. At 0:00 the part ends and your answers are saved.</li>' +
@@ -2158,7 +2512,7 @@
   function fpToggleBig(panel) { panel._big = !panel._big; fpApply(panel); fpSave(panel); }
   /** Window resized (or phone rotated): keep open panels inside the window; nothing else changes. */
   function fpOnWindowResize() {
-    ['#calc-panel', '#ref-panel'].forEach(function (id) { var p = $(id); if (p && p.classList.contains('on') && p._box) fpApply(p); });
+    ['#calc-panel', '#ref-panel', '#notes-panel'].forEach(function (id) { var p = $(id); if (p && p.classList.contains('on') && p._box) fpApply(p); });
     calcResize();
   }
 

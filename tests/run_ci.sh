@@ -23,4 +23,5 @@ run node nav_test.js          # Back / Backspace / Exit, home order, placement o
 run node fix47_test.js        # Reference sheet in every set kind + viewer; default 5; unfinished set → Continue / "Start a new set instead" (abandoned)
 run node pace48_test.js       # time to the final answer (revisit / change / blank), pace + placement bands from it; leave-window log (practice silent, placement note, ⚠)
 run node goover50_test.js    # #50 go over on the test screen (key only on Show answer), level boxes → Item_Overrides read everywhere, Undo, iPad
+run node goover62_test.js    # #62 teacher tools: Notes pad (MathQuill, copy rich + plain), pen on the question (4 colours, gone on the next question), instant Show answer
 echo "ALL SUITES PASSED"

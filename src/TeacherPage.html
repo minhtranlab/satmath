@@ -321,7 +321,8 @@
     qids = qids.slice(a, a + 40);                                         // at most 40 questions in one go-over
     var key = 'go|' + qids.join(','), view = T.view, have = cget(key);
     var d = have ? Promise.resolve(have) : call('goOverData', A.code, qids).then(function (r) { cput(key, r); return r; });
-    X.goOver(d, { sid: 'go', qid: qid, backLabel: o.back || 'Back', who: o.who || '', side: o.side || null,
+    var hs = 0; key.split('').forEach(function (ch) { hs = (hs * 31 + ch.charCodeAt(0)) | 0; });   // #62 one notes pad per list of questions
+    X.goOver(d, { sid: 'go', qid: qid, backLabel: o.back || 'Back', who: o.who || '', side: o.side || null, notesKey: 'list:' + (hs >>> 0).toString(36),
                   back: function () { X.show('scr-teacher'); X.nav('t-' + (view || 'home')); } });
   }
   /** Side info for one class / one student's set: classView rows, fetched only when "Student's answer" or Details is pressed. */
