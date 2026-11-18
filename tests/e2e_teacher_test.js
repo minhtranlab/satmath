@@ -139,8 +139,8 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await page.click('.t-nav [data-go="home"]');
     await page.waitForSelector('[data-prof="FX-T03"]');
     await page.$eval('[data-prof="FX-T03"]', e => e.click());
-    await page.waitForSelector('.t-lv');
-    check((await page.$$('.t-lv tr')).length >= 20 && /Homework/.test(await page.$eval('#t-body', e => e.innerText)), 'profile: 19 skills + the assignment with First Try / Best');
+    await page.waitForSelector('#t-my .ms-lrow');
+    check((await page.$$('#t-my .ms-lrow')).length === 19 && /Homework/.test(await page.$eval('#t-body', e => e.innerText)), 'profile: the student\'s skill map (19 skills) + the assignment with First Try / Best');
     await shot(page, 'e2e_t_profile');
 
     console.log('payloads');

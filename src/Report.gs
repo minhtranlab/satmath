@@ -23,7 +23,8 @@ var TYPES_ = [
 /** #48 teacher only: answering · checking · blank minutes and the leave-window log of a set (from its Responses rows). */
 function paceOf_(rows) {
   var f = setPaceFields_({}, rows.slice().sort(function (a, b) { return Number(a.order) - Number(b.order); }));
-  return { answer_min: f.time_answer_min, check_min: f.time_check_min, blank_min: f.time_blank_min,
+  var tm = setTimeOf_(rows);
+  return { time_min: tm.min, capped: tm.capped, answer_min: f.time_answer_min, check_min: f.time_check_min, blank_min: f.time_blank_min,
            away_n: f.away_n, away_sec: f.away_sec, away_at: f.away_at, has_answer_time: rows.some(function (r) { return r.time_answer_sec !== '' && r.time_answer_sec !== undefined; }) };
 }
 function resultView_(s, rows, asTeacher) {

@@ -895,12 +895,13 @@ button.t-mini{border:0;cursor:pointer;font:inherit;font-size:12px}
 .ms-h2row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 44px 0 14px; }
 .ms-h2row .hz-h2 { margin: 0 !important; }
 .ms-entry { font-size: 15px !important; padding: 7px 16px !important; }
-#scr-skills, #scr-skill, #scr-mist {
+#scr-skills, #scr-skill, #scr-mist, #scr-hist, .ms-scope {
   --lv-e: #9cc3f0; --lv-m: #4f7fe0; --lv-h: #1f2f86; --ms-none: #cfd4de; --ms-emp: #eceef4; --ms-out: #b7bdcb;
   --ms-up: #1f9d61; --ms-up-t: #17804e; --ms-rush: #c0352d; --ms-slow: #9a6b00;
   --ms-bg: #ffffff; --ms-card: #ffffff; --ms-soft: #f6f7fb; --ms-top: #eef2fd; --ms-on-acc: #ffffff;
-  background: var(--ms-bg); color: var(--hz-ink); min-height: 100vh;
 }
+.ms-scope { --hz-ink: #191c26; --hz-muted: #5f6577; --hz-faint: #8b90a0; --hz-line: #dde0ea; --hz-line2: #eef0f5; --hz-acc: #324dc7; --hz-disp: "Bricolage Grotesque", "Noto Sans", Arial, sans-serif; --hz-sans: "Noto Sans", Arial, sans-serif; }
+#scr-skills, #scr-skill, #scr-mist, #scr-hist { background: var(--ms-bg); color: var(--hz-ink); min-height: 100vh; }
 .ms-main { max-width: 980px; }
 .ms-back { margin: 4px 0 10px; display: inline-block; }
 .ms-h1 { font: 800 30px/1.15 var(--hz-disp); letter-spacing: -.02em; margin: 0 0 6px !important; text-wrap: balance; }
@@ -939,31 +940,43 @@ button.t-mini{border:0;cursor:pointer;font:inherit;font-size:12px}
 .ms-legend i { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
 .ms-legend i.e { background: var(--lv-e); } .ms-legend i.m { background: var(--lv-m); } .ms-legend i.h { background: var(--lv-h); }
 .ms-legend i.n { background: var(--ms-none); } .ms-legend i.up { background: var(--lv-m); box-shadow: 0 0 0 1.5px var(--ms-up); }
-/* Skill map: the 9-step ladders */
+/* Skill map: 9 blocks per skill in ONE blue (College Board style), gained blocks green (#70) */
 .ms-maph { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-.ms-maph .ms-h2 { margin: 0 !important; }
+.ms-maph .ms-h2 { margin: 0 !important; margin-right: auto !important; }
 .ms-vs { display: inline-flex; border: 1px solid var(--hz-line); border-radius: 999px; padding: 2px; gap: 2px; }
 .ms-vs button { border: 0; background: none; color: var(--hz-muted); font: 600 13px var(--hz-sans); padding: 5px 11px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
-.ms-vs button[aria-pressed="true"] { background: var(--hz-acc); color: var(--ms-on-acc); }
+.ms-vs button[aria-pressed="true"] { background: var(--hz-acc); color: #fff; }
+.ms-asg:disabled { opacity: .5; }
 .ms-lads { display: flex; flex-direction: column; }
 .ms-dom { font: 700 13px var(--hz-sans); color: var(--hz-muted); text-transform: uppercase; letter-spacing: .05em; margin: 14px 0 2px; }
 .ms-dom:first-child { margin-top: 4px; }
-.ms-lrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 1.3fr) 30px; gap: 12px; align-items: center; width: 100%; background: none; border: 0; border-bottom: 1px solid var(--hz-line2);
-  padding: 9px 2px; text-align: left; cursor: pointer; color: var(--hz-ink); font: 500 15px var(--hz-sans); }
-.ms-lrow:hover .ms-lname { color: var(--hz-acc); text-decoration: underline; }
-.ms-lrow:focus-visible { outline: 3px solid var(--hz-acc); outline-offset: 2px; border-radius: 6px; }
-.ms-lrow.grey .ms-lname { color: var(--hz-muted); }
+.ms-lrow { display: grid; grid-template-columns: minmax(0, 1fr) 30px auto; gap: 10px; align-items: center; border-bottom: 1px solid var(--hz-line2); padding: 6px 2px; }
+.ms-lrow.t { grid-template-columns: 22px minmax(0, 1fr) 30px; }
+.ms-lbtn { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 1.3fr); gap: 12px; align-items: center; background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer; color: var(--hz-ink); font: 500 15px var(--hz-sans); min-width: 0; }
+.ms-lbtn:hover .ms-lname { color: var(--hz-acc); text-decoration: underline; }
+.ms-lbtn:focus-visible { outline: 3px solid var(--hz-acc); outline-offset: 2px; border-radius: 6px; }
 .ms-lname { min-width: 0; line-height: 1.3; }
+.ms-ck { width: 18px; height: 18px; accent-color: var(--hz-acc); }
+.ms-pr { border: 1.5px solid var(--hz-acc); background: none; color: var(--hz-acc); border-radius: 999px; font: 700 13px var(--hz-sans); padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+.ms-pr:hover { background: #eef1fc; }
 .ms-lad { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
-.ms-lad i { height: 12px; border-radius: 2px; background: var(--ms-emp); }
+.ms-lad i { height: 12px; border-radius: 2px; background: #e3e7f0; }
 .ms-lad i:nth-child(3), .ms-lad i:nth-child(6) { margin-right: 4px; }
-.ms-lad i.e { background: var(--lv-e); } .ms-lad i.m { background: var(--lv-m); } .ms-lad i.h { background: var(--lv-h); }
-.ms-lad i.o { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ms-out); }
-.ms-lad i.n { background: var(--ms-none); }
-.ms-lad i.up { box-shadow: 0 0 0 2px var(--ms-up); }
+.ms-lad i.on { background: #324dc7; }
+.ms-lad i.up { background: #1f9d61; }
 .ms-lad.big { width: 100%; max-width: 420px; } .ms-lad.big i { height: 18px; border-radius: 3px; }
+.ms-legend i.on { background: #324dc7; } .ms-legend i.up { background: #1f9d61; }
 .ms-lg { font: 700 14px var(--hz-sans); color: var(--ms-up-t); text-align: right; }
-.ms-skhead { display: flex; align-items: center; gap: 12px; margin: 6px 0 10px; }
+.ms-skhead { display: flex; align-items: center; gap: 12px; margin: 6px 0 14px; }
+.ms-tdet { padding: 4px 0 10px 32px; } .ms-tdet .ms-card { border: 0; padding: 8px 0; } .ms-tdet .ms-card + .ms-card { margin-top: 0; }
+.ms-sets { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 8px 0 0; font-size: 13px; color: var(--hz-muted); }
+.ms-sets > span { margin-right: 4px; }
+.ms-sname .ms-sets { display: flex; margin: 4px 0 0; }
+.ms-setn { min-width: 28px; height: 26px; border: 1px solid var(--hz-line); background: #fff; border-radius: 6px; font: 700 12.5px var(--hz-sans); color: var(--hz-acc); cursor: pointer; }
+.ms-setn:hover { border-color: var(--hz-acc); }
+/* #70 student top bar: Home · My skills · History */
+.sm-nav { display: inline-flex; gap: 14px; margin-right: 6px; flex-wrap: wrap; }
+.sm-nav .hz-link { font-size: 15px; } .sm-nav [aria-current="page"] { color: var(--hz-ink); text-decoration: underline; text-underline-offset: 4px; }
 /* a skill: Easy / Medium / Hard split */
 .ms-emh { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .ms-emc { border: 1px solid var(--hz-line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; border-top-width: 6px; }
@@ -1008,12 +1021,20 @@ button.t-mini{border:0;cursor:pointer;font:inherit;font-size:12px}
 @media (max-width: 760px) {
   .ms-grid { grid-template-columns: 1fr; }
   .ms-h1 { font-size: 26px; }
-  .ms-lrow { grid-template-columns: minmax(0, 1fr) 30px; grid-template-areas: "n n" "l g"; gap: 5px 8px; font-size: 14.5px; padding: 8px 2px; }
-  .ms-lrow .ms-lname { grid-area: n; } .ms-lrow .ms-lad { grid-area: l; } .ms-lrow .ms-lg { grid-area: g; align-self: center; }
+  .ms-lrow { grid-template-columns: minmax(0, 1fr) 26px auto; gap: 8px; }
+  .ms-lrow.t { grid-template-columns: 22px minmax(0, 1fr) 26px; }
+  .ms-lbtn { grid-template-columns: 1fr; gap: 5px; font-size: 14.5px; }
+  .ms-pr { padding: 5px 10px; font-size: 12.5px; }
+  .sm-nav { gap: 10px; } .sm-nav .hz-link { font-size: 14px; }
+  .ms-tdet { padding-left: 0; }
   .ms-srow { grid-template-columns: 14px minmax(0, 1fr) auto auto; }
   .ms-entry { font-size: 14px !important; padding: 6px 12px !important; }
   .ms-why2 { grid-template-columns: 1fr 1fr; gap: 8px; } .ms-big { font-size: 22px; }
   .ms-emh { gap: 6px; } .ms-emc { padding: 8px 10px; } .ms-emc b { font-size: 20px; }
 }
+.t-scode { display: inline-flex; align-items: center; gap: 6px; }
+.t-mask { border: 1px solid #dde0ea; background: #fff; border-radius: 6px; padding: 1px 8px; font-size: 12px; letter-spacing: 2px; color: #5f6577; cursor: pointer; }
+.t-mask:hover { border-color: #324dc7; color: #324dc7; }
+.t-cap { font-size: 11.5px; color: #8f5200; border: 1px solid #e8c98f; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
 </style>
 

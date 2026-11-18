@@ -69,6 +69,23 @@
     return '<span class="t-codebox' + (big ? ' big' : '') + '"><b class="t-code">' + esc(code) + '</b><button type="button" class="t-copy" data-copy="' + esc(code) + '" title="Copy ' + esc(code) + '">Copy</button>' +
       (cb ? '<span class="t-cb">CB ' + esc(cb) + '</span>' : '') + '</span>';
   }
+  /** #70 a student's code, hidden (●●●●) until clicked: then the code + Copy; a click elsewhere hides it again. */
+  function stuCode(code) {
+    if (!code) return '<span class="t-code none">—</span>';
+    return '<span class="t-scode" data-scode="' + esc(code) + '"><button type="button" class="t-mask" aria-label="Show the code">●●●●</button></span>';
+  }
+  function bindCodes() { /* one listener below handles every ●●●● */ }
+  function hideCodes() { $$('.t-scode.on').forEach(function (w) { w.classList.remove('on'); w.innerHTML = '<button type="button" class="t-mask" aria-label="Show the code">●●●●</button>'; }); }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    var m = e.target.closest('.t-mask');
+    if (m) {
+      var w = m.closest('.t-scode'), c = w.getAttribute('data-scode'); e.stopPropagation(); hideCodes();
+      w.innerHTML = '<b class="t-code">' + esc(c) + '</b><button type="button" class="t-copy" data-copy="' + esc(c) + '">Copy</button>';
+      w.classList.add('on'); bindCopies(w); return;
+    }
+    if (!e.target.closest('.t-scode.on')) hideCodes();
+  }, true);
   function bindCopies(root) { $$('[data-copy]', root).forEach(function (b) { b.onclick = function (ev) { ev.stopPropagation(); copyText(b.getAttribute('data-copy'), b); }; }); }
 
   /** A dialog with form fields; resolves with the button value, read() gives the field values before it closes. */
@@ -109,7 +126,7 @@
       '<table class="t-table" id="t-students"><tr><th>Name</th><th>Code</th><th>Classes</th><th>Last activity</th><th>Asked</th><th>Review</th><th></th></tr>' +
       r.students.filter(function (s) { return s.active || T.showOff; }).map(function (s) {
         return '<tr class="' + (s.active ? '' : 'off') + '"><td><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button>' + (s.active ? '' : ' <span class="muted">(off)</span>') + '</td>' +
-          '<td>' + codeHtml(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
+          '<td>' + stuCode(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
           '<td><button type="button" class="hz-link" data-go-st="' + esc(s.code) + '">What to go over</button></td></tr>';
       }).join('') + '</table>';
     body().innerHTML = h;
@@ -128,14 +145,14 @@
     var cls = (T.home && T.home.classes) || [];
     dialog('New student', '<label class="t-lab">Name<input class="field" name="name" maxlength="60" placeholder="e.g. Nguyễn An"></label>' +
       (cls.length ? '<p class="t-lab">Classes</p><div class="t-checks">' + cls.map(function (c) { return '<label><input type="checkbox" name="cls" value="' + esc(c.class_id) + '"> ' + esc(c.name) + '</label>'; }).join('') + '</div>' : '') +
-      '<p class="muted">The app makes the sign-in code. It is shown once here (and stays in the Students tab).</p>',
+      '',
       [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Create', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }],
       function (m) { var i = $('[name=name]', m); if (i) i.focus(); }).then(function (r) {
       if (!r.v) return;
       toast('Creating the student and the sign-in code…', 4000);
       call('createStudent', A.code, r.vals.name, r.vals.cls || []).then(function (x) {
         stale(/^(home|cv\|)/);
-        dialog('Student created', '<p><b>' + esc(x.name) + '</b> signs in with:</p><p class="t-newcode">' + codeHtml(x.student_code, '', true) + '</p><p class="muted">Copy it now and give it to the student.</p>',
+        dialog('Student created', '<p><b>' + esc(x.name) + '</b> signs in with:</p><p class="t-newcode">' + codeHtml(x.student_code, '', true) + '</p>',
           [{ label: 'Done', value: 1 }], bindCopies).then(showHome);
       }).catch(function (e) { toast(X.errMsg(e), 3500); });
     });
@@ -143,7 +160,7 @@
   function editClass(c) {
     var studs = (T.home && T.home.students) || [], mem = c ? c.members.map(function (m) { return m.code; }) : [];
     dialog(c ? 'Edit class' : 'New class', '<label class="t-lab">Class name<input class="field" name="name" maxlength="60" value="' + esc(c ? c.name : '') + '" placeholder="e.g. An 1-on-1"></label>' +
-      '<p class="t-lab">Students (most classes are one student; a student can be in several classes)</p><div class="t-checks">' +
+      '<p class="t-lab">Students</p><div class="t-checks">' +
       studs.filter(function (s) { return s.active; }).map(function (s) { return '<label><input type="checkbox" name="st" value="' + esc(s.code) + '"' + (mem.indexOf(s.code) >= 0 ? ' checked' : '') + '> ' + esc(s.name) + ' <span class="muted">' + esc(s.code) + '</span></label>'; }).join('') + '</div>',
       [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: c ? 'Save' : 'Create class', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }]).then(function (r) {
       if (!r.v) return;
@@ -179,7 +196,7 @@
   function archiveClass(c, on) {
     var go = function () { saveClassNow(c, c.name, c.members.map(function (m) { return m.code; }), !on); if (on) toast('Archived "' + c.name + '". Its students, sets and history stay.', 2500); };
     if (!on) { go(); return; }
-    dialog('Archive "' + c.name + '"?', '<p>The class leaves the Classes screen. Its students, sets and history stay in the Sheet; open assignments of this class are closed.</p><p class="muted">You can bring it back with "Show archived classes" → Restore.</p>',
+    dialog('Archive "' + c.name + '"?', '<p>Students, sets and history stay.</p>',
       [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Archive class', value: 1 }]).then(function (r) { if (r.v) go(); });
   }
 
@@ -232,7 +249,7 @@
     var tb = $('#t-tabbody'), r = T.cv;
     if (T.tab === 'asg') { tb.innerHTML = asgListHtml(r.assignments); bindAsg(tb); return; }
     var rows = filtered();
-    if (!rows.length) { tb.innerHTML = '<div class="empty">' + (T.filter ? 'No question "' + esc(T.filter) + '" in this list. Press Enter to open it from the library.' : 'Nothing done in this period yet. Pick another period above.') + '</div>'; return; }
+    if (!rows.length) { tb.innerHTML = '<div class="empty">' + (T.filter ? 'Not in this list · Enter = library' : 'Nothing in this period') + '</div>'; return; }
     if (T.tab === 'grid') { renderGrid(tb, rows); return; }
     var h = '';
     if (r.weak && r.weak.length) h += '<p class="t-weak">Weak sub-skills: ' + r.weak.map(function (w) { return '<span>' + dotHtml('r') + esc(w.name) + ' · ' + w.right + '/' + w.n + ' first try</span>'; }).join('') + '</p>';
@@ -391,7 +408,7 @@
   /** The students who did this question (tries, time, Asked note, mistake type + note + Save) — the drawer of the go-over. */
   function goDrawerSide(q, pin, rows, again) {
     var row = rows.filter(function (x) { return x.qid === q.qid; })[0];
-    if (!row) { pin.innerHTML = '<p class="muted">Nobody in this list has done this question in the chosen period.</p>'; return; }
+    if (!row) { pin.innerHTML = '<p class="muted">No answers in this period</p>'; return; }
     var types = (T.home && T.home.mistake_types) || [], ph = (T.home && T.home.mistake_placeholder) || '— choose a mistake type —';
     pin.innerHTML = '<h3 class="t-h3">Students</h3>' + row.students.map(function (s, i) {
       var tries = s.tries.length ? s.tries.map(function (t) { return '<span class="' + (t.ok ? 'ok' : 'no') + '">' + esc(t.a || '–') + '</span>'; }).join(' → ') : '<span class="no">blank</span>';
@@ -424,7 +441,7 @@
   function renderAsks(r) {
     {
       $('#t-asks-n').textContent = r.asks.length ? '(' + r.asks.length + ')' : '';
-      var h = '<h1>Asked</h1><p class="sub">Questions students asked you about. Open one to see it with the student\'s tries; Resolve when you have gone over it.</p>';
+      var h = '<h1>Asked</h1>';
       h += r.asks.length ? '<table class="t-table"><tr><th>Question</th><th>Student</th><th>Note</th><th>Set</th><th></th></tr>' + r.asks.map(function (a, i) {
         return '<tr><td>' + codeHtml(a.code) + '</td><td>' + esc(a.student) + '</td><td>' + (a.note ? '“' + esc(a.note) + '”' : '<span class="muted">(no note)</span>') + '</td><td class="muted">' + esc(a.set_title) + ' · ' + esc(a.date) + ' · ' + (a.right1 ? 'right' : a.best ? 'fixed later' : 'wrong') + '</td>' +
           '<td class="t-rbtd"><span class="t-rowbtns"><button type="button" class="t-sb" data-res="' + i + '">Resolve</button><button type="button" class="t-sb go" data-open="' + i + '">Go over</button></span></td></tr>';
@@ -450,37 +467,20 @@
   function renderProfile(r) {
     {
       var s = r.student, t = r.totals, pct = function (a, b) { return b ? Math.round(100 * a / b) + '%' : '–'; };
-      var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(s.name) + '</h1><div class="muted">' + codeHtml(s.code) + ' · ' + esc(s.classes || 'no class') + (s.active ? '' : ' · <b>off</b>') + '</div></div>' +
+      var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(s.name) + '</h1><div class="muted">' + stuCode(s.code) + ' · ' + esc(s.classes || 'no class') + (s.active ? '' : ' · <b>off</b>') + '</div></div>' +
         '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-ren">Rename</button><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button></div></div>';
       h += '<div class="t-stats"><div><b>' + t.answers + '</b>answers</div><div><b>' + pct(t.first_try_right, t.answers) + '</b>first try</div><div><b>' + pct(t.best_right, t.answers) + '</b>best</div>' +
         '<div><b>' + t.tries + '</b>tries</div><div><b>' + t.time_min + '</b>minutes</div><div><b>' + r.review_open + '</b>in Review</div><div><b>' + r.asks_open + '</b>asked</div></div>';
       h += recBox(s.code, r.recommend);
-      var pf = r.profiles, mk = r.mistakes;
-      h += '<p class="t-line">Timing: ' + [['FAST_WRONG', 'Rushed and wrong'], ['SLOW_WRONG', "Didn't know (slow, wrong)"], ['WRONG', 'Wrong'], ['SLOW_RIGHT', 'Slow but right'], ['RIGHT', 'Right'], ['BLANK', 'Blank']]
-        .map(function (x) { return x[1] + ' <b>' + (pf[x[0]] || 0) + '</b>'; }).join(' · ') + '</p>';
-      if (Object.keys(mk).length) h += '<p class="t-line">Mistake types: ' + Object.keys(mk).map(function (k) { return esc(k) + ' <b>' + mk[k] + '</b>'; }).join(' · ') + '</p>';
-      if (r.placements && r.placements.length) {
-        h += '<h2 class="t-h2">Placement tests</h2><table class="t-table t-plsum"><tr><th>Date</th><th>Form</th>' + PL_DOMS.map(function (d) { return '<th>' + esc(PL_SHORT[d]) + '</th>'; }).join('') + '<th></th></tr>' +
-          r.placements.map(function (p) {
-            return '<tr><td class="muted">' + esc(p.date) + '</td><td>' + esc(p.form) + '</td>' + p.domains.map(function (d) { return '<td>' + plLvl(d.level) + '</td>'; }).join('') +
-              '<td class="t-rbtd">' + rowBtns('data-plrep="' + esc(p.set_id) + '"', 'data-plgo="' + esc(p.set_id) + '"') + '</td></tr>';
-          }).join('') + '</table>';
-      }
-      h += '<div class="t-h2row"><h2 class="t-h2">Level per skill</h2><span class="t-multi"><span class="muted" id="t-lv-cnt">Tick skills to give them in one assignment.</span><button type="button" class="btn-outline" id="t-lv-asg" disabled>Assign ticked skills</button></span></div>' +
-        '<div class="t-tw"><table class="t-table t-lv"><tr><th class="t-ck"></th><th>Skill</th><th>Level</th><th>Recent</th><th>Good sets in a row</th><th>First try</th><th></th></tr>' + r.skills.map(function (k, i) {
-        return '<tr class="' + (k.n ? '' : 'off') + '"><td class="t-ck"><input type="checkbox" class="t-lv-ck" data-k="' + i + '" aria-label="Tick ' + esc(k.name) + '"></td><td>' + (k.subs.length ? '<button type="button" class="hz-link" data-sub="' + i + '">' + esc(k.name) + '</button>' : esc(k.name)) + '<div class="muted t-dom">' + esc(k.domain) + '</div></td>' +
-          '<td>' + (k.level ? '<span class="t-lvl ' + k.level + '">' + diffName(k.level) + '</span>' : '<span class="muted">—</span>') + '</td><td>' + (k.recent === null ? '' : Math.round(k.recent * 100) + '%') + '</td><td>' + (k.level ? k.streak : '') + '</td>' +
-          '<td>' + (k.n ? dotHtml(k.dot) + k.right + '/' + k.n : '') + '</td><td><button type="button" class="hz-link t-lv-one" data-k="' + i + '" title="' + esc(diffsFor(k.level).split(',').map(diffName).join(' + ')) + '">Assign</button></td></tr>' +
-          (k.subs.length ? '<tr class="t-subs" id="t-sub-' + i + '" hidden><td colspan="7">' + k.subs.map(function (x) { return '<span>' + dotHtml(x.dot) + esc(x.name) + ' ' + x.right + '/' + x.n + '</span>'; }).join('') + '</td></tr>' : '');
-      }).join('') + '</table></div>';
-      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<div class="t-tw"><table class="t-table" id="t-sets"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th>Slow / rushed</th><th>Left the window</th><th></th></tr>' + r.sets.map(function (x, i) {
-        return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td>' +
-          '<td>' + (x.time_min ? x.time_min + ' min' : '') + (x.done && x.answer_min !== null ? '<div class="muted t-small">answering ' + x.answer_min + ' min</div>' : '') + '</td>' +
-          '<td class="t-rs2">' + (x.rs || []).map(function (q) { return '<span class="t-rsq" title="' + esc('Q' + q.no + ' · ' + X.tTitle(q.t, q.nm)) + '">Q' + q.no + ' ' + X.bdgT(q.b, q.t, q.nm) + '</span>'; }).join('') + '</td>' +
-          '<td class="t-away">' + (x.done && x.answer_min !== null ? (x.away_n ? x.away_n + '× · ' + X.durStr(x.away_sec) + (x.away_at ? '<div class="muted t-small">at ' + esc(x.away_at) + '</div>' : '') : '<span class="muted">—</span>') : '') + '</td>' +
-          '<td class="t-rbtd">' + (x.done ? rowBtns(x.kind === 'placement' ? 'data-plrep="' + esc(x.set_id) + '"' : 'data-res="' + i + '"', x.kind === 'placement' ? 'data-plgo="' + esc(x.set_id) + '"' : 'data-sgo="' + i + '"') : '') + '</td></tr>';
-      }).join('') + '</table></div>' : '<div class="empty">No sets yet.</div>');
-      body().innerHTML = h; bindCopies(body());
+      h += '<div class="ms-scope" id="t-my">' + X.ms.html(r.my, { teacher: true }) + '</div>';     // #70 = the student's My skills + extras
+      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<div class="t-tw"><table class="t-table" id="t-sets"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th>Left the window</th><th></th></tr>' + r.sets.map(function (x, i) {
+        var pl = x.kind === 'placement';
+        return '<tr' + (pl ? ' class="t-plrow"' : '') + '><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + (pl && x.form ? ' · ' + esc(x.form) : '') + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done && !pl ? x.best + '/' + x.n : '') + '</td>' +
+          '<td' + (x.capped ? ' title="capped: ' + x.capped + (x.capped === 1 ? ' question' : ' questions') + ' over 20 min counted as 20 min"' : '') + '>' + (x.time_min ? x.time_min + ' min' + (x.capped ? ' <span class="t-cap">capped</span>' : '') : '') + '</td>' +
+          '<td class="t-away">' + (x.done && x.answer_min !== null ? (x.away_n ? x.away_n + '× · ' + X.durStr(x.away_sec) + (x.away_at ? '<div class="muted t-small">' + esc(x.away_at) + '</div>' : '') : '<span class="muted">—</span>') : '') + '</td>' +
+          '<td class="t-rbtd">' + (x.done ? rowBtns(pl ? 'data-plrep="' + esc(x.set_id) + '"' : 'data-res="' + i + '"', pl ? 'data-plgo="' + esc(x.set_id) + '"' : 'data-sgo="' + i + '"') : '') + '</td></tr>';
+      }).join('') + '</table></div>' : '<div class="empty">No sets yet</div>');
+      body().innerHTML = h; bindCopies(body()); bindCodes(body()); myBind(r);
       $('#t-back').onclick = showHome;
       $('#t-p-go').onclick = function () { openClass('st:' + s.code, 'all'); };
       $('#t-p-asg').onclick = function () { openBuilder('st:' + s.code); };
@@ -490,14 +490,7 @@
           [{ label: 'Cancel', value: 0, cls: 'btn-outline' }, { label: 'Save', value: 1, check: function (v) { return !!String(v.name || '').trim(); } }],
           function (m) { var i = $('[name=name]', m); if (i) i.select(); }).then(function (x) { if (x.v) setStudent(r, { name: String(x.vals.name).trim() }); });
       };
-      $$('[data-sub]', body()).forEach(function (b) { b.onclick = function () { var tr = $('#t-sub-' + b.getAttribute('data-sub')); tr.hidden = !tr.hidden; }; });
       recBind(s.code, r.recommend || {});
-      var topicOf = function (k) { return { code: k.skill, n: 4, diffs: diffsFor(k.level) }; };
-      $$('.t-lv-one', body()).forEach(function (b) { b.onclick = function () { openBuilder('st:' + s.code, { topics: [topicOf(r.skills[+b.getAttribute('data-k')])] }); }; });
-      var cks = $$('.t-lv-ck', body()), multi = $('#t-lv-asg');
-      var upd = function () { var n = cks.filter(function (c) { return c.checked; }).length; multi.disabled = !n; multi.textContent = n ? 'Assign ' + n + (n === 1 ? ' skill' : ' skills') : 'Assign ticked skills'; };
-      cks.forEach(function (c) { c.onchange = upd; });
-      multi.onclick = function () { var t = cks.filter(function (c) { return c.checked; }).map(function (c) { return topicOf(r.skills[+c.getAttribute('data-k')]); }); if (t.length) openBuilder('st:' + s.code, { topics: t }); };
       $$('[data-plrep]', body()).forEach(function (b) { b.onclick = function () { openPlacement(b.getAttribute('data-plrep')); }; });
       $$('[data-plgo]', body()).forEach(function (b) { b.onclick = function () { goPlacement(b.getAttribute('data-plgo'), s.name); }; });
       $$('[data-res]', body()).forEach(function (b) { b.onclick = function () {
@@ -507,6 +500,36 @@
       // #63: "Go over" opens the test screen for every kind of set (Wrong only ON), like Placement
       $$('[data-sgo]', body()).forEach(function (b) { b.onclick = function () { goSet(s.code, r.sets[+b.getAttribute('data-sgo')].set_id, s.name); }; });
     }
+  }
+  /** #70 the student's My skills blocks on the teacher's page: a row opens the skill (E / M / H %, sub-skills, the sets
+   *  1, 2, 3 → Go over); the lists open in go-over; ticked rows → one assignment. */
+  function myBind(r) {
+    var root = $('#t-my'), s = r.student, d = r.my; if (!root) return;
+    var MS = X.ms.S, N = d.min_n, ticked = {};
+    var topicOf = function (k) { var x = d.skills.filter(function (y) { return y.k === k; })[0]; return { code: k, n: 4, diffs: diffsFor(x && x.level) }; };
+    var updAsg = function () { var n = Object.keys(ticked).length, b = $('#ms-asg', root); if (!b) return; b.disabled = !n; b.textContent = n ? 'Assign ' + n + (n === 1 ? ' skill' : ' skills') : 'Assign ticked skills'; };
+    var redraw = function () { root.innerHTML = X.ms.html(d, { teacher: true }); Object.keys(ticked).forEach(function (k) { var c = root.querySelector('[data-ms-ck="' + k + '"]'); if (c) c.checked = true; }); updAsg(); };
+    root.onclick = function (e) {
+      if (!e.target.closest) return;
+      var t;
+      if ((t = e.target.closest('[data-ms-ck]'))) { var k0 = t.getAttribute('data-ms-ck'); if (t.checked) ticked[k0] = 1; else delete ticked[k0]; updAsg(); return; }
+      if ((t = e.target.closest('#ms-asg'))) { var tp = Object.keys(ticked).map(topicOf); if (tp.length) openBuilder('st:' + s.code, { topics: tp }); return; }
+      if ((t = e.target.closest('[data-ms-vs]'))) { MS.vs = +t.getAttribute('data-ms-vs'); try { localStorage.setItem('sml_ms_vs', String(MS.vs)); } catch (er) { /* fine */ } redraw(); return; }
+      if ((t = e.target.closest('[data-ms-set]'))) { goSet(s.code, t.getAttribute('data-ms-set'), s.name); return; }
+      if ((t = e.target.closest('[data-ms-list]'))) {
+        var L = X.ms.listOf(d, t.getAttribute('data-ms-list')); if (!L || !L.items.length) return;
+        var q = []; L.items.forEach(function (x) { if (q.indexOf(x.qid) < 0) q.push(x.qid); });
+        openGo(q, q[0], { back: 'Back to ' + s.name, who: s.name, side: side('st:' + s.code, 'all') }); return;
+      }
+      if ((t = e.target.closest('[data-ms-open]'))) {
+        var k = t.getAttribute('data-ms-open'), x = d.skills.filter(function (y) { return y.k === k; })[0], p = root.querySelector('#ms-tdet-' + k.replace(/\./g, '-'));
+        if (!x || !p) return;
+        if (!p.hidden && t.closest('.ms-lrow')) { p.hidden = true; return; }
+        p.innerHTML = X.ms.skill(x, N, true) + '</section>'; p.hidden = false;
+        if (!t.closest('.ms-lrow')) p.scrollIntoView({ block: 'center' });
+      }
+    };
+    updAsg();
   }
   /** Turn a student on / off or rename: the profile and the lists change at once; saved in the background. */
   function setStudent(r, f) {
@@ -535,9 +558,8 @@
   /** "Recommended assignment": editable rows (skill · n · difficulties), the Review list, one click Assign. */
   function recBox(code, rec) {
     var t = (rec && rec.topics) || [], rv = (rec && rec.review) || 0;
-    if (!t.length && !rv) return '<section class="t-rec" id="t-rec"><div class="t-rec-h"><h2>Recommended assignment</h2></div><p class="muted">Not enough answers yet to recommend skills. Give a Placement test first, or build one with New assignment.</p></section>';
-    return '<section class="t-rec" id="t-rec" data-code="' + esc(code) + '"><div class="t-rec-h"><h2>Recommended assignment</h2><span class="muted">' +
-      (t.length ? 'The ' + (t.length === 1 ? 'weakest skill' : t.length + ' weakest skills') + ' at the right level' : '') + (rv ? (t.length ? ', plus ' : '') + 'their Review list' : '') + '. Change anything, then Assign.</span></div>' +
+    if (!t.length && !rv) return '<section class="t-rec" id="t-rec"><div class="t-rec-h"><h2>Recommended assignment</h2></div><p class="muted">Not enough answers yet</p></section>';
+    return '<section class="t-rec" id="t-rec" data-code="' + esc(code) + '"><div class="t-rec-h"><h2>Recommended assignment</h2></div>' +
       '<div class="t-rec-rows">' + t.map(function (k, i) {
         var ds = String(k.diffs || '').split(',');
         return '<div class="t-rec-row" data-ri="' + i + '" data-code="' + esc(k.code) + '"><label class="b-tick"><input type="checkbox" class="r-on" checked> <b>' + esc(k.name) + '</b></label>' +
@@ -587,7 +609,7 @@
       var hw = 'Homework – ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       body().innerHTML = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><h1>New assignment</h1>' +
         '<div class="t-seg b-kind" role="group" aria-label="Kind of assignment"><button type="button" data-kind="questions" class="on">Questions</button><button type="button" data-kind="placement" id="b-kind-pl">Placement test</button></div>' +
-        '<p class="sub" id="b-sub">Untimed, like practice. Tick topics, how many questions and which difficulties; the app picks the questions (those nobody has done first). Same questions for everyone in a class.</p>' +
+        '<p class="sub" id="b-sub"></p>' +
         '<div class="t-form"><label>To<select id="b-to" class="field">' + opts + '</select></label><label>Title<input id="b-title" class="field" maxlength="80" value="' + esc(hw) + '"></label>' +
         '<label>Available from<input id="b-from" type="date" class="field" value="' + today + '"></label><label>Due (optional)<input id="b-due" type="date" class="field"></label></div>' +
         '<div id="b-tree"><p class="muted">Choose who it is for first.</p></div><div id="b-pick"></div>';
@@ -597,7 +619,7 @@
       var draw = function () {
         $$('[data-kind]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-kind') === kind); });
         if (kind === 'placement') {
-          $('#b-sub').textContent = 'One question at a time, chosen from the student\'s answers and time: about 15–24 questions over the 4 areas (8 at least, 24 at most). No timer; the time is recorded. The result sets the student\'s practice level in every skill.';
+          $('#b-sub').textContent = '';
           $('#b-pick').innerHTML = '';
           $('#b-tree').innerHTML = '<div class="t-form b-plform"><label>Form<select id="b-form" class="field"><option value="auto">Auto — form A the first time, form B for a retake</option><option value="A">Form A</option><option value="B">Form B</option></select></label></div>' +
             '<p class="b-pub"><button type="button" class="btn-blue" id="b-plpub">Publish the placement test</button></p>';
@@ -606,7 +628,7 @@
             publishNow({ kind: 'placement', target: to.value, title: $('#b-title').value, form: $('#b-form').value, available_from: $('#b-from').value, due: $('#b-due').value }, 'placement test');
           };
         } else {
-          $('#b-sub').textContent = 'Untimed, like practice. Tick topics, how many questions and which difficulties; the app picks the questions (those nobody has done first). Same questions for everyone in a class.';
+          $('#b-sub').textContent = '';
           if (to.value) loadTree(to.value); else { $('#b-tree').innerHTML = '<p class="muted">Choose who it is for first.</p>'; $('#b-pick').innerHTML = ''; }
         }
       };
@@ -734,7 +756,7 @@
       var h = '<button type="button" class="hz-link t-back" id="t-back">← ' + (back ? esc(r.student) : 'Classes') + '</button>' +
         '<div class="t-head"><div><h1>Placement test — ' + esc(r.student) + '</h1><div class="muted">Form ' + esc(r.form) + ' · ' + esc(r.date) + ' · ' + r.n_items + ' questions · ' + r.n_right + ' right · ' + r.time_min + ' min' + (r.done ? '' : ' · <b>not finished</b>') + '</div></div>' +
         '<div class="t-actions"><button class="btn-outline" type="button" id="pl-prof">Profile</button></div></div>';
-      if (r.pace) h += '<p class="t-pace" id="pl-pace">' + (r.pace.has_answer_time ? 'Answering <b>' + r.pace.answer_min + ' min</b> · ' : '') + X.awayLine(r.pace.away_n, r.pace.away_sec, r.pace.away_at) +
+      if (r.pace) h += '<p class="t-pace" id="pl-pace">' + X.awayLine(r.pace.away_n, r.pace.away_sec, r.pace.away_at) +
         (r.items.some(function (x) { return x.away_flag; }) ? ' · <span class="t-warn">⚠ = left the window ≥ ' + r.away_flag_sec + ' s on that question, then right (a sign, not proof)</span>' : '') + '</p>';
       h += '<div class="pl-tdoms" id="pl-tdoms">' + r.domains.map(function (d) {
         var pv = r.previous ? r.previous.domains.filter(function (x) { return x.dom === d.dom; })[0] : null;
@@ -742,7 +764,7 @@
           '<div class="muted pl-path">' + (d.n ? d.right + '/' + d.n + ' · ' + esc(d.path) : 'not tested') + '</div><div class="pl-start">Practice starts: <b>' + esc(d.level ? lvName(d.level) : '—') + '</b></div></div>';
       }).join('') + '</div>';
       h += '<h2 class="t-h2">Teach first</h2>' + (r.teach_first.length ? '<ol class="pl-teach" id="pl-teach">' + r.teach_first.map(function (k) { return '<li><b>' + esc(k.name) + '</b> <span class="muted">' + esc(PL_SHORT[k.dom]) + ' · ' + k.right + '/' + k.n + ' right</span> ' + plLvl(k.level) + '</li>'; }).join('') + '</ol>'
-        : '<p class="muted">Nothing below Strong among the skills tested.</p>');
+        : '<p class="muted">Nothing below Strong</p>');
       if (r.done) h += recBox(r.student_code, { topics: r.teach_first.map(function (k) { return { code: k.skill, name: k.name, level: k.level, n: 4, diffs: diffsFor(k.level) }; }), review: 0 });
       h += '<h2 class="t-h2">Skills tested</h2><table class="t-table"><tr><th>Skill</th><th>Area</th><th>Right</th><th>Level now</th>' + (r.previous ? '<th>Before</th>' : '') + '</tr>' + r.skills.map(function (k) {
         return '<tr><td>' + esc(k.name) + '</td><td class="muted">' + esc(PL_SHORT[k.dom]) + '</td><td>' + k.right + '/' + k.n + '</td><td>' + plLvl(k.level) + '</td>' + (r.previous ? '<td>' + plLvl(r.previous.skills[k.skill] || '') + '</td>' : '') + '</tr>';

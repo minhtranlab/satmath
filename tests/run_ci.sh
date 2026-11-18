@@ -26,5 +26,6 @@ run node goover50_test.js    # #50 go over on the test screen (key only on Show 
 run node goover62_test.js    # #62 teacher tools: Notes pad (MathQuill, copy rich + plain), pen on the question (4 colours, gone on the next question), instant Show answer
 run node goover66_test.js    # #66 the time next to every R / S badge (Result, Sets, What to go over, Grid, Details), go-over data in memory
 run node goover68_test.js    # #68 mistake type in the go-over top bar (one student / class popover, keys 1–7), a tag resolves the Ask, Notes open in math
-run node myskills69_test.js  # #68 D + #69 My skills v2 (ladders, gains, focus at level, E/M/H weeks, rushed/slow lists, mistakes, sub-skill practice, phone + laptop, dark)
+run node myskills70_test.js  # My skills v3 (#68 D, #69, #70): position + Placement baseline, gains, focus, lists, Practise, top bar, History, teacher view, masked codes
+run node clean70_test.js     # #70 no narrator text, light only, set time = Σ (time − away) with a 20-min cap
 echo "ALL SUITES PASSED"

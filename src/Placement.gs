@@ -393,7 +393,7 @@ function placementReport_(s) {
   var bands = { E: [S.pl_easy_fast_sec, S.pl_easy_max_sec], M: [S.pl_medium_fast_sec, S.pl_medium_max_sec], H: [S.pl_hard_fast_sec, S.pl_hard_max_sec], spr: S.pl_spr_extra_sec };
   return { ok: true, placement_report: true, set_id: String(s.set_id), student: st ? String(st.name || '') : String(s.student_code), student_code: normCode_(s.student_code),
            form: String(s.level_at_start || ''), done: isFinished_(s), date: dateStr_(s.submitted_at || s.created_at), n_items: list.length,
-           n_right: list.filter(function (x) { return x.right; }).length, time_min: rec ? Number(rec.time_min) || 0 : round_(list.reduce(function (a, x) { return a + x.time_s; }, 0) / 60, 1),
+           n_right: list.filter(function (x) { return x.right; }).length, time_min: setTimeOf_(rows).min, capped: setTimeOf_(rows).capped,
            domains: doms, skills: skills, teach_first: teach, items: list, previous: prev, bands: bands, pace: paceOf_(rows),
            away_flag_sec: Number(S.away_flag_sec) || 20 };
 }

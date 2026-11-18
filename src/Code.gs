@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.13.2 (2026-11-18, always white · slow mean without answers over 10 min · My skills v2: 9-step ladders by level, gains vs last week, Focus at the current level, Easy/Medium/Hard weekly lines, rushed / slow with Review these, blue levels)';
+var APP_VERSION = 'v0.14.0 (2026-11-18, My skills v3 one-colour map from Placement, Practise per skill, student top bar + History, teacher student page = My skills + extras, set time with 20-min cap, codes hidden, no narrator text)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -842,6 +842,18 @@ function deriveMetrics_(events, qids) {
   return m;
 }
 
+/** #70 the time of a set (Minh): Σ per question (time to the final answer − time outside the window), each capped at 20 min.
+ *  capped = how many questions hit the cap. */
+var SET_Q_CAP_SEC_ = 1200;
+function setTimeOf_(rows) {
+  var sec = 0, capped = 0;
+  rows.forEach(function (r) {
+    var t = Math.max(0, (Number(r.time_try1_sec) || 0) - (Number(r.away_sec) || 0));
+    if (t > SET_Q_CAP_SEC_) { t = SET_Q_CAP_SEC_; capped++; }
+    sec += t;
+  });
+  return { min: round_(sec / 60, 1), capped: capped };
+}
 /** #48 per set (teacher only): answering · checking (on answered questions after their final answer) · blank, and the
  *  leave-window log (count, seconds, at which questions). */
 function setPaceFields_(f, rows) {

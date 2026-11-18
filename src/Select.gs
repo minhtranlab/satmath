@@ -524,7 +524,7 @@ function homeData(code) {
     if (normCode_(r.student_code) !== codeN || plSet[String(r.set_id)]) return;
     if (Number(r.best_correct) !== 1 && !isYes_(r.locked)) fixLeft[String(r.set_id)] = (fixLeft[String(r.set_id)] || 0) + 1;
   });
-  var history = sets.filter(isFinished_).sort(function (a, b) { return toMs_(b.submitted_at) - toMs_(a.submitted_at); }).slice(0, 50).map(function (s) {
+  var history = sets.filter(isFinished_).sort(function (a, b) { return toMs_(b.submitted_at) - toMs_(a.submitted_at); }).slice(0, 300).map(function (s) {
     return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), title: setTitle_(s), date: dateStr_(s.submitted_at), n: Number(s.n) || 0,
              first_try: Number(s.first_try) || 0, best: s.best_score === '' ? Number(s.first_try) || 0 : Number(s.best_score),
              fix_left: fixLeft[String(s.set_id)] || 0 };

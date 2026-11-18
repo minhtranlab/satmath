@@ -50,9 +50,9 @@ console.log('[server]');
       await H.login(page, E.url, T); await page.waitForSelector('[data-prof="FX-T01"]');
       await page.$eval('[data-prof="FX-T01"]', e => e.click());
       // 2. profile Sets
-      await page.waitForSelector('#t-sets .t-rs2');
+      await page.waitForSelector('#t-sets');
       const setsTxt = await page.$eval('#t-sets', e => e.innerText);
-      check(setsTxt.includes('Q' + sq.no + ' ' + mm(600)) || new RegExp('Q' + sq.no + '\\s+' + mm(600)).test(setsTxt), dev + ' · profile Sets: "Q' + sq.no + ' S ' + mm(600) + '" and "Q' + rq.no + ' R ' + mm(3) + '"');
+      check(!/Slow \/ rushed/i.test(setsTxt) && /Left the window/i.test(setsTxt), dev + ' · profile Sets: no "Slow / rushed" column (#70), "Left the window" kept');
       await page.$eval('#t-sets', e => e.scrollIntoView({ block: 'center' })); await sleep(200); await shot(page, 'go66_sets' + tag);
       // 1. set Result
       await page.$eval('#t-sets [data-res]', e => e.click()); await page.waitForSelector('#result-body .rcell.tm');

@@ -23,7 +23,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await tp.waitForSelector('#b-kind-pl');
     await tp.click('#b-kind-pl');
     await tp.selectOption('#b-to', 'st:FX-T01');
-    check(await tp.$eval('#b-title', e => e.value) === 'Placement test' && /15–24 questions/.test(await tp.$eval('#b-sub', e => e.textContent)), 'builder: "Placement test" switch, title + what it does');
+    check(await tp.$eval('#b-title', e => e.value) === 'Placement test' , 'builder: "Placement test" switch + title');
     check((await tp.$$eval('#b-form option', a => a.map(o => o.value))).join(',') === 'auto,A,B', 'form: Auto (A first time, B retake) · A · B');
     await shot(tp, 'e2e_pl_builder');
     await tp.click('#b-plpub');
@@ -99,9 +99,11 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     console.log('teacher report');
     await tp.click('.t-nav [data-go="home"]'); await tp.waitForSelector('#t-students');
     await tp.click('#t-students [data-prof="FX-T01"]');
-    await tp.waitForSelector('.t-plsum [data-plrep]');
-    check(/Strong/.test(await tp.$eval('.t-plsum', e => e.innerText)), 'profile: "Placement tests" table (form A, Strong ×4)');
-    await tp.click('.t-plsum [data-plrep]');
+    await tp.waitForSelector('#t-sets .t-plrow [data-plrep]');
+    check(/Placement/.test(await tp.$eval('#t-sets .t-plrow', e => e.innerText)) && !(await tp.$('.t-plsum')), 'profile: the Placement is a row of the Sets list (no separate table)');
+    const steps = await tp.$$eval('#t-my .ms-lrow', rs => rs.map(r => r.querySelectorAll('.ms-lad i.on, .ms-lad i.up').length));
+    check(steps.length === 19 && steps.every(n => n >= 6), 'skill map starts from the Placement (Hard everywhere → 6+ blocks per skill): ' + steps.join(','));
+    await tp.click('#t-sets .t-plrow [data-plrep]');
     await tp.waitForSelector('#pl-items');
     const rep = await tp.$eval('#t-body', e => e.innerText);
     check(/Form A/.test(rep) && /15 questions/.test(rep) && (rep.match(/Practice starts: Hard/g) || []).length === 4, 'report: form A · 15 questions · practice starts Hard in the 4 areas');

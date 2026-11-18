@@ -1,20 +1,22 @@
-/* ============================== My skills v2 (#69, Minh 18 Nov 20:29: Map B · Focus B · Progress B · Rush/Slow A · Colours A) ==============================
- * The student's own page, computed here from the cached snapshots (one call when the page opens; clicks need no server).
- * Formulas = design/my_skills_prototype/README.md ("v2" section):
+/* ============================== My skills v3 (#70, Minh 18 Nov 21:28–22:13) ==============================
+ * The student's own page (and the teacher's view of it), computed here from the cached snapshots (one call per page open).
+ * Formulas = design/my_skills_prototype/README.md ("v3" section):
  *   answers    = the student's Responses rows (all set kinds), last 60 days; one row = one first-try answer, blank = wrong;
  *                difficulty = the question's difficulty now (teacher overrides included), else the one saved with the answer
- *   ladder     = 9 steps E1 E2 E3 · M1 M2 M3 · H1 H2 H3 per skill. Level = the current adaptive level (Levels; no row → the
- *                level the picker would use). Steps below the level are all filled; inside the level: first-try % AT that
- *                level (≥ 5 answers there) < 50 → 1, 50–79 → 2, ≥ 80 → 3; fewer → 0. < 5 answers in the skill → grey (0 steps).
- *   ladder then = the same rules on the answers up to 7 (or 14) days ago and the level at that date (read back from the Levels
- *                history: the "from" of the first change after that date, else today's level); gain = steps now − then, if > 0
- *   Focus      = skills with ≥ 5 answers at their current level and < 80 % there; rank (1 − % at level) × Skill_Profile weight; top 3
+ *   position   = 0–9 blocks (E1 E2 E3 · M1 M2 M3 · H1 H2 H3), the max of
+ *                (a) level: the skill's Levels level (no row → the domain level of the latest Placement; no Placement → none):
+ *                    all lower levels full + first-try % at that level with ≥ 5 answers there: < 50 → 1, 50–79 → 2, ≥ 80 → 3
+ *                (b) every difficulty with ≥ 5 first-try answers and ≥ 50 %: all lower levels full + 2 (50–79) or 3 (≥ 80)
+ *                So a student who took Placement starts from its levels; without Placement everything starts at 0.
+ *   gains      = position now − position at the end of the day 7 / 30 days ago (same rules on the answers up to then; the
+ *                level then read back from the Levels history, or the Placement finished by then), if > 0
+ *   Focus      = % at the difficulty that gave the position (else the hardest one with ≥ 5 answers); skills with < 5 answers
+ *                at every difficulty left out; < 80 % there; rank (1 − %) × Skill_Profile weight; top 3
  *   progress   = 4 weeks × Easy / Medium / Hard first-try %, a point only with ≥ 3 answers at that difficulty that week
  *   rushed     = wrong first tries with the R badge (profile FAST_WRONG) ÷ wrong first tries (60 days)
  *   slow       = right first tries with the S badge (SLOW_RIGHT); extra = mean(time to the final answer − normal time), m:ss;
  *                an answer with more than 10 min to the final answer is listed but not in the mean (Minh 18 Nov 21:29)
- *   My mistakes = the teacher's tags in the 60 days ("Not A Mistake" not counted), shown from 3 tags: per type count + share,
- *                last 4 weeks vs the 4 weeks before, the skill(s) where it happens most, the questions. No tips (Minh #69).
+ *   My mistakes = the teacher's tags in the 60 days ("Not A Mistake" not counted), shown from 3 tags.
  * Only this student's rows go into the payload — no codes, no keys, nothing of anyone else. */
 var MS_ = { WINDOW: 60, MIN_N: 5, WEEK_MIN: 3, MIN_TAGS: 3, UPS: 28, TOP: 80, MID: 50, LEFT: 600 };
 var MS_LV_ = ['E', 'M', 'H'];
@@ -42,18 +44,27 @@ function msHistory_(hist, todayStr) {
   });
   return out;
 }
-/** The level on day D (end of that day): the "from" of the first change after D; no change after D → the level now. */
+/** The level on day D (end of that day): the "from" of the first change after D (a Placement / first Mixed entry after D →
+ *  no level yet); no change after D → the level now. */
 function msLevelAt_(hist, nowLevel, D) {
-  for (var i = 0; i < hist.length; i++) if (hist[i].date > D) return hist[i].from || 'E';
+  for (var i = 0; i < hist.length; i++) if (hist[i].date > D) return hist[i].from || '';
   return nowLevel;
 }
-/** Ladder steps (0–9) from a skill's answers in a window and its level. */
-function msLadder_(xs, level) {
-  if (xs.length < MS_.MIN_N) return { steps: 0, grey: true, at_n: 0, at_pct: null };
-  var at = xs.filter(function (a) { return a.dif === level; }), r = at.filter(function (a) { return a.ok; }).length;
-  var pct = at.length ? Math.round(100 * r / at.length) : null, k = 0;
-  if (at.length >= MS_.MIN_N) k = pct >= MS_.TOP ? 3 : pct >= MS_.MID ? 2 : 1;
-  return { steps: 3 * MS_LV_.indexOf(level) + k, grey: false, at_n: at.length, at_pct: pct };
+/** Position (0–9 blocks) of a skill from its answers in a window and its level ('' = none): the max of (a) the level rule and
+ *  (b) every difficulty with ≥ 5 answers and ≥ 50 %. src = the difficulty that gave it. */
+function msPos_(xs, level) {
+  var by = {}; MS_LV_.forEach(function (d) { var x = xs.filter(function (a) { return a.dif === d; }); by[d] = { n: x.length, pct: x.length ? Math.round(100 * x.filter(function (a) { return a.ok; }).length / x.length) : null }; });
+  var best = 0, src = '';
+  if (level) {
+    var b = by[level], k = b.n >= MS_.MIN_N ? (b.pct >= MS_.TOP ? 3 : b.pct >= MS_.MID ? 2 : 1) : 0;
+    best = 3 * MS_LV_.indexOf(level) + k; src = level;
+  }
+  MS_LV_.forEach(function (d) {
+    var b = by[d]; if (b.n < MS_.MIN_N || b.pct < MS_.MID) return;
+    var v = 3 * MS_LV_.indexOf(d) + (b.pct >= MS_.TOP ? 3 : 2);
+    if (v > best) { best = v; src = d; }
+  });
+  return { steps: best, src: src, by: by };
 }
 
 function mySkills(code) {
@@ -61,7 +72,7 @@ function mySkills(code) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code);
   return mySkillsOf_(codeN);
 }
-function mySkillsOf_(codeN) {
+function mySkillsOf_(codeN, asTeacher) {
   var S = getSettings_(), now = Date.now(), today = msDayStr_(now);
   var sets = {}, titles = {};
   readTable_('Sets').rows.forEach(function (s) { if (normCode_(s.student_code) === codeN) sets[String(s.set_id)] = s; });
@@ -94,30 +105,40 @@ function mySkillsOf_(codeN) {
   });
   A.forEach(function (a) { var o = byK[a.k]; if (!o) return; o.xs.push(a); var s = o._s[a.ss]; if (s) { s.n++; s.r += a.ok; } });
   var lvRow = {}; readTable_('Levels').rows.forEach(function (r) { if (normCode_(r.student_code) === codeN) lvRow[clean_(r.skill)] = r; });
-  var tries = firstTries_(codeN);
-  var then = { 7: msDayStr_(now - 7 * 86400000), 14: msDayStr_(now - 14 * 86400000) };
-  var gains = { 7: { total: 0, skills: [] }, 14: { total: 0, skills: [] } };
+  var plLv = {}, plDay = '';                                         // the latest Placement: domain levels + the day it finished
+  try { plLv = plLatestLevels_(codeN) || {}; var ph = plHistory_(codeN); if (ph.length) plDay = toMs_(ph[0].finished_at) ? msDayStr_(toMs_(ph[0].finished_at)) : today; } catch (e) { plLv = {}; }
+  var W = { 7: msDayStr_(now - 7 * 86400000), 30: msDayStr_(now - 30 * 86400000) };
+  var gains = { 7: { total: 0 }, 30: { total: 0 } };
   skills.forEach(function (o) {
-    var row = lvRow[o.k], lvNow = row && /^[EMH]$/.test(String(row.level)) ? String(row.level) : levelState_(codeN, o.k, tries, S).level;
+    var row = lvRow[o.k], dom = String(o.k).charAt(0);
+    var lvNow = row && /^[EMH]$/.test(String(row.level)) ? String(row.level) : (plLv[dom] || '');
     var hist = msHistory_(row ? row.history : '', today);
-    o.level = lvNow; o.level_set = !!row;
+    o.level = lvNow;
     o.n = o.xs.length; o.pct = o.n ? Math.round(100 * o.xs.filter(function (a) { return a.ok; }).length / o.n) : null;
-    var L = msLadder_(o.xs, lvNow); o.steps = L.steps; o.grey = L.grey; o.at_n = L.at_n; o.at_pct = L.at_pct;
-    o.by = MS_LV_.map(function (d) { var x = o.xs.filter(function (a) { return a.dif === d; }); return { d: d, n: x.length, pct: x.length ? Math.round(100 * x.filter(function (a) { return a.ok; }).length / x.length) : null }; });
+    var P = msPos_(o.xs, lvNow); o.steps = P.steps; o.src = P.src;
+    o.by = MS_LV_.map(function (d) { return { d: d, n: P.by[d].n, pct: P.by[d].pct }; });
+    var fd = o.src && P.by[o.src].n >= MS_.MIN_N ? o.src : '';
+    if (!fd) MS_LV_.forEach(function (d) { if (P.by[d].n >= MS_.MIN_N) fd = d; });
+    o.fd = fd; o.f_pct = fd ? P.by[fd].pct : null;
     o.gain = {};
-    [7, 14].forEach(function (w) {
-      var D = then[w];
+    [7, 30].forEach(function (w) {
+      var D = W[w];
       var xs = ans.filter(function (a) { return a.k === o.k && msDayStr_(a.ms) <= D && msDayAge_(a.ms, D) <= MS_.WINDOW; });
-      var lt = msLevelAt_(hist, lvNow, D), P = msLadder_(xs, lt), g = Math.max(0, o.steps - P.steps);
-      o.gain[w] = { was: P.steps, g: g };
-      if (g) { gains[w].total += g; gains[w].skills.push({ k: o.k, name: o.name, g: g }); }
+      var lt = row && /^[EMH]$/.test(String(row.level)) ? msLevelAt_(hist, lvNow, D) : (plDay && plDay <= D ? (plLv[dom] || '') : '');
+      var was = msPos_(xs, lt).steps, g = Math.max(0, o.steps - was);
+      o.gain[w] = { was: was, g: g }; gains[w].total += g;
     });
     o.subs.forEach(function (s) { s.pct = s.n ? Math.round(100 * s.r / s.n) : null; s.live = live[s.ss] || 0; });
+    if (asTeacher) {                                                 // teacher: the sets with answers in this skill / sub-skill
+      var seen = {}, ord = ans.filter(function (a) { return a.k === o.k; }).sort(function (a, b) { return a.ms - b.ms; });
+      o.sets = []; ord.forEach(function (a) { if (!seen[a.set_id]) { seen[a.set_id] = 1; o.sets.push(item(a)); } });
+      o.subs.forEach(function (s) { var sn = {}; s.sets = []; ord.forEach(function (a) { if (a.ss === s.ss && !sn[a.set_id]) { sn[a.set_id] = 1; s.sets.push(item(a)); } }); });
+    }
   });
 
-  // Focus now: % at the current level (≥ 5 answers there, < 80 %), × weight
-  var focus = skills.filter(function (o) { return o.at_n >= MS_.MIN_N && o.at_pct < MS_.TOP; }).map(function (o) {
-    return { k: o.k, score: (1 - o.at_pct / 100) * skillProfile_(o.k).weight, pct: o.at_pct };
+  // Focus now: % at the difficulty that gave the position (≥ 5 answers there, < 80 %), × weight
+  var focus = skills.filter(function (o) { return o.fd && o.f_pct < MS_.TOP; }).map(function (o) {
+    return { k: o.k, score: (1 - o.f_pct / 100) * skillProfile_(o.k).weight, pct: o.f_pct };
   }).sort(function (a, b) { return b.score - a.score || a.pct - b.pct; }).slice(0, 3).map(function (f) { return f.k; });
 
   // Why I miss questions (60 days)
@@ -168,15 +189,16 @@ function mySkillsOf_(codeN) {
     });
   });
   ups.sort(function (a, b) { return a.age - b.age; });
-  [7, 14].forEach(function (w) { gains[w].skills.sort(function (a, b) { return b.g - a.g; }); });
 
   return {
-    ok: true, v: 2, today: today, window: MS_.WINDOW, min_n: MS_.MIN_N, week_min: MS_.WEEK_MIN, n_all: A.length,
+    ok: true, v: 3, today: today, window: MS_.WINDOW, min_n: MS_.MIN_N, week_min: MS_.WEEK_MIN, n_all: A.length,
     domains: doms,
     skills: skills.map(function (o) {
-      return { k: o.k, d: o.d, name: o.name, n: o.n, pct: o.pct, level: o.level, steps: o.steps, grey: o.grey, at_n: o.at_n, at_pct: o.at_pct,
-               by: o.by, gain: o.gain,
-               subs: o.subs.map(function (s) { return { ss: s.ss, name: s.name, n: s.n, pct: s.pct, live: s.live }; }) };
+      var x = { k: o.k, d: o.d, name: o.name, n: o.n, pct: o.pct, level: o.level, steps: o.steps, src: o.src, fd: o.fd, f_pct: o.f_pct,
+                by: o.by, gain: o.gain,
+                subs: o.subs.map(function (s) { var y = { ss: s.ss, name: s.name, n: s.n, pct: s.pct, live: s.live }; if (asTeacher) y.sets = s.sets; return y; }) };
+      if (asTeacher) x.sets = o.sets;
+      return x;
     }),
     gains: gains, focus: focus, why: why, mistakes: mist, weeks: weeks, ups: ups, review_open: openReviewRows_(codeN).length
   };

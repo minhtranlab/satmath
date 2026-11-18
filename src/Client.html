@@ -113,7 +113,7 @@
   function show(id) {
     $$('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
     if (id === 'scr-home') navSet('home'); else if (id === 'scr-result') navSet('result');
-    else if (id === 'scr-skills' || id === 'scr-skill' || id === 'scr-mist') navSet(id.slice(4));
+    else if (id === 'scr-skills' || id === 'scr-skill' || id === 'scr-mist' || id === 'scr-hist') navSet(id.slice(4));
     else if (id === 'scr-test') navSet($('#scr-test').classList.contains('viewing') ? 'view' : 'set');
   }
 
@@ -141,7 +141,7 @@
     if (on === 'scr-result') { var b = $('#res-home'); if (b) { NAV.cur = ''; b.click(); } else navAgain(); return; }
     if (on === 'scr-teacher') { if (window.SMLT && window.SMLT.back && window.SMLT.back()) return; navAgain(); return; }
     if (on === 'scr-skill' || on === 'scr-mist') { NAV.cur = ''; openSkills(false); return; }               // #68 D
-    if (on === 'scr-skills') { NAV.cur = ''; showHome(); return; }
+    if (on === 'scr-skills' || on === 'scr-hist') { NAV.cur = ''; showHome(); return; }
     navAgain();                                                          // home / sign-in: stay in the app
   }
   function isTyping(t) { return t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable); }
@@ -356,7 +356,7 @@
       // ④ Review: questions missed or slow, until one clean try
       var rv = el('section', { class: 'sm-revcard', id: 'review-card' });
       var nr = (r.review && r.review.open) || 0;
-      rv.innerHTML = '<div><b>Review</b><span>' + (nr ? nr + (nr === 1 ? ' question' : ' questions') + ' to review' : 'Nothing to review yet. Questions you miss (or that take you long) come here.') + '</span></div>';
+      rv.innerHTML = '<div><b>Review</b><span>' + (nr ? nr + (nr === 1 ? ' question' : ' questions') + ' to review' : 'Nothing to review yet') + '</span></div>';
       if (nr) {
         var hasOpenRev = (r.open || []).some(function (o) { return o.kind === 'review'; });
         var rb = el('button', { class: 'hz-btn', type: 'button', id: 'btn-review' }, hasOpenRev ? 'Continue' : 'Start ' + r.review.next);
@@ -365,19 +365,36 @@
       }
       box.appendChild(rv);
       if (r.history && r.history.length) {
-        box.appendChild(el('h2', { class: 'hz-h2' }, 'History'));
-        var t = el('table', { class: 'sm-hist', id: 'history' });
+        var hh = el('div', { class: 'ms-h2row' }, '<h2 class="hz-h2">History</h2>');
+        hh.appendChild(el('button', { class: 'hz-link', type: 'button', id: 'btn-fullhist', 'data-top': 'hist' }, 'Full history →'));
+        box.appendChild(hh);
+        box.appendChild(histTable(r.history.slice(0, 5), 'history'));
+      }
+    }
+  }
+  /** History rows (newest first): date · set · First Try · Best Score · Fix n more / Open. */
+  function histTable(list, id) {
+    {
+      {
+        var t = el('table', { class: 'sm-hist', id: id });
         t.innerHTML = '<tr><th>Date</th><th>Set</th><th>First Try</th><th>Best Score</th><th></th></tr>';
-        r.history.forEach(function (h) {
+        list.forEach(function (h) {
           var pl = h.kind === 'placement';
           var tr = el('tr'); tr.innerHTML = '<td class="dt">' + esc(h.date) + '</td><td>' + esc(h.title) + '</td><td class="num">' + (pl ? '–' : h.first_try + '/' + h.n) + '</td><td class="num">' + (pl ? '–' : h.best + '/' + h.n) + '</td><td class="act"></td>';
           if (h.fix_left && !pl) { var fb = el('button', { class: 'hz-link fix', type: 'button' }, 'Fix ' + h.fix_left + ' more'); fb.onclick = function () { A.result = null; openFix(h.set_id); }; tr.lastChild.appendChild(fb); }
           var b = el('button', { class: 'hz-link', type: 'button' }, 'Open'); b.onclick = function () { openResult(h.set_id); }; tr.lastChild.appendChild(b);
           t.appendChild(tr);
         });
-        box.appendChild(t);
+        return t;
       }
     }
+  }
+  /** #70 the full History page: every finished set, newest first. */
+  function openHistory() {
+    msWho(); show('scr-hist'); window.scrollTo(0, 0);
+    var m = $('#hist-main'), list = (A.home && A.home.history) || [];
+    m.innerHTML = '<h1 class="ms-h1">History</h1>';
+    if (list.length) m.appendChild(histTable(list, 'history-all')); else m.appendChild(el('p', { class: 'ms-empty' }, 'No sets yet'));
   }
   /** Three columns: area → skill → the chosen skill (its sub-skills, read-only progress) + 5 / 10 / 20 + Start. */
   /** #47: an unfinished practice set of a skill (or the Mixed set) — the page offers Continue, never a size that would not open. */
@@ -430,62 +447,47 @@
     draw();
     return box;
   }
-  /* ---------- My skills v2 (#69, Minh: Map B · Focus B · Progress B · Rush/Slow A · Colours A). One server call (mySkills,
-     snapshots) when the page opens; a skill's page and the question lists are drawn from that payload — no calls per click.
-     Levels = one blue scale (Easy light → Hard dark); red/amber only for rushed / slow, green only for gains; grey = not enough yet. */
+  /* ---------- My skills v3 (#70). One server call (mySkills, snapshots) per open; the skill page and the question lists are
+     drawn from that payload. msHtml() is shared with the teacher's student page (same blocks, + teacher extras). ---------- */
   var MS = { d: null, code: '', k: null, list: null, vs: 7 };
-  var MS_LV = { E: 'Easy', M: 'Medium', H: 'Hard' }, MS_G = ['e', 'e', 'e', 'm', 'm', 'm', 'h', 'h', 'h'];
-  try { if (localStorage.getItem('sml_ms_vs') === '14') MS.vs = 14; } catch (e) { /* storage off: default "vs last week" */ }
-  function msK(k) { return ((MS.d && MS.d.skills) || []).filter(function (x) { return x.k === k; })[0]; }
+  var MS_LV = { E: 'Easy', M: 'Medium', H: 'Hard' };
+  try { if (localStorage.getItem('sml_ms_vs') === '30') MS.vs = 30; } catch (e) { /* storage off */ }
+  function msK(k, d) { return (((d || MS.d) && (d || MS.d).skills) || []).filter(function (x) { return x.k === k; })[0]; }
   function msWho() { $$('.ms-who').forEach(function (e) { e.textContent = (A.student && A.student.name) || ''; }); }
-  /** The 9-step ladder: filled steps in their level's blue, the current level's empty steps outlined, the steps gained since
-   *  the chosen date outlined green; < 5 answers = all grey. */
+  /** 9 blocks in one blue, filled as far as the student is good; the blocks gained in the period are green. */
   function msLadder(k, big) {
-    var h = '<span class="ms-lad' + (big ? ' big' : '') + '" aria-hidden="true">', g = k.gain[MS.vs] || { was: k.steps, g: 0 }, cur = 'EMH'.indexOf(k.level);
-    for (var i = 0; i < 9; i++) {
-      var c = k.grey ? 'n' : i < k.steps ? MS_G[i] + (g.g && i >= g.was ? ' up' : '') : (Math.floor(i / 3) === cur ? 'o' : '');
-      h += '<i class="' + c + '"></i>';
-    }
+    var g = k.gain[MS.vs] || { was: k.steps, g: 0 }, h = '<span class="ms-lad' + (big ? ' big' : '') + '" aria-hidden="true">';
+    for (var i = 0; i < 9; i++) h += '<i class="' + (i < k.steps ? (g.g && i >= g.was ? 'up' : 'on') : '') + '"></i>';
     return h + '</span>';
   }
-  function msLadLabel(k) { return k.grey ? 'not enough answers yet' : 'level ' + MS_LV[k.level] + ', ' + k.steps + ' of 9 steps'; }
+  function msLadLabel(k) { return k.steps + ' of 9' + (k.src ? ', ' + MS_LV[k.src] : ''); }
   function openSkills(again) {
     msWho();
     show('scr-skills'); window.scrollTo(0, 0);
     var have = MS.d && MS.code === A.code ? MS.d : null;
-    if (have) msRender(have); else $('#ms-main').innerHTML = '<div class="spinner"></div><p class="lead" style="text-align:center">Loading your skills…</p>';
+    if (have) msRender(have); else $('#ms-main').innerHTML = '<div class="spinner"></div>';
     if (have && again === false) return;
     call('mySkills', A.code).then(function (d) {
       var same = have && JSON.stringify(have) === JSON.stringify(d);
       MS.d = d; MS.code = A.code;
       if (!same && $('#scr-skills').classList.contains('on')) { var y = window.scrollY; msRender(d); window.scrollTo(0, y); }
-    }).catch(function (e) { if (!have) $('#ms-main').innerHTML = '<div class="empty">Could not load your skills: ' + esc(errMsg(e)) + '</div>'; });
+    }).catch(function (e) { if (!have) $('#ms-main').innerHTML = '<div class="empty">' + esc(errMsg(e)) + '</div>'; });
   }
-  function msGainLine(d) {
-    var g = d.gains[MS.vs];
-    if (!g || !g.total) return '';
-    return '<p class="ms-gain" id="ms-gain">' + (MS.vs === 7 ? 'This week' : 'Last 2 weeks') + ': <b>+' + g.total + (g.total === 1 ? ' step' : ' steps') + '</b>' +
-      g.skills.map(function (s) { return ' · ' + esc(s.name) + ' <b>+' + s.g + '</b>'; }).join('') + '</p>';
-  }
-  function msRender(d) {
-    var N = d.min_n;
-    var h = '<button type="button" class="hz-link ms-back" data-ms-back="home">← Home</button><h1 class="ms-h1">My skills</h1>' +
-      '<p class="ms-sub">' + (d.n_all ? 'From your <b>' + d.n_all + '</b> answers in the last ' + d.window + ' days' : 'Answer some questions and this page fills in.') + '</p>' +
-      '<div id="ms-gain-w">' + msGainLine(d) + '</div><div class="ms-grid">';
-    // Focus now — % right first try at the current level only
-    var fh = '<h2 class="ms-h2">Focus now</h2>', focus = d.focus.map(msK).filter(Boolean);
-    var atLv = d.skills.filter(function (k) { return k.at_n >= N; });
+  function msRender(d) { $('#ms-main').innerHTML = '<h1 class="ms-h1">My skills</h1>' + msHtml(d, {}); }
+  /** The My skills blocks. o.teacher: tick boxes + "Assign ticked skills" on the map, no Practise buttons. */
+  function msHtml(d, o) {
+    var N = d.min_n, T = !!(o && o.teacher), h = '<div class="ms-grid">';
+    // Focus now — % at the difficulty that gave the position
+    var fh = '<h2 class="ms-h2">Focus now</h2>', focus = d.focus.map(function (k) { return msK(k, d); }).filter(Boolean);
     if (focus.length) {
       fh += '<div class="ms-flist">' + focus.map(function (k) {
         return '<div class="ms-frow"><button type="button" class="ms-fname" data-ms-open="' + esc(k.k) + '">' + esc(k.name) + '</button>' +
-          '<span class="ms-fat"><b>' + k.at_pct + '%</b> at ' + MS_LV[k.level] + '</span>' +
-          '<button type="button" class="ms-five" data-ms-prac="' + esc(k.k) + '" aria-label="Practise 5 questions of ' + esc(k.name) + '">5</button></div>';
+          '<span class="ms-fat"><b>' + k.f_pct + '%</b> at ' + MS_LV[k.fd] + '</span>' +
+          (T ? '' : '<button type="button" class="ms-five" data-ms-prac="' + esc(k.k) + '" aria-label="Practise 5 questions of ' + esc(k.name) + '">5</button>') + '</div>';
       }).join('') + '</div>';
-    } else if (atLv.length) fh += '<p class="ms-empty">You get 80% or more at your level in every skill you practise. 🎉 Try a new skill.</p>';
-    else if (d.n_all) fh += '<p class="ms-empty">Answer at least <b>' + N + ' questions at your level</b> in a skill and it shows up here.</p>';
-    else fh += '<p class="ms-empty">Nothing yet. Do a practice set (Practise by skill or Mixed) and come back.</p>';
+    } else fh += '<p class="ms-empty">' + (d.n_all ? 'Nothing below 80% yet' : 'No answers yet') + '</p>';
     h += '<section class="ms-card" id="ms-focus">' + fh + '</section>';
-    // Why I miss questions — rushed share of the wrong answers, extra time on slow right answers
+    // Why I miss questions
     var y = d.why, wh = '<h2 class="ms-h2">Why I miss questions</h2>';
     if (d.n_all) {
       wh += '<div class="ms-why2"><div class="ms-wc" id="ms-rush">' + (y.wrong ? '<b class="ms-big rush">' + y.rushed + ' of ' + y.wrong + '</b><span>wrong answers were rushed (' + y.rushed_pct + '%)</span>' : '<b class="ms-big">0</b><span>wrong answers</span>') +
@@ -493,34 +495,36 @@
         '<div class="ms-wc" id="ms-slow">' + (y.slow && y.slow_extra ? '<b class="ms-big slow">+' + y.slow_extra + '</b><span>slower than normal on ' + y.slow + ' right answer' + (y.slow === 1 ? '' : 's') + '</span>'
           : y.slow ? '<b class="ms-big slow">' + y.slow + '</b><span>slow right answer' + (y.slow === 1 ? '' : 's') + '</span>' : '<b class="ms-big">0</b><span>slow right answers</span>') +
         (y.slow ? '<button type="button" class="ms-rv" data-ms-list="slow">Review these ' + y.slow + ' →</button>' : '') + '</div></div>';
-    } else wh += '<p class="ms-empty">Shows up after your first set.</p>';
+    } else wh += '<p class="ms-empty">No answers yet</p>';
     h += '<section class="ms-card" id="ms-why">' + wh + '</section>';
-    // My mistakes (the teacher's tags) — counts, top type, trend, the questions
+    // My mistakes
     var m = d.mistakes, mh = '<h2 class="ms-h2">My mistakes</h2>';
-    if (!m.enough) mh += '<p class="ms-empty">Your teacher hasn\'t tagged enough mistakes yet.</p>';
+    if (!m.enough) mh += '<p class="ms-empty">Not enough tagged yet</p>';
     else mh += '<div class="mm-list">' + m.types.map(function (t, i) {
-      var tr = t.trend === 'up' ? '<span class="mm-tr up">↑ ' + t.now + ' in the last 4 weeks (' + t.before + ' before)</span>'
-        : t.trend === 'down' ? '<span class="mm-tr down">↓ ' + t.now + ' in the last 4 weeks (' + t.before + ' before)</span>'
-        : '<span class="mm-tr">= ' + t.now + ' in the last 4 weeks (same as before)</span>';
+      var tr = t.trend === 'up' ? '↑ ' : t.trend === 'down' ? '↓ ' : '= ';
       return '<div class="mm-row' + (i === 0 ? ' top' : '') + '">' + (i === 0 ? '<span class="mm-badge">Most common</span>' : '') +
         '<div class="mm-h"><b>' + esc(t.t) + '</b><span class="mm-n">' + t.n + ' · ' + t.share + '%</span></div><span class="ms-bar"><i class="mm" style="width:' + t.share + '%"></i></span>' +
-        '<div class="mm-meta">' + tr + '<span>Most in: <b>' + t.skills.map(esc).join(', ') + '</b></span></div>' +
+        '<div class="mm-meta"><span class="mm-tr" title="Last 4 weeks (the 4 weeks before)">' + tr + t.now + ' (' + t.before + ')</span><span>Most in: <b>' + t.skills.map(esc).join(', ') + '</b></span></div>' +
         '<button type="button" class="hz-link mm-see" data-ms-list="mt:' + i + '">See these questions (' + t.n + ') →</button></div>';
     }).join('') + '</div>';
     h += '<section class="ms-card ms-wide" id="ms-mist">' + mh + '</section>';
-    // Skill map — one 9-step ladder per skill
-    var map = '<div class="ms-maph"><h2 class="ms-h2">Skill map</h2><div class="ms-vs" role="group" aria-label="Compare with">' +
-      '<button type="button" data-ms-vs="7" aria-pressed="' + (MS.vs === 7) + '">vs last week</button><button type="button" data-ms-vs="14" aria-pressed="' + (MS.vs === 14) + '">vs 2 weeks ago</button></div></div>' +
-      '<div class="ms-legend"><span><i class="e"></i>Easy</span><span><i class="m"></i>Medium</span><span><i class="h"></i>Hard</span><span><i class="up"></i>new</span><span><i class="n"></i>not enough yet</span></div><div class="ms-lads">';
+    // Skill map — 9 blocks per skill, one colour; gained blocks green
+    var map = '<div class="ms-maph"><h2 class="ms-h2">Skill map</h2>' +
+      (T ? '<button type="button" class="btn-outline ms-asg" id="ms-asg" disabled>Assign ticked skills</button>' : '') +
+      '<div class="ms-vs" role="group" aria-label="Compare with"><button type="button" data-ms-vs="7" aria-pressed="' + (MS.vs === 7) + '">vs last week</button><button type="button" data-ms-vs="30" aria-pressed="' + (MS.vs === 30) + '">vs last month</button></div></div>' +
+      '<div class="ms-legend"><span><i class="on"></i>Easy → Medium → Hard</span><span><i class="up"></i>' + (MS.vs === 7 ? 'this week' : 'this month') + '</span></div><div class="ms-lads">';
     d.domains.forEach(function (dm) {
       map += '<div class="ms-dom">' + esc(dm.name) + '</div>' + d.skills.filter(function (k) { return k.d === dm.d; }).map(function (k) {
         var g = (k.gain[MS.vs] || {}).g || 0;
-        return '<button type="button" class="ms-lrow' + (k.grey ? ' grey' : '') + '" data-ms-open="' + esc(k.k) + '" aria-label="' + esc(k.name) + ': ' + msLadLabel(k) + (g ? ', +' + g + ' new' : '') + '">' +
-          '<span class="ms-lname">' + esc(k.name) + '</span>' + msLadder(k) + '<span class="ms-lg">' + (g ? '+' + g : '') + '</span></button>';
+        return '<div class="ms-lrow' + (T ? ' t' : '') + '" data-k="' + esc(k.k) + '">' + (T ? '<input type="checkbox" class="ms-ck" data-ms-ck="' + esc(k.k) + '" aria-label="Tick ' + esc(k.name) + '">' : '') +
+          '<button type="button" class="ms-lbtn" data-ms-open="' + esc(k.k) + '" aria-label="' + esc(k.name) + ': ' + msLadLabel(k) + (g ? ', +' + g : '') + '"><span class="ms-lname">' + esc(k.name) + '</span>' + msLadder(k) + '</button>' +
+          '<span class="ms-lg">' + (g ? '+' + g : '') + '</span>' +
+          (T ? '' : '<button type="button" class="ms-pr" data-ms-prac="' + esc(k.k) + '" aria-label="Practise 5 questions of ' + esc(k.name) + '">Practise</button>') + '</div>' +
+          (T ? '<div class="ms-tdet" id="ms-tdet-' + esc(k.k).replace(/\./g, '-') + '" hidden></div>' : '');
       }).join('');
     });
     h += '<section class="ms-card ms-wide" id="ms-map">' + map + '</div></section>';
-    // My progress — first-try % per week, one line per difficulty
+    // My progress
     var ph = '<h2 class="ms-h2">My progress</h2>', any = d.weeks.some(function (w) { return w.E !== null || w.M !== null || w.H !== null; });
     if (any) {
       var X = function (i) { return i === 3 ? 330 : 60 + i * 90; }, Y = function (p) { return 112 - p; }, lines = '', dots = '';
@@ -528,7 +532,7 @@
         var seg = [];
         d.weeks.forEach(function (w, i) {
           if (w[L] === null) { if (seg.length > 1) lines += '<polyline class="' + L.toLowerCase() + '" points="' + seg.join(' ') + '"/>'; seg = []; return; }
-          seg.push(X(i) + ',' + Y(w[L])); dots += '<circle class="' + L.toLowerCase() + '" cx="' + X(i) + '" cy="' + Y(w[L]) + '" r="4"><title>' + MS_LV[L] + ': ' + w[L] + '% (' + w[L + 'n'] + ' answers)</title></circle>';
+          seg.push(X(i) + ',' + Y(w[L])); dots += '<circle class="' + L.toLowerCase() + '" cx="' + X(i) + '" cy="' + Y(w[L]) + '" r="4"><title>' + MS_LV[L] + ': ' + w[L] + '% (' + w[L + 'n'] + ')</title></circle>';
         });
         if (seg.length > 1) lines += '<polyline class="' + L.toLowerCase() + '" points="' + seg.join(' ') + '"/>';
       });
@@ -536,45 +540,52 @@
         '<svg class="ms-chart" viewBox="0 0 340 140" role="img" aria-label="First-try % by week. ' + ['E', 'M', 'H'].map(function (L) { return MS_LV[L] + ': ' + d.weeks.map(function (w) { return w[L] === null ? 'no point' : w[L] + '%'; }).join(', '); }).join('. ') + '">' +
         [0, 50, 100].map(function (g) { return '<line x1="24" x2="330" y1="' + Y(g) + '" y2="' + Y(g) + '" class="gl"/><text x="0" y="' + (Y(g) + 4) + '" class="ax">' + g + '%</text>'; }).join('') +
         lines + dots + d.weeks.map(function (w, i) { return '<text x="' + X(i) + '" y="134" text-anchor="' + (i === 3 ? 'end' : 'middle') + '" class="ax">' + (i === 3 ? 'This week' : (3 - i) + ' wk ago') + '</text>'; }).join('') + '</svg>';
-    } else ph += '<p class="ms-empty">Your lines start after a week with ' + d.week_min + ' answers at a difficulty.</p>';
-    ph += '<div class="ms-plist">' + (d.ups.length ? d.ups.map(function (u) { return '<span class="ms-up">▲ ' + esc(u.name) + ': ' + MS_LV[u.from] + ' → ' + MS_LV[u.to] + ' <em>' + esc(u.when) + '</em></span>'; }).join('') : '<span class="ms-muted">No level-ups in the last 4 weeks yet.</span>') + '</div>';
-    if (d.review_open) ph += '<button type="button" class="hz-link ms-rev" data-ms-rev="1">' + d.review_open + (d.review_open === 1 ? ' question' : ' questions') + ' waiting in Review →</button>';
+    } else ph += '<p class="ms-empty">No weekly points yet</p>';
+    if (d.ups.length) ph += '<div class="ms-plist">' + d.ups.map(function (u) { return '<span class="ms-up">▲ ' + esc(u.name) + ': ' + MS_LV[u.from] + ' → ' + MS_LV[u.to] + ' <em>' + esc(u.when) + '</em></span>'; }).join('') + '</div>';
+    if (d.review_open && !T) ph += '<button type="button" class="hz-link ms-rev" data-ms-rev="1">' + d.review_open + ' in Review →</button>';
     h += '<section class="ms-card ms-wide" id="ms-prog">' + ph + '</section></div>';
-    $('#ms-main').innerHTML = h;
+    return h;
   }
-  /** A skill: its ladder, % right first try split Easy / Medium / Hard, every sub-skill (Practise 5 = practice by sub-skill). */
+  /** A skill: its blocks, % right first try by difficulty, every sub-skill (Practise 5 = practice by sub-skill). */
   function openSkillPage(kk) {
     var k = msK(kk), N = MS.d.min_n; if (!k) return;
     MS.k = kk; msWho();
     var g = (k.gain[MS.vs] || {}).g || 0;
-    var sdot = function (s) { return s.n < N ? 'n' : s.pct >= 80 ? 'b3' : s.pct >= 50 ? 'b2' : 'b1'; };
-    var h = '<button type="button" class="hz-link ms-back" data-ms-back="skills">← My skills</button><h1 class="ms-h1">' + esc(k.name) + '</h1>' +
-      '<div class="ms-skhead">' + msLadder(k, true) + (g ? '<span class="ms-lg">+' + g + '</span>' : '') + '</div>' +
-      (k.grey ? '<p class="ms-sub" id="sk-notyet">Not enough answers yet: ' + k.n + ' of ' + N + '. Practise this skill and your steps show up.</p>' : '<p class="ms-sub">Now at <b>' + MS_LV[k.level] + '</b> · ' + k.n + ' answers in the last ' + MS.d.window + ' days</p>') +
-      '<section class="ms-card"><h2 class="ms-h2">Right on the first try</h2><div class="ms-emh">' + k.by.map(function (b) {
-        return '<div class="ms-emc ' + b.d.toLowerCase() + '"><span>' + MS_LV[b.d] + '</span><b>' + (b.n ? b.pct + '%' : '–') + '</b><em>' + b.n + ' q</em></div>';
-      }).join('') + '</div></section>' +
-      '<section class="ms-card"><h2 class="ms-h2">Sub-skills</h2><div class="ms-subs">' + k.subs.map(function (s) {
-        var weak = s.n && s.pct < 80;
-        return '<div class="ms-srow"><i class="sm-dot ' + sdot(s) + '"></i><span class="ms-sname">' + esc(s.name) + '</span><span class="ms-sval">' + (s.n ? s.pct + '%' + (s.n < N ? ' <em>· ' + s.n + ' q</em>' : '') : '<em>–</em>') + '</span>' +
-          (weak ? '<button type="button" class="ms-sp" data-ms-psub="' + esc(s.ss) + '">Practise 5</button>' : '<span class="ms-sp0"></span>') + '</div>';
-      }).join('') + '</div>' +
+    var h = '<h1 class="ms-h1">' + esc(k.name) + '</h1>' +
+      '<div class="ms-skhead">' + msLadder(k, true) + (g ? '<span class="ms-lg">+' + g + '</span>' : '') + '</div>' + msSkillBody(k, N, false) +
       '<div class="ms-pa"><button type="button" class="hz-btn" data-ms-prac="' + esc(kk) + '">Practise 5 · whole skill</button></div></section>';
     $('#sk-main').innerHTML = h; show('scr-skill'); window.scrollTo(0, 0);
   }
-  /** A list of exactly those questions (rushed / slow / one mistake type), newest first → each opens in the review screen. */
+  /** E / M / H % + the sub-skills (the teacher view adds the sets under each, numbered 1, 2, 3 → Go over). Leaves the
+   *  sub-skills section open (the caller closes it). */
+  function msSkillBody(k, N, teacher) {
+    var sdot = function (s) { return s.n < N ? 'n' : s.pct >= 80 ? 'b3' : s.pct >= 50 ? 'b2' : 'b1'; };
+    var setBtns = function (sets) { return (sets || []).map(function (x, i) { return '<button type="button" class="ms-setn" data-ms-set="' + esc(x.set_id) + '" title="' + esc(x.title + ' · ' + x.date) + '">' + (i + 1) + '</button>'; }).join(''); };
+    return '<section class="ms-card"><div class="ms-emh">' + k.by.map(function (b) {
+        return '<div class="ms-emc ' + b.d.toLowerCase() + '"><span>' + MS_LV[b.d] + '</span><b>' + (b.n ? b.pct + '%' : '–') + '</b><em>' + b.n + ' q</em></div>';
+      }).join('') + '</div>' + (teacher && k.sets && k.sets.length ? '<div class="ms-sets"><span>Sets</span>' + setBtns(k.sets) + '</div>' : '') + '</section>' +
+      '<section class="ms-card"><h2 class="ms-h2">Sub-skills</h2><div class="ms-subs">' + k.subs.map(function (s) {
+        var weak = s.n && s.pct < 80;
+        return '<div class="ms-srow' + (teacher ? ' t' : '') + '"><i class="sm-dot ' + sdot(s) + '"></i><span class="ms-sname">' + esc(s.name) + (teacher && s.sets && s.sets.length ? '<span class="ms-sets">' + setBtns(s.sets) + '</span>' : '') + '</span><span class="ms-sval">' + (s.n ? s.pct + '%' + (s.n < N ? ' <em>· ' + s.n + ' q</em>' : '') : '<em>–</em>') + '</span>' +
+          (teacher ? '' : weak ? '<button type="button" class="ms-sp" data-ms-psub="' + esc(s.ss) + '">Practise 5</button>' : '<span class="ms-sp0"></span>') + '</div>';
+      }).join('') + '</div>';
+  }
+  /** A list of exactly those questions (rushed / slow / one mistake type), newest first. */
+  function msListOf(d, key) {
+    if (key === 'rushed') return { t: 'Rushed wrong answers', items: d.why.rushed_items };
+    if (key === 'slow') return { t: 'Slow right answers', items: d.why.slow_items };
+    var t = d.mistakes.types[+key.slice(3)]; return t ? { t: t.t, items: t.items } : null;
+  }
+  function msListHtml(L, d) {
+    return '<h1 class="ms-h1">' + esc(L.t) + '</h1><p class="ms-sub">' + L.items.length + ' · ' + d.window + ' days</p><section class="ms-card"><div class="mm-qs">' + L.items.map(function (x, j) {
+      return '<div class="mm-q"><div><b>' + esc(x.title) + ' · Q' + x.q + '</b><span>' + esc(x.date) + ' · ' + esc(x.sub || x.skill) + (x.extra ? ' · <i class="mm-x">' + esc(x.extra) + '</i>' : '') + '</span></div><button type="button" class="hz-btn ghost" data-ms-q="' + j + '">Open</button></div>';
+    }).join('') + '</div></section>';
+  }
   function openList(key) {
     var d = MS.d; if (!d) return;
-    var L;
-    if (key === 'rushed') L = { t: 'Rushed wrong answers', items: d.why.rushed_items };
-    else if (key === 'slow') L = { t: 'Slow right answers', items: d.why.slow_items };
-    else { var t = d.mistakes.types[+key.slice(3)]; if (!t) return; L = { t: t.t, items: t.items }; }
+    var L = msListOf(d, key); if (!L) return;
     MS.list = { key: key, items: L.items }; msWho();
-    var h = '<button type="button" class="hz-link ms-back" data-ms-back="skills">← My skills</button><h1 class="ms-h1">' + esc(L.t) + '</h1>' +
-      '<p class="ms-sub">' + L.items.length + (L.items.length === 1 ? ' question' : ' questions') + ' · last ' + d.window + ' days</p><section class="ms-card"><div class="mm-qs">' + L.items.map(function (x, j) {
-        return '<div class="mm-q"><div><b>' + esc(x.title) + ' · Q' + x.q + '</b><span>' + esc(x.date) + ' · ' + esc(x.sub || x.skill) + (x.extra ? ' · <i class="mm-x">' + esc(x.extra) + '</i>' : '') + '</span></div><button type="button" class="hz-btn ghost" data-ms-q="' + j + '">Open</button></div>';
-      }).join('') + '</div></section>';
-    $('#mi-main').innerHTML = h; show('scr-mist'); window.scrollTo(0, 0);
+    $('#mi-main').innerHTML = msListHtml(L, d); show('scr-mist'); window.scrollTo(0, 0);
   }
   function startSubPractice(sub, btn) {
     var undo = busyBtn(btn, 'Picking…');
@@ -589,7 +600,7 @@
   }
   function initMySkills() {
     document.addEventListener('click', function (e) {
-      if (!e.target.closest) return;
+      if (!e.target.closest || e.target.closest('#t-body')) return;      // the teacher's copy of these blocks has its own clicks
       var t;
       if ((t = e.target.closest('[data-ms-open]'))) { openSkillPage(t.getAttribute('data-ms-open')); return; }
       if ((t = e.target.closest('[data-ms-prac]'))) { MS.d = null; startPractice(t.getAttribute('data-ms-prac'), 5, t, ''); return; }
@@ -605,6 +616,7 @@
       }
       if ((t = e.target.closest('[data-ms-rev]'))) { showHome(); setTimeout(function () { var c = $('#review-card'); if (c) c.scrollIntoView({ block: 'center' }); }, 60); return; }
       if ((t = e.target.closest('[data-ms-back]'))) { if (t.getAttribute('data-ms-back') === 'home') showHome(); else openSkills(false); return; }
+      if ((t = e.target.closest('[data-top]'))) { var w = t.getAttribute('data-top'); if (w === 'skills') openSkills(); else if (w === 'hist') openHistory(); else showHome(); return; }
     });
   }
   /** #42: the button says what is happening; the set comes back in the same call (no second wait). */
@@ -707,8 +719,7 @@
     console.error(e);
     built = null;
     show('scr-test'); view('v-wait');
-    $('#v-wait').innerHTML = '<div class="page center"><h1 style="font-size:24px">Still loading…</h1><p class="lead">Your answers and time are saved. ' +
-      'Check the internet connection, then tap <b>Try again</b>.</p><button class="btn-blue" id="btn-retry" type="button">Try again</button></div>';
+    $('#v-wait').innerHTML = '<div class="page center"><h1 style="font-size:24px">Still loading…</h1><button class="btn-blue" id="btn-retry" type="button">Try again</button></div>';
     $('#btn-retry').onclick = function () { location.reload(); };
   }
   function setupTest(res) {
@@ -840,7 +851,7 @@
     stopLoops(); clearTimeout(A.subT);
     show('scr-test'); view('v-wait');
     $('#v-wait').innerHTML = '<div class="page center"><h1 style="font-size:24px">This test is open in another window. Close this one.</h1>' +
-      '<p class="lead">Your test goes on in the window where you opened it last. Nothing more is saved from this window.</p>' +
+      '<p class="lead">Open in another window</p>' +
       '<button class="btn-outline" id="btn-oc-home" type="button">Back to home</button></div>';
     $('#btn-oc-home').onclick = function () { showHome(); };
   }
@@ -913,11 +924,7 @@
     $('#v-directions').innerHTML = '<div class="page dir-page">' + overview + '<h1>' + esc(d.title || 'Part ' + d.part) + '</h1>' +
       '<div class="part-facts"><div><b>' + (A.pl ? esc(A.profile.n_range || '8–24') : n) + '</b>questions</div><div><b>' + (unt ? 'No' : fmt(d.time_limit_sec * 1000)) + '</b>' + (unt ? 'timer' : 'time') + '</div><div><b>' + (d.calculator ? 'Yes' : 'No') + '</b>calculator</div></div>' +
       '<div class="dir-text">' + (d.directions_html || '') + '</div>' +
-      (A.pl ? '<p class="lead"><b>Take your time — the time on each question is recorded.</b> Answer each question before you go on; ' +
-              'the next question depends on your answer. Your answers are saved: you can close the page and continue later from your home page.</p>'
-       : unt ? '<p class="lead">Take your time. Your answers are saved as you go: you can close the page and continue later from your home page. ' +
-             'When you are done, go to <b>Check Your Work</b> and submit.</p>'
-           : '<p class="lead">The timer starts when you click <b>Begin</b>. Once you leave this ' + word() + ' you cannot come back to it.</p>') +
+      (A.pl || unt ? '' : '<p class="lead">Timer starts at Begin</p>') +
       '<div class="center"><button class="btn-blue" id="btn-begin" type="button" style="min-width:180px">Begin</button></div></div>';
     $('#btn-begin').onclick = beginPart;
     typeset($('#v-directions'));
@@ -966,8 +973,7 @@
     var canPause = canPauseAfter(prev);
     var nextName = nextLabel();
     $('#v-transition').innerHTML = '<div class="page center"><h1>' + esc(pd.title || 'Part ' + prev) + ' is complete</h1>' +
-      '<p class="lead">Your answers are saved. You can no longer return to ' + esc(pd.title || 'that part') + '.<br>Next: <b>' + esc(pdef().title || nextName) + '</b>.</p>' +
-      (canPause ? '<p class="lead">You can take a break and start ' + esc(nextName) + ' later, even on another day. The timer for ' + esc(nextName) + ' starts only when you select <b>Begin</b>.</p>' : '') +
+      '<p class="lead">Next: <b>' + esc(pdef().title || nextName) + '</b></p>' +
       '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
       '<button class="btn-blue" id="btn-cont" type="button">' + (canPause ? 'Start ' + esc(nextName) + ' Now' : 'Continue') + '</button>' +
       (canPause ? '<button class="btn-outline" id="btn-pause" type="button">Save and Continue Later</button>' : '') + '</div></div>';
@@ -987,10 +993,7 @@
     $('#v-break').innerHTML = '<div class="page break-page"><div class="break-left"><div class="break-lbl">Remaining Break Time:</div>' +
       '<div class="big-count" id="break-count"></div><button class="btn-blue" id="btn-resume" type="button">Resume Testing</button>' +
       (canPause ? '<button class="btn-outline" id="btn-pause" type="button">Save and Continue Later</button>' : '') + '</div>' +
-      '<div class="break-right"><h1>Break</h1><p class="lead" id="break-msg">You have a ' + mins + '-minute break before ' + esc(nextName) + '. ' +
-      'When the countdown reaches 0:00, ' + esc(nextName) + ' starts automatically. To start sooner, select <b>Resume Testing</b>.</p>' +
-      (canPause ? '<p class="lead">Need to stop for today? Select <b>Save and Continue Later</b>. Your answers so far are saved, and you can start ' +
-        esc(nextName) + ' another day from My Tests. (A test taken in two sittings is marked on your result.)</p>' : '') + '</div></div>';
+      '<div class="break-right"><h1>Break</h1><p class="lead" id="break-msg">Next: ' + esc(nextName) + '</p></div></div>';
     $('#btn-resume').onclick = function () { A.st.break_until = null; A.st.phase = 'directions'; persist(); renderDirections(); };
     var bp = $('#btn-pause');
     if (bp) bp.onclick = function () { saveForLater([bp, $('#btn-resume')], nextName); };
@@ -1336,8 +1339,7 @@
     var d = pdef(), l = qlist(), ps = pst();
     var unanswered = l.filter(function (q) { return !ps.ans[q.qid]; }).length, marked = l.filter(function (q) { return ps.mark[q.qid]; }).length;
     $('#v-review').innerHTML = '<div class="page"><h1>Check Your Work</h1>' +
-      '<p class="lead">You can go back to any question in this ' + word() + (untimed() ? ' until you submit' : ' until time runs out or you click <b>Next</b>') + '. ' +
-      (unanswered ? '<br><b>' + unanswered + '</b> unanswered' : '<br>All questions answered') + (marked ? ' · <b>' + marked + '</b> marked for review' : '') + '.</p>' +
+      '<p class="lead">' + (unanswered ? '<b>' + unanswered + '</b> unanswered' : 'All questions answered') + (marked ? ' · <b>' + marked + '</b> marked for review' : '') + '</p>' +
       '<div class="card"><div class="pop-head" style="border:0;padding-bottom:4px">' + esc(d.title || 'Part ' + d.part) + ' Questions</div>' +
       '<div class="legend">' + legendHtml(false) + '</div><div class="grid" id="rev-grid">' + gridHtml(false) + '</div></div>' +
       (untimed() ? '<p class="center" style="margin-top:18px"><button class="btn-outline" id="btn-save-later" type="button">Save and continue later</button></p>' : '') + '</div>';
@@ -1545,7 +1547,7 @@
           '<b class="w">' + (PL_ICON[w] || '') + esc(d.word || '–') + '</b>' +
           '<span class="l">' + (first ? '<strong>Practise this next.</strong>' : esc(line[w] || '')) + '</span></div>';
       }).join('') + '</div>' +
-      '<p class="lead">Thank you! Your teacher will go over the test with you. Your practice now starts at the right level for you in each area.</p></div>';
+      '<p class="lead">Thank you!</p></div>';
     $('#result-body').innerHTML = h;
     $('#res-home').onclick = showHome;
   }
@@ -1685,7 +1687,7 @@
       h += '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>' +
         '<div class="sm-scores"><div class="sm-score" id="score-first"><div class="k">First Try</div><div class="v">' + res.first_try.right + '<small>/' + res.first_try.n + '</small></div><div class="s">right the first time</div></div>' +
         '<div class="sm-score best" id="score-best"><div class="k">Best Score</div><div class="v">' + res.best.right + '<small>/' + res.best.n + '</small></div><div class="s">first try + fixed later</div></div></div>';
-      if (teacher && res.pace) h += '<p class="t-pace" id="res-pace">' + (res.pace.has_answer_time ? 'Answering <b>' + res.pace.answer_min + ' min</b> · checking ' + res.pace.check_min + ' min · on blank questions ' + res.pace.blank_min + ' min · ' : '') +
+      if (teacher && res.pace) h += '<p class="t-pace" id="res-pace">Time <b' + (res.pace.capped ? ' title="capped: ' + res.pace.capped + ' over 20 min counted as 20 min"' : '') + '>' + res.pace.time_min + ' min</b>' + (res.pace.capped ? ' <span class="t-cap">capped</span>' : '') + ' · ' +
         awayLine(res.pace.away_n, res.pace.away_sec, res.pace.away_at) + '</p>';
       if (res.review_summary) h += '<p class="sm-revsum" id="review-summary"><b>' + res.review_summary.cleared + '</b> cleared, <b>' + res.review_summary.still + '</b> still to review.</p>';
       var fx = res.fix || {};
@@ -1703,7 +1705,7 @@
   function renderResultBody(res, h, teacher, legacy) {
     var b = $('#result-body');
     if (legacy && res.show === 'none') {
-      h += '<p class="lead">Your test has been submitted. Your teacher will go over the results with you.</p></div>';
+      h += '<p class="lead">Submitted</p></div>';
       b.innerHTML = h; $('#res-home').onclick = teacher ? showTeacher : showHome; return;
     }
     if (legacy && !res.valid) {
@@ -2019,7 +2021,7 @@
     var strip = '';
     if (sh) {
       if (!who) strip = '<span class="muted">Loading the answers…</span>';
-      else if (!who.length) strip = '<span class="muted">No answer recorded for this question here.</span>';
+      else if (!who.length) strip = '<span class="muted">No answer here</span>';
       else strip = who.map(function (s) {
         var tries = s.tries || [], fin = tries.length ? tries[tries.length - 1].a : '';
         if (fin) { var f = String(fin).toUpperCase(); (picks[f] = picks[f] || []).push(String(s.name || 'Student').split(/\s+/)[0]); }
@@ -2624,7 +2626,7 @@
   function showTeacher() { show('scr-teacher'); if (window.SMLT) window.SMLT.show(); }
   function initTeacher() {
     // the teacher page (TeacherPage.html) uses these helpers of the student client
-    window.SMLX = { durStr: durStr, awayLine: awayLine, nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
+    window.SMLX = { ms: { html: msHtml, skill: msSkillBody, listOf: msListOf, listHtml: msListHtml, ladder: msLadder, S: MS, LV: MS_LV }, durStr: durStr, awayLine: awayLine, nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
                     figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell, goOver: goOver, mmss: mmss, tTitle: tTitle, bdgT: bdgT };
     if (window.SMLT) window.SMLT.init();
   }

@@ -391,22 +391,24 @@ function studentProfile(code, sc) {
   var fixLeft = {}; resp.forEach(function (r) { if (Number(r.best_correct) !== 1 && !isYes_(r.locked)) fixLeft[r.set_id] = (fixLeft[r.set_id] || 0) + 1; });
   var rsOf = {};                                                     // #66 the R / S questions of each set, with their time
   resp.forEach(function (r) { var b = qBadge_(String(r.profile)); if (b) (rsOf[String(r.set_id)] = rsOf[String(r.set_id)] || []).push({ no: Number(r.order) || 0, qid: String(r.qid), b: b, t: Math.round(Number(r.time_try1_sec) || 0), nm: normSec_(r) }); });
+  var bySet = {}; resp.forEach(function (r) { (bySet[String(r.set_id)] = bySet[String(r.set_id)] || []).push(r); });
   var placements = []; try { placements = plSummaries_(c); } catch (e) {}
   var sets = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === c && !isHidden_(s); })
     .sort(function (a, b) { return (toMs_(b.submitted_at) || toMs_(b.created_at)) - (toMs_(a.submitted_at) || toMs_(a.created_at)); }).map(function (s) {
       return { set_id: String(s.set_id), title: setTitle_(s), kind: String(s.kind), date: dateStr_(s.submitted_at || s.created_at), done: isFinished_(s),
                n: Number(s.n) || 0, first_try: isFinished_(s) ? Number(s.first_try) || 0 : null, best: isFinished_(s) ? Number(s.best_score) || 0 : null,
-               time_min: Number(s.time_used_min) || 0, fix_left: String(s.kind) === 'placement' ? 0 : fixLeft[String(s.set_id)] || 0, progress: String(s.progress || ''),
+               time_min: bySet[String(s.set_id)] ? setTimeOf_(bySet[String(s.set_id)]).min : 0, capped: bySet[String(s.set_id)] ? setTimeOf_(bySet[String(s.set_id)]).capped : 0, fix_left: String(s.kind) === 'placement' ? 0 : fixLeft[String(s.set_id)] || 0, progress: String(s.progress || ''),
                answer_min: s.time_answer_min === '' || s.time_answer_min === undefined ? null : Number(s.time_answer_min) || 0,
                away_n: Number(s.away_n) || 0, away_sec: Number(s.away_sec) || 0, away_at: String(s.away_at || ''),
-               rs: (rsOf[String(s.set_id)] || []).sort(function (a, b) { return a.no - b.no; }) };
+               rs: (rsOf[String(s.set_id)] || []).sort(function (a, b) { return a.no - b.no; }), form: String(s.kind) === 'placement' ? String(s.level_at_start || '') : '' };
     });
   var review = readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === c && String(r.status) === 'open'; }).length;
   return { ok: true, student: { code: c, name: String(st.name || ''), active: isYes_(st.active), classes: String(st.classes || '') },
            skills: skills, sets: sets, placements: placements, profiles: prof, mistakes: types, asks_open: asks, review_open: review,
+           my: mySkillsOf_(c, true),
            recommend: recommendFor_(skills, review),
            totals: { answers: resp.length, first_try_right: resp.filter(function (r) { return Number(r.try1_correct) === 1; }).length,
-                     best_right: resp.filter(function (r) { return Number(r.best_correct) === 1; }).length, tries: nTries, time_min: round_(time / 60, 1) } };
+                     best_right: resp.filter(function (r) { return Number(r.best_correct) === 1; }).length, tries: nTries, time_min: setTimeOf_(resp).min } };
 }
 
 /** #43 Difficulties to assign for a student's level in a skill (Minh 14 Nov): Weak (Easy level) → Easy + Medium · Medium →

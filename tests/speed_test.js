@@ -146,7 +146,7 @@ console.log('[server: tab snapshots]');
     await H.login(p2, E.url, 'TEACH-FX-9'); await p2.waitForSelector('.t-card[data-class="C-001"]');
     await p2.click('.t-card[data-class="C-001"]'); await p2.waitForSelector('#t-arch-cl');
     await p2.click('#t-arch-cl'); await p2.waitForSelector('#modal-root.on');
-    check(/stay in the Sheet/.test(await p2.$eval('#modal-root', e => e.innerText)), 'Archive asks first (in the page): students, sets and history stay');
+    check(/sets and history stay/.test(await p2.$eval('#modal-root', e => e.innerText)), 'Archive asks first (in the page): students, sets and history stay');
     await p2.click('#modal-root .btns button:last-child');
     await p2.waitForSelector('#t-students'); await p2.waitForSelector('#wq-dot.ok', { timeout: 15000 });
     check(!(await p2.$('.t-card[data-class="C-001"]')), 'archived class gone from Classes');
