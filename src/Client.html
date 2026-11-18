@@ -1808,7 +1808,7 @@
     return row ? row.students || [] : [];
   }
   function goBar(q) {
-    if (PEN.qid !== q.qid) penNewQuestion(q.qid);                       // #62: a drawing belongs to one question only
+    if (PEN.qid !== q.qid) { penNewQuestion(q.qid); if (VW.go) { VW.go.mkOpen = false; VW.go.mtUndo = null; } }   // #62: a drawing belongs to one question only
     var G = VW.go, m = q.meta || null, cur = m ? m.difficulty + m.level : '', k = G.keys[q.qid], sh = !!G.shown[q.qid];
     var h = '<span class="go-id"><b>' + esc(q.label || '') + '</b>' + (q.code ? ' <span class="muted">' + esc(q.code) + '</span>' : '') + '</span>';
     if (m) {
@@ -1819,7 +1819,8 @@
       if (G.undo && G.undo.qid === q.qid) h += '<button type="button" class="hz-link" id="go-undo">Undo</button>';
     }
     if (G.filter) h += '<label class="go-wo"><input type="checkbox" id="go-wrong"' + (G.wrong ? ' checked' : '') + '> Wrong only</label>';
-    h += '<button type="button" class="btn-outline go-det" id="go-det">' + (G.drawer ? 'Hide details' : 'Details') + '</button>';
+    h += '<span class="go-end">' + goMkHtml(G, q) +                       // #68 the mistake type, right before Details (kept together)
+      '<button type="button" class="btn-outline go-det" id="go-det">' + (G.drawer ? 'Hide details' : 'Details') + '</button></span>';
     var notes = [];
     if (m && m.placement) notes.push('Placement test item: the Placement forms keep their own levels — this level is for practice, Mixed and assignments.');
     if (m && m.allowed && m.allowed.length && m.allowed.indexOf(m.difficulty) < 0) notes.push('<span class="warn">⚠ ' + DN[m.difficulty] + ' is not offered for this skill in practice (Skill_Profile) — saved anyway.</span>');
@@ -1857,6 +1858,7 @@
     var u = $('#go-undo'); if (u) u.onclick = function () { goLevel(q, G.undo.back, true); };
     var w = $('#go-wrong'); if (w) w.onchange = function () { G.wrong = w.checked; goShow(G, q.qid); };
     $('#go-det').onclick = function () { goDrawer(!G.drawer); };
+    goMkBind(G, q);
     $('#go-stu').onclick = function () {
       G.shown[q.qid] = !G.shown[q.qid];
       if (G.shown[q.qid] && !G.rows && G.o.side) G.o.side.rows().then(function (r) { G.rows = r || []; goRefresh(); }).catch(function (e) { G.rows = []; toast(errMsg(e)); goRefresh(); });
@@ -1870,6 +1872,70 @@
     var rb = $('#go-rat'); if (rb) rb.onclick = function () { goDrawer(true, true); };
     if (G.drawer) goDrawerFill(q);
   }
+  /* ---------- #68 mistake type in the go-over top bar ----------
+     One student wrong / blank on try 1 → "Mistake [select]" (saved at once, "Saved ✓ · Undo" 5 s, keys 1–7).
+     Several students (class lists) → "Mistakes · n students · k tagged ▾" → a popover: each student + answer + select,
+     and "Set all to …". Hidden on a right answer and where the answer has no set (Placement go-over). Saving is the
+     teacher page's (SMLT.tag / tagAll): the same data as Details, the Grid and the What to go over list. */
+  function goMk(G, q) {
+    if (!G.rows || !window.SMLT || !window.SMLT.tag) return null;
+    var row = G.rows.filter(function (r) { return r.qid === q.qid; })[0]; if (!row) return null;
+    var missed = row.students.filter(function (s) { return !s.right1 && s.set_id; });
+    if (!missed.length) return null;
+    return { row: row, missed: missed, one: row.students.length === 1, mt: window.SMLT.mtypes() };
+  }
+  function goMkHtml(G, q) {
+    var m = goMk(G, q); if (!m) return '';
+    if (m.one) {
+      var s = m.missed[0], u = G.mtUndo && G.mtUndo.qid === q.qid && G.mtUndo.until > Date.now();
+      return '<span class="go-mk"><label for="go-mt">Mistake</label><select id="go-mt" title="Keys 1–' + m.mt.types.length + '"><option value="">' + esc(m.mt.ph) + '</option>' +
+        m.mt.types.map(function (t, i) { return '<option value="' + esc(t) + '"' + (t === s.mistake_type ? ' selected' : '') + '>' + (i + 1) + ' · ' + esc(t) + '</option>'; }).join('') + '</select>' +
+        (u ? '<span class="go-mk-ok">Saved ✓</span><button type="button" class="hz-link" id="go-mt-undo">Undo</button>' : '') + '</span>';
+    }
+    var k = m.missed.filter(function (s) { return s.mistake_type; }).length;
+    return '<span class="go-mk"><label>Mistakes</label><button type="button" class="btn-outline go-mk-b" id="go-mk-b" aria-expanded="' + !!G.mkOpen + '">' + m.missed.length + ' student' + (m.missed.length > 1 ? 's' : '') + ' · ' + k + ' tagged ▾</button></span>';
+  }
+  function goMkSet(G, q, type) {
+    var m = goMk(G, q); if (!m || !m.one) return;
+    var s = m.missed[0]; if ((s.mistake_type || '') === type) return;
+    var r = window.SMLT.tag(m.row, s, type, undefined, { again: goRefresh });
+    G.mtUndo = { qid: q.qid, until: Date.now() + 5000, t: r.old.t, resolved: r.resolved };
+    setTimeout(function () { if (G.mtUndo && G.mtUndo.until <= Date.now() && VW && VW.go === G) { G.mtUndo = null; goRefresh(); } }, 5100);
+    goRefresh();
+  }
+  function goMkBind(G, q) {
+    var sel = $('#go-mt'); if (sel) sel.onchange = function () { goMkSet(G, q, sel.value); };
+    var u = $('#go-mt-undo'); if (u) u.onclick = function () {
+      var m = goMk(G, q), x = G.mtUndo; if (!m || !x) return;
+      G.mtUndo = null; window.SMLT.tag(m.row, m.missed[0], x.t, undefined, { again: goRefresh, undoAsk: x.resolved });
+    };
+    var b = $('#go-mk-b'); if (b) b.onclick = function (e) { e.stopPropagation(); G.mkOpen = !G.mkOpen; goMkPop(G, q); };
+    goMkPop(G, q);
+  }
+  function goMkPop(G, q) {
+    var pop = $('#go-mkpop'); if (!pop) { pop = document.createElement('div'); pop.id = 'go-mkpop'; pop.className = 'go-mkpop'; $('#scr-test').appendChild(pop); }
+    var m = goMk(G, q), b = $('#go-mk-b');
+    if (!G.mkOpen || !m || m.one || !b) { pop.hidden = true; return; }
+    var opt = function (cur) { return '<option value="">' + esc(m.mt.ph) + '</option>' + m.mt.types.map(function (t) { return '<option' + (t === cur ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join(''); };
+    pop.innerHTML = m.missed.map(function (s, i) {
+      var tr = s.tries || [], a = tr.length ? tr[tr.length - 1].a : '';
+      return '<div class="go-mkr"><b>' + esc(s.name) + '</b><span class="go-mka">' + (a ? esc(a) : 'blank') + '</span><select data-mi="' + i + '">' + opt(s.mistake_type) + '</select><span class="go-mk-ok">' + (s.mistake_type ? '✓' : '') + '</span></div>';
+    }).join('') + (m.missed.length > 1 ? '<div class="go-mkr go-mkall"><b>Set all to</b><select id="go-mkall">' + opt('') + '</select></div>' : '');
+    pop.hidden = false;
+    var r = b.getBoundingClientRect(), host = $('#scr-test').getBoundingClientRect(), w = Math.min(460, host.width - 24);
+    pop.style.width = w + 'px'; pop.style.top = (r.bottom - host.top + 6) + 'px'; pop.style.left = Math.max(12, Math.min(r.right - host.left - w, host.width - w - 12)) + 'px';
+    $$('[data-mi]', pop).forEach(function (sel) { sel.onchange = function () { window.SMLT.tag(m.row, m.missed[+sel.getAttribute('data-mi')], sel.value, undefined, { again: goRefresh }); }; });
+    var all = $('#go-mkall', pop); if (all) all.onchange = function () { if (all.value) window.SMLT.tagAll(m.row, m.missed, all.value, goRefresh); };
+  }
+  function goKeys(e) {                                                  // keys 1–7 → mistake type (one student, not while typing)
+    if (!(A.view && VW && VW.go) || e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || !/^[1-9]$/.test(e.key)) return;
+    if (e.target && (e.target.tagName === 'SELECT' || (e.target.closest && e.target.closest('#notes-panel')))) return;
+    var c = curQ(), m = c && goMk(VW.go, c); if (!m || !m.one) return;
+    var t = m.mt.types[+e.key - 1]; if (!t) return;
+    e.preventDefault(); goMkSet(VW.go, c, t);
+  }
+  document.addEventListener('keydown', goKeys);
+  document.addEventListener('click', function (e) { var G = VW && VW.go; if (G && G.mkOpen && !e.target.closest('#go-mkpop') && !e.target.closest('#go-mk-b')) { G.mkOpen = false; var p = $('#go-mkpop'); if (p) p.hidden = true; var b = $('#go-mk-b'); if (b) b.setAttribute('aria-expanded', 'false'); } });
   function goRefresh() { if (VW && VW.go && A.view) { var c = curQ(); if (c) goBar(c); } }
   function goLevel(q, x, isUndo) {
     var G = VW.go, m = q.meta, old = m.difficulty + m.level;
@@ -2038,15 +2104,54 @@
     var f = NT.mq.MathField(sp, { spaceBehavesLikeTab: false, autoCommands: 'pi theta sqrt pm', autoOperatorNames: 'sin cos tan log ln',
       handlers: {
         edit: function () { notesSaveSoon(); },
-        enter: function () { caretBy(sp, true); },
+        enter: function () { newMathLine(lineOf(sp)); },                // #68: Enter = a new MATH line
         moveOutOf: function (dir) { caretBy(sp, dir === NT.mq.R); },
         upOutOf: function () { caretBy(sp, false); }, downOutOf: function () { caretBy(sp, true); },
         deleteOutOf: function (dir) { if (!f.latex()) { caretBy(sp, false); sp.parentNode.removeChild(sp); notesSaveSoon(); } else caretBy(sp, dir === NT.mq.R); }
       } });
     if (latex) f.latex(latex);
     sp._mq = f; sp.setAttribute('contenteditable', 'false');
-    sp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); caretBy(sp, true); } });
+    sp.addEventListener('keydown', function (e) {
+      var k = e.key;
+      if (k === 'Escape') { e.preventDefault(); toText(sp); }                                                     // Esc → words after the math
+      else if ((e.ctrlKey || e.metaKey) && (k === 't' || k === 'T')) { e.preventDefault(); mqWords(sp); }         // Ctrl+T / "Aa Text" → words
+      else if (k === ' ' && !e.ctrlKey && !e.metaKey && !mqInText(sp)) { e.preventDefault(); f.write('\\ '); }    // a space stays a space
+    });
     return f;
+  }
+  /** #68 Notes are math first: every line starts inside a math field. Text when wanted: Esc / Ctrl+T / "Aa Text" leaves
+   *  the math field (an empty one is removed) and the rest of the line is words; the next line is math again. */
+  function lineOf(n) { var ed = $('#nt-ed'); while (n && n.parentNode && n.parentNode !== ed) n = n.parentNode; return n && n.parentNode === ed ? n : null; }
+  function newMathLine(after) {
+    return loadMQ().then(function () {
+      var ed = $('#nt-ed'), line = document.createElement('div'), sp = document.createElement('span');
+      sp.className = 'mq'; line.appendChild(sp); line.appendChild(document.createTextNode('\u00a0'));
+      if (after && after.parentNode === ed) { if (after.nodeType === 3) { var w = document.createElement('div'); ed.insertBefore(w, after); w.appendChild(after); after = w; } ed.insertBefore(line, after.nextSibling); }
+      else ed.appendChild(line);
+      var f = mqField(sp, ''); f.focus(); notesSaveSoon(); return f;
+    }).catch(function (e) { toast('The math editor did not load: ' + errMsg(e)); });
+  }
+  function toText(sp) {
+    if (sp._mq && !sp._mq.latex()) { var ln = lineOf(sp), nx = sp.nextSibling; sp.parentNode.removeChild(sp); var ed = $('#nt-ed'); ed.focus();
+      var r = document.createRange(); if (nx) r.setStartBefore(nx); else if (ln) { r.selectNodeContents(ln); r.collapse(true); } else { r.selectNodeContents(ed); r.collapse(false); }
+      var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    else caretBy(sp, true);
+    notesSaveSoon();
+  }
+  /** Ctrl+T: an empty math line becomes a words line; inside math with something typed → upright words IN the math
+   *  ("x = 3 so y = 7"); Ctrl+T again leaves the words. */
+  function mqInText(sp) { return !!sp.querySelector('.mq-text-mode.mq-hasCursor, .mq-text-mode .mq-cursor'); }
+  function mqWords(sp) {
+    var f = sp._mq; if (!f) return;
+    if (!f.latex()) return toText(sp);
+    if (mqInText(sp)) { f.keystroke('End'); f.keystroke('Right'); }
+    else f.cmd('\\text');
+    notesSaveSoon();
+  }
+  function notesMathStart() {                                           // open → the cursor in an empty math line at the end
+    var ed = $('#nt-ed'), last = ed.lastElementChild, lsp = last && $('.mq', last);
+    if (lsp && lsp._mq && !lsp._mq.latex() && last.textContent.replace(/\s|\u00a0/g, '') === '') { lsp._mq.focus(); return; }
+    newMathLine(ed.lastChild);
   }
   function insertMath() {
     return loadMQ().then(function () {
@@ -2061,7 +2166,7 @@
   }
   function notesSerial() {
     var ed = $('#nt-ed'), c = ed.cloneNode(true), real = $$('.mq', ed);
-    $$('.mq', c).forEach(function (sp, i) { var n = document.createElement('span'); n.className = 'mq'; n.setAttribute('data-latex', real[i] && real[i]._mq ? real[i]._mq.latex() : (sp.getAttribute('data-latex') || '')); sp.parentNode.replaceChild(n, sp); });
+    $$('.mq', c).forEach(function (sp, i) { var lx = real[i] && real[i]._mq ? real[i]._mq.latex() : (sp.getAttribute('data-latex') || ''); if (!lx) { sp.parentNode.removeChild(sp); return; } var n = document.createElement('span'); n.className = 'mq'; n.setAttribute('data-latex', lx); sp.parentNode.replaceChild(n, sp); });
     return c.innerHTML;
   }
   function notesSaveSoon() { clearTimeout(NT.t); NT.t = setTimeout(notesSaveNow, 400); }
@@ -2083,8 +2188,9 @@
     var panel = $('#notes-panel');
     if (!on) { if (panel.classList.contains('on')) notesSaveNow(); panel.classList.remove('on'); $('#tool-notes').classList.remove('active'); return; }
     notesSync(); fpOpen(panel); $('#tool-notes').classList.add('active');
-    loadMQ().catch(function () {});
-    setTimeout(function () { var ed = $('#nt-ed'); if (!ed.contains(document.activeElement)) { ed.focus(); var r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } }, 30);
+    loadMQ().then(function () { setTimeout(notesMathStart, 30); }).catch(function () {        // #68 math first; text if MathQuill cannot load
+      setTimeout(function () { var ed = $('#nt-ed'); if (!ed.contains(document.activeElement)) { ed.focus(); var r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } }, 30);
+    });
   }
   function notesCmd(cmd, val) {
     var ed = $('#nt-ed'), sel = getSelection();
@@ -2242,7 +2348,7 @@
         var t = b.getAttribute('data-nt');
         if (t === 'bold') notesCmd('bold'); else if (t === 'c') notesCmd('foreColor', b.getAttribute('data-c'));
         else if (t === 'hl') notesCmd('hiliteColor', '#fde68a'); else if (t === 'ul') notesCmd('insertUnorderedList');
-        else if (t === 'math') insertMath(); else if (t === 'copy') notesCopy();
+        else if (t === 'math') insertMath(); else if (t === 'text') { var fm = document.activeElement && inMq(document.activeElement); if (fm) mqWords(fm); else $('#nt-ed').focus(); } else if (t === 'copy') notesCopy();
         else if (t === 'clear') notesClear(false); else if (t === 'end') notesClear(true);
       };
     });
@@ -2250,6 +2356,7 @@
       if (inMq(e.target) && e.target !== ed) return;
       var k = e.key, mod = e.ctrlKey || e.metaKey;
       if (k === '$' || (e.ctrlKey && (k === 'm' || k === 'M'))) { e.preventDefault(); insertMath(); return; }
+      if (k === 'Enter' && !e.shiftKey && !mod) { e.preventDefault(); var sl = getSelection(); newMathLine(sl.rangeCount ? lineOf(sl.getRangeAt(0).startContainer) : null); return; }   // #68 next line: math again
       if (mod && (k === 'e' || k === 'E')) { e.preventDefault(); notesCmd('hiliteColor', '#fde68a'); return; }
       if (mod && (k === 'b' || k === 'B')) { e.preventDefault(); notesCmd('bold'); return; }
       if (k === 'ArrowRight' || k === 'ArrowLeft') {
@@ -2297,7 +2404,7 @@
     var scr = $('#scr-test'); scr.classList.remove('viewing', 'ro', 'fixing', 'going');
     var wasFix = VW && VW.fix, sid = VW && VW.sid, g = VW && VW.go;
     if (g) {                                                            // #50: back where the go-over was opened
-      penSet(false); penRemove(); PEN.qid = null; notesOpen(false);
+      penSet(false); penRemove(); PEN.qid = null; notesOpen(false); g.mkOpen = false; var mp = $('#go-mkpop'); if (mp) mp.hidden = true;
       var dr = $('#go-drawer'); if (dr) { dr.classList.remove('on'); dr.setAttribute('aria-hidden', 'true'); }
       $('#fb-go').innerHTML = ''; $('#go-strip').innerHTML = ''; VW = null;
       A.view = null; A.st = null; A.test = null; A.profile = null; built = null;

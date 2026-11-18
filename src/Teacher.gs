@@ -214,7 +214,7 @@ function classView(code, target, scope) {
       tries: tl.map(function (t) { return { a: clean_(t.answer), ok: Number(t.correct) === 1 }; }),
       try1: clean_(r.try1_answer), right1: right1, best: best, n_tries: nt, locked: isYes_(r.locked), time_s: Math.round(Number(r.time_try1_sec) || 0), away_s: Math.round(Number(r.away_sec) || 0),
       norm_s: normSec_(r), total_s: Math.round(Number(r.time_total_sec) || 0),   // #66 S · 2:35 · normal 1:10
-      pace: Number(r.pace_ratio) || null, profile: p, badge: qBadge_(p), flags: String(r.flags || ''), asked: !!r.asked, ask_note: clean_(r.ask_note),
+      pace: Number(r.pace_ratio) || null, profile: p, badge: qBadge_(p), flags: String(r.flags || ''), asked: !!r.asked, ask_by: clean_(r.resolved_by), ask_note: clean_(r.ask_note),
       ask_status: String(r.ask_status || ''), mistake_type: clean_(r.mistake_type), mistake_note: clean_(r.mistake_note) });
   });
   var rows = priorityOrder_(Object.keys(byQ).map(function (k) { return byQ[k]; }), T.members.length === 1);
@@ -284,19 +284,32 @@ function responseRow_(setId, qid) {
   return readTable_('Responses').rows.filter(function (r) { return String(r.set_id) === String(setId) && String(r.qid) === String(qid); })[0];
 }
 /** Mistake type of one answer (Minh's 7, Settings.mistake_types). A real mistake also puts the item in the student's Review. */
-function tagMistake(code, setId, qid, type, note) {
+function tagMistake(code, setId, qid, type, note, undoAsk) {
   requireTeacher_(code);
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try { return tagOne_(setId, qid, type, note, undoAsk); } finally { lock.releaseLock(); }
+}
+/** #68 "Set all to …" in the class go-over: one call, one lock, each student's open Ask resolved too. */
+function tagMistakes(code, list, type) {
+  requireTeacher_(code);
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try { return { ok: true, items: (list || []).slice(0, 60).map(function (x) { return tagOne_(x.set_id, x.qid, type, x.note, false); }) }; } finally { lock.releaseLock(); }
+}
+/** A mistake type for one answer. #68: any type (incl. "Not A Mistake") on an answer with an OPEN Ask resolves it
+ *  (resolved_by = tag) — the teacher has gone over it. undoAsk (the Undo of that tag) opens it again. */
+function tagOne_(setId, qid, type, note, undoAsk) {
   var S = getSettings_(), types = String(S.mistake_types).split(/\s*;\s*/).filter(String);
   type = String(type || '').trim();
   if (type && types.indexOf(type) < 0) throw new Error('FORM: Unknown mistake type.');
-  var lock = LockService.getScriptLock(); lock.waitLock(20000);
-  try {
-    var r = responseRow_(setId, qid); if (!r) throw new Error('FORM: Answer not found.');
-    updateRow_('Responses', r._row, { mistake_type: type, mistake_note: txt_(String(note || '').slice(0, 300)), tagged_at: type ? nowIso_() : '', tagged_in: type ? 'app' : '' });
-    var added = false;
-    if (type && type !== 'Not A Mistake') added = tagToReview_(normCode_(r.student_code), String(qid), String(setId));
-    return { ok: true, review_added: added };
-  } finally { lock.releaseLock(); }
+  var r = responseRow_(setId, qid); if (!r) throw new Error('FORM: Answer not found.');
+  var f = { mistake_type: type, mistake_note: txt_(String(note === undefined || note === null ? r.mistake_note || '' : note).slice(0, 300)), tagged_at: type ? nowIso_() : '', tagged_in: type ? 'app' : '' };
+  var resolved = false, reopened = false;
+  if (type && isYes_(r.asked) && String(r.ask_status) === 'open') { f.ask_status = 'resolved'; f.resolved_at = nowIso_(); f.resolved_by = 'tag'; resolved = true; }
+  if (undoAsk && String(r.resolved_by) === 'tag' && String(r.ask_status) === 'resolved') { f.ask_status = 'open'; f.resolved_at = ''; f.resolved_by = ''; reopened = true; }
+  updateRow_('Responses', r._row, f);
+  var added = false;
+  if (type && type !== 'Not A Mistake') added = tagToReview_(normCode_(r.student_code), String(qid), String(setId));
+  return { ok: true, review_added: added, ask_resolved: resolved, ask_reopened: reopened, set_id: String(setId), qid: String(qid) };
 }
 function tagToReview_(sc, qid, setId) {
   var open = readTable_('Review').rows.some(function (x) { return normCode_(x.student_code) === sc && String(x.qid) === qid && String(x.status) === 'open'; });
@@ -328,7 +341,7 @@ function ensureMistakeDropdown_() {
 function resolveAsk(code, setId, qid, reopen) {
   requireTeacher_(code);
   var r = responseRow_(setId, qid); if (!r) throw new Error('FORM: Answer not found.');
-  updateRow_('Responses', r._row, reopen ? { ask_status: 'open', resolved_at: '' } : { ask_status: 'resolved', resolved_at: nowIso_() });
+  updateRow_('Responses', r._row, reopen ? { ask_status: 'open', resolved_at: '', resolved_by: '' } : { ask_status: 'resolved', resolved_at: nowIso_(), resolved_by: 'teacher' });
   return { ok: true };
 }
 function asksInbox(code) {

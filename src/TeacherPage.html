@@ -342,7 +342,7 @@
     var d = have ? Promise.resolve(have) : call('goOverData', A.code, qids).then(function (r) { cput(key, r); return r; });
     var hs = 0; key.split('').forEach(function (ch) { hs = (hs * 31 + ch.charCodeAt(0)) | 0; });   // #62 one notes pad per list of questions
     X.goOver(d, { sid: 'go', qid: qid, backLabel: o.back || 'Back', who: o.who || '', side: o.side || null, wrongOnly: o.wrongOnly, wrongSet: o.wrongSet || null, notesKey: 'list:' + (hs >>> 0).toString(36),
-                  back: function () { X.show('scr-teacher'); X.nav('t-' + (view || 'home')); } });
+                  back: function () { X.show('scr-teacher'); X.nav('t-' + (view || 'home')); if (view === 'class' && T.cv && T.view === 'class') renderClass(); } });
   }
   /** Side info for one class / one student's set: classView rows, fetched only when "Student's answer" or Details is pressed. */
   function side(target, scope) {
@@ -360,6 +360,34 @@
     el.innerHTML = s ? '<h3 class="t-h3">Student</h3><div class="t-ps"><div class="t-pst">Answer: ' + (s.tries.length ? '<span class="' + (s.tries[0].ok ? 'ok' : 'no') + '">' + esc(s.tries[0].a) + '</span>' : '<span class="no">blank</span>') +
       ' · ' + s.time_s + ' s' + (s.profile ? ' <span class="muted">' + esc(s.profile) + '</span>' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + '</div></div>' : '';
   }
+  /** #68 one place that saves a mistake type (go-over top bar, class popover, Details): the data on screen first, then the
+   *  queue. The server resolves an OPEN Ask on that answer in the same call; opts.undoAsk (the Undo) opens it again. */
+  function recount(row) {
+    row.untagged = row.students.filter(function (s) { return !s.right1 && !s.mistake_type; }).length;
+    row.asks = row.students.filter(function (s) { return s.asked && s.ask_status === 'open'; }).length;
+  }
+  function tagStu(row, s, type, note, opts) {
+    opts = opts || {};
+    var old = { t: s.mistake_type || '', n: s.mistake_note || '', ask: s.ask_status, by: s.ask_by || '' };
+    var nn = note === undefined ? old.n : note, res = !!(type && s.asked && s.ask_status === 'open'), reo = !!(opts.undoAsk && s.ask_status === 'resolved' && s.ask_by === 'tag');
+    var put = function (t, n, ask, by) { s.mistake_type = t; s.mistake_note = n; s.ask_status = ask; s.ask_by = by; recount(row); if (opts.again) opts.again(); };
+    save({ fn: 'tagMistake', args: [s.set_id, row.qid, type, nn, !!opts.undoAsk], label: 'Mistake type for ' + s.name,
+      apply: function () { put(type, nn, res ? 'resolved' : reo ? 'open' : old.ask, res ? 'tag' : reo ? '' : old.by); },
+      undo: function () { put(old.t, old.n, old.ask, old.by); },
+      done: function (r) {
+        if (!opts.quiet) toast(type ? 'Saved ✓ ' + type + (r && r.ask_resolved ? ' · Ask resolved' : '') + (r && r.review_added ? ' · added to ' + s.name.split(/\s+/)[0] + '\'s Review' : '') : (r && r.ask_reopened ? 'Undone · Ask open again' : 'Tag removed.'), 2500);
+        stale(/^(home|asks|cv\||prof\||go\|)/);
+      } });
+    return { old: old, resolved: res };
+  }
+  /** #68 "Set all to …": every student who missed it, one server call. */
+  function tagAll(row, list, type, again) {
+    var olds = list.map(function (s) { return { s: s, t: s.mistake_type || '', ask: s.ask_status, by: s.ask_by || '' }; });
+    save({ fn: 'tagMistakes', args: [list.map(function (s) { return { set_id: s.set_id, qid: row.qid }; }), type], label: 'Mistake type for ' + list.length + ' students',
+      apply: function () { list.forEach(function (s) { if (type && s.asked && s.ask_status === 'open') { s.ask_status = 'resolved'; s.ask_by = 'tag'; } s.mistake_type = type; }); recount(row); if (again) again(); },
+      undo: function () { olds.forEach(function (o) { o.s.mistake_type = o.t; o.s.ask_status = o.ask; o.s.ask_by = o.by; }); recount(row); if (again) again(); },
+      done: function (r) { var n = ((r && r.items) || []).filter(function (x) { return x.ask_resolved; }).length; toast('Saved ✓ ' + type + ' · ' + list.length + ' students' + (n ? ' · ' + n + ' Ask resolved' : ''), 2500); stale(/^(home|asks|cv\||prof\||go\|)/); } });
+  }
   /** The students who did this question (tries, time, Asked note, mistake type + note + Save) — the drawer of the go-over. */
   function goDrawerSide(q, pin, rows, again) {
     var row = rows.filter(function (x) { return x.qid === q.qid; })[0];
@@ -375,11 +403,8 @@
     }).join('');
     $$('[data-save]', pin).forEach(function (b) { b.onclick = function () {
       var i = +b.getAttribute('data-save'), s = row.students[i], type = $('[data-tag="' + i + '"]', pin).value, note = $('[data-note="' + i + '"]', pin).value;
-      var old = { t: s.mistake_type, n: s.mistake_note, u: row.untagged };
-      save({ fn: 'tagMistake', args: [s.set_id, row.qid, type, note], label: 'Mistake type for ' + s.name,
-        apply: function () { s.mistake_type = type; s.mistake_note = note; if (!s.right1 && type && !old.t && row.untagged) row.untagged--; b.textContent = 'Saved ✓'; setTimeout(function () { b.textContent = 'Save'; }, 1500); },
-        undo: function () { s.mistake_type = old.t; s.mistake_note = old.n; row.untagged = old.u; again(); },
-        done: function (r) { toast(type ? 'Saved: ' + type + (r && r.review_added ? ' · added to ' + s.name.split(/\s+/)[0] + '\'s Review' : '') : 'Tag removed.', 2500); stale(/^(home|cv\||prof\|)/); } });
+      tagStu(row, s, type, note, { again: again });
+      b.textContent = 'Saved ✓'; setTimeout(function () { b.textContent = 'Save'; }, 1500);
     }; });
     $$('[data-resolve]', pin).forEach(function (b) { b.onclick = function () {
       var s = row.students[+b.getAttribute('data-resolve')], reopen = s.ask_status === 'resolved', oa = row.asks;
@@ -748,7 +773,7 @@
     $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openBuilder(''); }; });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
   }
-  window.SMLT = { side: side, levelChanged: function () { stale(/^(cv\||go\||prof\||tree\||home)/); }, back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
+  window.SMLT = { side: side, tag: tagStu, tagAll: tagAll, mtypes: function () { return { types: (T.home && T.home.mistake_types) || [], ph: (T.home && T.home.mistake_placeholder) || '— choose a mistake type —' }; }, levelChanged: function () { stale(/^(cv\||go\||prof\||tree\||home)/); }, back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };
   if (window.SMLX) init();
 })();
 </script>

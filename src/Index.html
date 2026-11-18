@@ -147,7 +147,7 @@
       <div class="fp-resize" id="ref-rs"></div>
     </div>
     <div id="notes-panel" class="float-panel" style="right:24px;top:84px;width:460px;height:420px" aria-label="Notes">
-      <div class="fp-head" id="notes-head"><span class="ttl">Notes</span><span class="nt-hint">$ or Ctrl+M = math</span><button type="button" id="notes-x" aria-label="Close" style="font-size:20px;line-height:1">×</button></div>
+      <div class="fp-head" id="notes-head"><span class="ttl">Notes</span><span class="nt-hint">Math first · Ctrl+T = words</span><button type="button" id="notes-x" aria-label="Close" style="font-size:20px;line-height:1">×</button></div>
       <div class="nt-tools" id="nt-tools">
         <button type="button" data-nt="bold" title="Bold (Ctrl+B)"><b>B</b></button>
         <button type="button" data-nt="c" data-c="#1b2a4a" title="Navy" class="nt-dot" style="--c:#1b2a4a"></button>
@@ -156,13 +156,14 @@
         <button type="button" data-nt="c" data-c="#1f8a4c" title="Green" class="nt-dot" style="--c:#1f8a4c"></button>
         <button type="button" data-nt="hl" title="Highlight (Ctrl+E)"><span class="nt-hl">ab</span></button>
         <button type="button" data-nt="ul" title="Bullet line">• List</button>
-        <button type="button" data-nt="math" title="Math ($ or Ctrl+M)">∑ Math</button>
+        <button type="button" data-nt="math" title="New math field ($ or Ctrl+M)">∑ Math</button>
+        <button type="button" data-nt="text" title="Words (Ctrl+T): on an empty line the line becomes words; inside math, upright words in the math. Esc = leave the math">Aa Text</button>
         <i class="pb-sep"></i>
         <button type="button" data-nt="copy">Copy</button>
         <button type="button" data-nt="clear">Clear</button>
         <button type="button" data-nt="end">End &amp; clear</button>
       </div>
-      <div class="fp-body nt-body"><div id="nt-ed" contenteditable="true" spellcheck="false" data-ph="Type here. $ starts math: / fraction · ^ power · sqrt root · → leaves it."></div></div>
+      <div class="fp-body nt-body"><div id="nt-ed" contenteditable="true" spellcheck="false" data-ph="Math: / fraction · ^ power · sqrt root · Enter = new line · Ctrl+T = words"></div></div>
       <div class="fp-resize" id="notes-rs"></div>
     </div>
     <aside id="go-drawer" aria-hidden="true"><div class="gd-head"><b>Details</b><button type="button" id="go-dr-x" aria-label="Close">×</button></div><div id="go-dr-body"></div></aside>

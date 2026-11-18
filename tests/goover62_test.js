@@ -55,8 +55,8 @@ console.log('[server: the set\'s keys in the TEACHER go-over payloads only]');
     console.log('Notes pad');
     check(await page.$eval('#tool-notes', e => getComputedStyle(e).display !== 'none') && await page.$eval('#tool-pen', e => getComputedStyle(e).display !== 'none'), 'Notes + Pen buttons in the top bar (teacher go-over)');
     await page.click('#tool-notes');
-    await page.waitForSelector('#notes-panel.on #nt-ed');
-    await page.click('#nt-ed');
+    await page.waitForSelector('#notes-panel.on #nt-ed .mq.mq-focused');        // #68 opens inside a math field
+    await page.keyboard.press('Escape');                                        // words first on this line
     await page.keyboard.type('Slope = ');
     await page.keyboard.type('$');
     await page.waitForSelector('#nt-ed .mq.mq-focused');
@@ -69,7 +69,7 @@ console.log('[server: the set\'s keys in the TEACHER go-over payloads only]');
     await page.keyboard.type('+1');
     await page.keyboard.press('Escape');
     await page.keyboard.type(' (check)');
-    await page.keyboard.press('Enter'); await page.keyboard.type('Trap: answer C');
+    await page.keyboard.press('Enter'); await page.keyboard.press('Escape'); await page.keyboard.type('Trap: answer C');
     const latex = await page.$$eval('#nt-ed .mq', a => a.map(x => (x.querySelector('.mq-root-block') || x).textContent));
     check(await page.$('#nt-ed .mq .mq-fraction') && await page.$('#nt-ed .mq sup, #nt-ed .mq .mq-sup'), 'math typed like Desmos: "/" → a fraction, "^" → an exponent (' + latex.join(' | ') + ')');
     // colour "Trap" red + highlight "answer C"
@@ -162,7 +162,7 @@ console.log('[server: the set\'s keys in the TEACHER go-over payloads only]');
       await ip.tap('#tool-pen');
       const bx = await (await ip.$('#tmain canvas.pen-cv')).boundingBox();
       for (const [c, y] of [['red', 70], ['blue', 120]]) { await ip.tap('#pen-bar [data-pc="' + c + '"]'); await ip.mouse.move(bx.x + 40, bx.y + y); await ip.mouse.down(); for (let i = 1; i < 10; i++) await ip.mouse.move(bx.x + 40 + i * 30, bx.y + y + (i % 2) * 8); await ip.mouse.up(); }
-      await ip.tap('#tool-notes'); await ip.waitForSelector('#notes-panel.on'); await ip.click('#nt-ed'); await ip.keyboard.type('Area = '); await ip.keyboard.type('$'); await ip.waitForSelector('#nt-ed .mq.mq-focused'); await ip.keyboard.type('1/2bh');
+      await ip.tap('#tool-notes'); await ip.waitForSelector('#notes-panel.on #nt-ed .mq.mq-focused'); await ip.keyboard.press('Escape'); await ip.keyboard.type('Area = '); await ip.keyboard.type('$'); await ip.waitForSelector('#nt-ed .mq.mq-focused'); await ip.keyboard.type('1/2bh');
       await sleep(400);
       const fit = await ip.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector('#notes-panel').getBoundingClientRect().right <= innerWidth + 1);
       check(fit, dev + ': pen bar + Notes panel fit the screen');

@@ -117,7 +117,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     check((await page.$$('#go-dr-body .t-ps')).length === 2 && /Tries:/.test(await page.$eval('#go-dr-body .t-ps', e => e.innerText)), 'Details drawer: each student with tries + time');
     await page.selectOption('#go-dr-body [data-tag="0"]', 'Concept Gap');
     await page.$eval('#go-dr-body [data-save="0"]', e => e.click());
-    await page.waitForFunction(() => /Saved: Concept Gap/.test(document.querySelector('#toast').textContent));
+    await page.waitForFunction(() => /Saved.*Concept Gap/.test(document.querySelector('#toast').textContent));
     check(true, 'mistake type saved ("Concept Gap") from the drawer');
     await page.click('#go-show');
     await page.waitForSelector('.go-key');
