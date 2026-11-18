@@ -152,11 +152,13 @@ var NEIGHBOUR_ = { E: ['M'], M: ['E', 'H'], H: ['M'] };
  * Picks the questions of a practice set. Returns {qids, level, slots, n, standin}.
  * setSeed makes the random parts repeatable (tests); in the app it is the set id.
  */
-function pickForPractice_(codeN, skill, n, setSeed) {
+function pickForPractice_(codeN, skill, n, setSeed, only) {
   var S = getSettings_(), now = Date.now(), tries = firstTries_(codeN), hist = historyOf_(codeN, tries);
   var st = levelState_(codeN, skill, tries, S), prof = skillProfile_(skill);
   var slots = template_(prof.max_set ? 'M' : st.level, n);         // rare skills (max_set): a mix of all difficulties
   var all = livePool_().filter(function (r) { return clean_(r.skill) === skill && profServes_(skill, r.difficulty); }); // Skill_Profile
+  if (only && only.sub) all = all.filter(function (r) { return clean_(r.subskill) === only.sub; });                     // #68 one sub-skill
+  if (only && only.exclude) all = all.filter(function (r) { return only.exclude.indexOf(String(r.qid)) < 0; });
   var pool = all.filter(function (r) { var h = hist[String(r.qid)]; return !h || now - h.last_ms >= S.block_days * 86400000; });
   if (pool.length < n) pool = all;                                  // block dropped only if the pool is too small
   // Skill_Profile: level E in a skill with no Easy → Medium level 1 only; level H with no Hard → Medium level 2–3 + Hard only
@@ -305,6 +307,16 @@ function pickForPractice_(codeN, skill, n, setSeed) {
   });
   return { qids: picked.map(function (x) { return String(x.r.qid); }), level: st.level,
            slots: picked.map(function (x) { return x.slot; }).join(','), why: picked.map(function (x) { return x.why; }), standin: map.standin };
+}
+
+/** #68 D: practice of ONE sub-skill = the same picker (rules, level, slots) on that sub-skill's live items; fewer than n →
+ *  all of them, then the rest picked from the same skill. sub_n = how many are of the sub-skill. */
+function pickForSub_(codeN, skill, sub, n, setSeed) {
+  var have = livePool_().filter(function (r) { return clean_(r.skill) === skill && clean_(r.subskill) === sub && profServes_(skill, r.difficulty); }).length;
+  var a = have ? pickForPractice_(codeN, skill, Math.min(n, have), setSeed, { sub: sub }) : { qids: [], slots: '', level: '' };
+  if (a.qids.length >= n) { a.sub_n = a.qids.length; return a; }
+  var b = pickForPractice_(codeN, skill, n - a.qids.length, setSeed + '+', { exclude: a.qids });
+  return { qids: a.qids.concat(b.qids), level: b.level || a.level, slots: [a.slots, b.slots].filter(String).join(','), sub_n: a.qids.length };
 }
 
 /* ---------------- Mixed Practice (Minh 13 Nov): one set, several skills ----------------
@@ -505,7 +517,7 @@ function homeData(code) {
   var plSet = {}; sets.forEach(function (s) { if (String(s.kind) === 'placement') plSet[String(s.set_id)] = 1; });
   var open = sets.filter(function (s) { return isOpenStatus_(s.status) && String(s.kind) !== 'assignment' && String(s.kind) !== 'placement'; }).map(function (s) {
     var stt = parseState_(s) || {}, ps = (stt.parts || {})[SET_PART] || {}, nAns = Object.keys(ps.ans || {}).length;
-    return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), skill: String(s.skill || ''), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
+    return { set_id: String(s.set_id), kind: String(s.kind || 'practice'), skill: String(s.skill || ''), sub: clean_(s.subskill || ''), title: setTitle_(s), n: Number(s.n) || 0, answered: nAns, started: dateStr_(s.created_at) };
   });
   var fixLeft = {};
   readTable_('Responses').rows.forEach(function (r) {

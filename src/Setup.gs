@@ -12,7 +12,7 @@ var TABS_ = [
   ['Sets', ['set_id', 'student_code', 'kind', 'skill', 'assignment_id', 'n', 'qids', 'level_at_start', 'slots', 'created_at',
             'submitted_at', 'status', 'first_try', 'best_score', 'n_blank', 'time_used_min', 'sittings', 'current_q', 'last_saved_at',
             'events_saved', 'state_json', 'copy_token', 'progress', 'hidden', 'device',
-            'time_answer_min', 'time_check_min', 'time_blank_min', 'away_n', 'away_sec', 'away_at']],
+            'time_answer_min', 'time_check_min', 'time_blank_min', 'away_n', 'away_sec', 'away_at', 'subskill']],
   ['Responses', ['set_id', 'student_code', 'qid', 'order', 'skill', 'subskill', 'difficulty', 'level', 'try1_answer', 'try1_correct',
                  'final_answer', 'best_correct', 'n_tries', 'locked', 'fixed_at', 'n_changes', 'change_pattern', 'eliminated', 'ever_marked',
                  'visits', 'time_try1_sec', 'time_total_sec', 'pace_ratio', 'calc_used', 'ref_used', 'profile', 'flags', 'mistake_type',

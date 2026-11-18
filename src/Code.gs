@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.11.0 (2026-11-18, mistake type in the go-over top bar · a tag resolves the Ask · Notes open in math)';
+var APP_VERSION = 'v0.12.0 (2026-11-18, My skills for students: Focus now, Why I miss, My mistakes, skill map, progress, practice by sub-skill)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -424,7 +424,7 @@ function setQuestions_(s) {
 /** Title of a set for students / the Sheet ("Practice · Linear functions"). */
 function setTitle_(s) {
   var kind = String(s.kind || 'practice');
-  if (kind === 'practice') return 'Practice · ' + (skillName_(String(s.skill || '')) || 'Mixed');
+  if (kind === 'practice') return 'Practice · ' + (clean_(s.subskill || '') ? subskillName_(clean_(s.subskill)) : (skillName_(String(s.skill || '')) || 'Mixed'));
   if (kind === 'review') return 'Review';
   if (kind === 'mixed') return MIXED_TITLE;
   if (kind === 'placement') return PL_TITLE;
@@ -470,7 +470,7 @@ function withSet_(r, code, opts) {
   try { r.set = getSet(code, r.set_id, o); } catch (e) { /* the page opens it with its own call */ }
   return r;
 }
-function startPracticeCore_(code, skill, n, replace) {
+function startPracticeCore_(code, skill, n, replace, sub) {
   var st = requireStudent_(code), codeN = normCode_(st.student_code), S = getSettings_();
   var sizes = String(S.set_sizes).split(/[,\s]+/).map(Number).filter(Boolean);
   n = Number(n);
@@ -481,18 +481,21 @@ function startPracticeCore_(code, skill, n, replace) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'practice' && String(r.skill) === skill; });
+    sub = clean_(sub || '');
+    var open = readTable_('Sets').rows.filter(function (r) { return normCode_(r.student_code) === codeN && isOpenStatus_(r.status) && String(r.kind) === 'practice' && String(r.skill) === skill && clean_(r.subskill || '') === sub; });
     open = abandonReplaced_(open, replace);                             // #47 "Start a new set instead" (the student said yes)
     if (open.length) { var o = open[open.length - 1]; return { ok: true, set_id: String(o.set_id), resumed: true, n: Number(o.n) || 0 }; } // one open practice set per skill
     var setId = newSetId_(codeN);
-    var pick = pickForPractice_(codeN, skill, n, setId);
+    var pick = sub ? pickForSub_(codeN, skill, sub, n, setId) : pickForPractice_(codeN, skill, n, setId);
     if (!pick.qids.length) throw new Error('FORM: There are no questions for this skill yet. Try another skill.');
     appendObjects_('Sets', [{
-      set_id: setId, student_code: codeN, kind: 'practice', skill: txt_(skill), n: pick.qids.length, qids: pick.qids.join(','),
+      set_id: setId, student_code: codeN, kind: 'practice', skill: txt_(skill), subskill: sub ? txt_(sub) : '', n: pick.qids.length, qids: pick.qids.join(','),
       level_at_start: pick.level || '', slots: pick.slots || '', created_at: nowIso_(), status: 'in_progress',
       events_saved: 0, last_saved_at: nowIso_()
     }]);
-    return { ok: true, set_id: setId, n: pick.qids.length, short: pick.qids.length < n };
+    var out = { ok: true, set_id: setId, n: pick.qids.length, short: pick.qids.length < n };
+    if (sub) { out.sub = sub; out.sub_n = pick.sub_n; out.filled = pick.qids.length - pick.sub_n; out.sub_name = subskillName_(sub); out.skill_name = skillName_(skill); }
+    return out;
   } finally { lock.releaseLock(); }
 }
 function newSetId_(codeN) {
