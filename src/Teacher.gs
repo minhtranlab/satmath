@@ -178,7 +178,7 @@ function classView(code, target, scope) {
   T.members.forEach(function (c) { mem[c] = 1; });
   readTable_('Students').rows.forEach(function (r) { names[normCode_(r.student_code)] = String(r.name || r.student_code); });
   var allSets = readTable_('Sets').rows.filter(function (s) { return mem[normCode_(s.student_code)] && isFinished_(s) && !isHidden_(s); });
-  var asg = readTable_('Assignments').rows.filter(function (a) { return a.assignment_id && targetMembers_(a).some(function (c) { return mem[c]; }); });
+  var asg = readTable_('Assignments').rows.filter(function (a) { return a.assignment_id && String(a.status) !== 'deleted' && targetMembers_(a).some(function (c) { return mem[c]; }); });
   // scopes to pick from: assignments of these students, recent sets, date ranges
   scope = String(scope || (asg.length ? 'a:' + asg[asg.length - 1].assignment_id : 'd30'));
   var now = Date.now(), inScope;
@@ -403,10 +403,10 @@ function studentProfile(code, sc) {
                rs: (rsOf[String(s.set_id)] || []).sort(function (a, b) { return a.no - b.no; }), form: String(s.kind) === 'placement' ? String(s.level_at_start || '') : '' };
     });
   var review = readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === c && String(r.status) === 'open'; }).length;
+  var my = mySkillsOf_(c, true);
   return { ok: true, student: { code: c, name: String(st.name || ''), active: isYes_(st.active), classes: String(st.classes || '') },
            skills: skills, sets: sets, placements: placements, profiles: prof, mistakes: types, asks_open: asks, review_open: review,
-           my: mySkillsOf_(c, true),
-           recommend: recommendFor_(skills, review),
+           my: my, recommend: recommendFor_(my, review),
            totals: { answers: resp.length, first_try_right: resp.filter(function (r) { return Number(r.try1_correct) === 1; }).length,
                      best_right: resp.filter(function (r) { return Number(r.best_correct) === 1; }).length, tries: nTries, time_min: setTimeOf_(resp).min } };
 }
@@ -416,12 +416,11 @@ function studentProfile(code, sc) {
 function diffsForLevel_(level) { return { E: 'E,M', M: 'M,H', H: 'H' }[String(level || '').toUpperCase()] || 'E,M'; }
 /** Recommended assignment: the 3 weakest skills with answers or a level (Easy level first, then Medium; lower first-try
  *  share first; never Strong) × 4 questions at the right difficulties, + the student's Review questions. */
-function recommendFor_(skills, reviewOpen) {
-  var rank = { E: 0, M: 1, '': 1.5, H: 3 };
-  var cand = skills.filter(function (k) { return (k.level || k.n) && String(k.level) !== 'H'; }).sort(function (a, b) {
-    return rank[String(a.level)] - rank[String(b.level)] || (a.n ? a.right / a.n : 0.5) - (b.n ? b.right / b.n : 0.5) || b.n - a.n;
-  }).slice(0, 3);
-  return { topics: cand.map(function (k) { return { code: k.skill, name: k.name, level: String(k.level || ''), n: 4, diffs: diffsForLevel_(k.level) }; }), review: reviewOpen || 0 };
+function recommendFor_(my, reviewOpen) {
+  // #71 the same skills, in the same order, as the student's "Focus now" (no contradiction); difficulties from the one Focus shows
+  var byK = {}; (my.skills || []).forEach(function (k) { byK[k.k] = k; });
+  var cand = (my.focus || []).map(function (k) { return byK[k]; }).filter(Boolean);
+  return { topics: cand.map(function (k) { return { code: k.k, name: k.name, level: String(k.level || ''), n: 4, diffs: diffsForLevel_(k.fd || k.level) }; }), review: reviewOpen || 0 };
 }
 
 /* ============================== assignments (§7) ============================== */
@@ -574,6 +573,85 @@ function closeAssignment(code, aid, reopen) {
   var r = readTable_('Assignments').rows.filter(function (x) { return String(x.assignment_id) === String(aid); })[0];
   if (!r) throw new Error('FORM: Assignment not found.');
   updateRow_('Assignments', r._row, { status: reopen ? 'published' : 'closed' });
+  return { ok: true };
+}
+
+/** #71 one-time (and safe to repeat): Asks tagged with a mistake BEFORE #68 B still open → resolved (resolved_by
+ *  "tag-backfill"). Reads every Responses row, writes only those three cells of the rows that need it. */
+function backfillAskTags_() {
+  var n = 0, at = nowIso_(), sh = sheet_('Responses'), hd = headers_('Responses');
+  readTable_('Responses').rows.forEach(function (r) {
+    if (isYes_(r.asked) && String(r.ask_status) === 'open' && clean_(r.mistake_type)) {
+      var f = { ask_status: 'resolved', resolved_by: 'tag-backfill', resolved_at: at };
+      Object.keys(f).forEach(function (h) { var c = hd.indexOf(h); if (c >= 0) sh.getRange(r._row, c + 1).setValue(f[h]); });
+      n++;
+    }
+  });
+  if (n) tabChanged_('Responses');
+  return 'asks backfill: ' + n + ' resolved';
+}
+
+/* ---------------- #71 the Assignment tab: Current (published) · Past (closed / cancelled); Edit · Cancel · Delete ---------------- */
+function asgSets_(aid) { return readTable_('Sets').rows.filter(function (s) { return String(s.assignment_id) === String(aid) && String(s.status) !== 'abandoned'; }); }
+function asgRow_(aid) {
+  var r = readTable_('Assignments').rows.filter(function (x) { return String(x.assignment_id) === String(aid); })[0];
+  if (!r || String(r.status) === 'deleted') throw new Error('FORM: Assignment not found.');
+  return r;
+}
+/** Every assignment that is not deleted: title, who (class / student name), from–due, done x / y, started, status. */
+function teacherAssignments(code) {
+  requireTeacher_(code); cachedReads_();
+  var names = {}; readTable_('Students').rows.forEach(function (r) { names[normCode_(r.student_code)] = String(r.name || r.student_code); });
+  var cls = {}; readTable_('Classes').rows.forEach(function (c) { cls[String(c.class_id)] = String(c.name || c.class_id); });
+  var list = readTable_('Assignments').rows.filter(function (a) { return a.assignment_id && String(a.status) !== 'deleted'; }).map(function (a) {
+    var info = assignmentInfo_(a, names), started = info.students.filter(function (x) { return x.state !== 'not started'; }).length;
+    var who = String(a.target_type) === 'student' ? names[normCode_(a.target_id)] || String(a.target_id) : cls[String(a.target_id)] || String(a.target_id);
+    var tp = []; try { tp = JSON.parse(String(a.topics || '[]')) || []; } catch (e) {}
+    return { assignment_id: info.assignment_id, title: info.title, kind: info.kind, n: info.n, from: info.available_from, due: info.due, status: info.status,
+             target: String(a.target_type) === 'student' ? 'st:' + normCode_(a.target_id) : String(a.target_id), who: who,
+             done: info.students.filter(function (x) { return x.state === 'done'; }).length, total: info.students.length, started: started, topics: tp,
+             created: dateStr_(a.created_at) };
+  });
+  return { ok: true, current: list.filter(function (a) { return a.status === 'published' || a.status === 'draft'; }).reverse(),
+           past: list.filter(function (a) { return a.status === 'closed' || a.status === 'cancelled'; }).reverse() };
+}
+/** Edit: title, due and students always; the questions only while nobody has started it. */
+function editAssignment(code, aid, f) {
+  requireTeacher_(code); f = f || {};
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var a = asgRow_(aid), started = asgSets_(aid).length, up = {};
+    if (f.title !== undefined) { var t = String(f.title || '').trim().slice(0, 80); if (!t) throw new Error('FORM: The title is empty.'); up.title = t; }
+    if (f.due !== undefined) { if (f.due && !/^\d{4}-\d{2}-\d{2}$/.test(String(f.due))) throw new Error('FORM: Due must be a date.'); up.due = txt_(f.due || ''); }
+    if (f.target !== undefined && f.target !== '') {
+      var T = resolveTarget_(f.target); if (T.kind === 'all') throw new Error('FORM: Choose a student or a class.');
+      up.target_type = T.kind; up.target_id = T.id;
+    }
+    if (f.qids !== undefined) {
+      if (started) throw new Error('FORM: Someone has started it: the questions can no longer change.');
+      if (String(a.kind) === 'placement') throw new Error('FORM: A placement test has no question list.');
+      var q = (f.qids || []).map(String).filter(String); if (!q.length) throw new Error('FORM: No questions.');
+      up.qids = q.join(','); if (f.topics) up.topics = txt_(JSON.stringify(f.topics));
+    }
+    if (Object.keys(up).length) updateRow_('Assignments', a._row, up);
+    return { ok: true, started: started };
+  } finally { lock.releaseLock(); }
+}
+/** Cancel: hidden for the students at once (home card, start); its sets and history stay. undo → published again. */
+function cancelAssignment(code, aid, undo) {
+  requireTeacher_(code);
+  var a = asgRow_(aid);
+  updateRow_('Assignments', a._row, { status: undo ? 'published' : 'cancelled' });
+  return { ok: true };
+}
+/** Delete: only while nobody has started it (the row stays in the Sheet, status "deleted", shown nowhere). */
+function deleteAssignment(code, aid, undo) {
+  requireTeacher_(code);
+  var r = readTable_('Assignments').rows.filter(function (x) { return String(x.assignment_id) === String(aid); })[0];
+  if (!r) throw new Error('FORM: Assignment not found.');
+  if (undo) { updateRow_('Assignments', r._row, { status: 'published' }); return { ok: true }; }
+  if (asgSets_(aid).length) throw new Error('FORM: Someone has started it: cancel it instead.');
+  updateRow_('Assignments', r._row, { status: 'deleted' });
   return { ok: true };
 }
 

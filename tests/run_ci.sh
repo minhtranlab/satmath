@@ -28,4 +28,5 @@ run node goover66_test.js    # #66 the time next to every R / S badge (Result, S
 run node goover68_test.js    # #68 mistake type in the go-over top bar (one student / class popover, keys 1–7), a tag resolves the Ask, Notes open in math
 run node myskills70_test.js  # My skills v3 (#68 D, #69, #70): position + Placement baseline, gains, focus, lists, Practise, top bar, History, teacher view, masked codes
 run node clean70_test.js     # #70 no narrator text, light only, set time = Σ (time − away) with a 20-min cap
+run node minor71_test.js     # #71 sign-in, equal map blocks, Recommended = Focus, Assignment tab (edit / cancel / delete), Ask backfill
 echo "ALL SUITES PASSED"

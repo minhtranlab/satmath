@@ -62,7 +62,7 @@ console.log('[server: one key at a time]');
   // recommended + review + one-click publish
   const prof = G.call('studentProfile', ['TEACH-FX-9', 'FX-T03']);
   const rec = prof.recommend;
-  check(rec && rec.topics.length >= 1 && rec.topics.every(t => t.n === 4 && /^(E,M|M,H|H)$/.test(t.diffs)) && rec.topics.every(t => t.level !== 'H'), 'profile: Recommended = weakest skills × 4 at the right difficulties (' + rec.topics.map(t => t.code + ' ' + (t.level || '-') + '→' + t.diffs).join(', ') + ')');
+  check(rec && JSON.stringify(rec.topics.map(t => t.code)) === JSON.stringify(prof.my.focus) && rec.topics.every(t => t.n === 4 && /^(E,M|M,H|H)$/.test(t.diffs)), 'profile: Recommended = the Focus now skills (#71) × 4 at the right difficulties (' + rec.topics.map(t => t.code).join(', ') + ')');
   check(C.diffsForLevel_('E') === 'E,M' && C.diffsForLevel_('M') === 'M,H' && C.diffsForLevel_('H') === 'H' && C.diffsForLevel_('') === 'E,M', 'Weak → Easy + Medium · Medium → Medium + Hard · Strong → Hard');
   const pk2 = G.call('pickAssignment', ['TEACH-FX-9', { target: 'st:FX-T03', topics: [{ code: 'H.B', n: 2, diffs: 'E,M' }], review: true }]);
   const rvT = pk2.topics.find(t => t.review), openRv = G.table('Review').filter(r => r.student_code === 'FX-T03' && r.status === 'open').map(r => r.qid);

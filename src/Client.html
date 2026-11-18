@@ -512,7 +512,7 @@
     var map = '<div class="ms-maph"><h2 class="ms-h2">Skill map</h2>' +
       (T ? '<button type="button" class="btn-outline ms-asg" id="ms-asg" disabled>Assign ticked skills</button>' : '') +
       '<div class="ms-vs" role="group" aria-label="Compare with"><button type="button" data-ms-vs="7" aria-pressed="' + (MS.vs === 7) + '">vs last week</button><button type="button" data-ms-vs="30" aria-pressed="' + (MS.vs === 30) + '">vs last month</button></div></div>' +
-      '<div class="ms-legend"><span><i class="on"></i>Easy → Medium → Hard</span><span><i class="up"></i>' + (MS.vs === 7 ? 'this week' : 'this month') + '</span></div><div class="ms-lads">';
+      '<div class="ms-lads">';
     d.domains.forEach(function (dm) {
       map += '<div class="ms-dom">' + esc(dm.name) + '</div>' + d.skills.filter(function (k) { return k.d === dm.d; }).map(function (k) {
         var g = (k.gain[MS.vs] || {}).g || 0;

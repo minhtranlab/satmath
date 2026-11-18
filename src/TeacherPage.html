@@ -307,10 +307,10 @@
     return list.slice().reverse().map(function (a) {
       if (a.kind === 'placement') return '<div class="t-asg t-asgpl"><div><b>' + esc(a.title) + '</b> <span class="muted">Placement test · form ' + esc(a.form === 'auto' ? 'auto (A first time, B retake)' : a.form) + ' · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
         '<div class="t-asgst">' + a.students.map(function (s) { return s.state === 'done' ? '<button type="button" class="t-mini right" data-plrep="' + esc(s.set_id) + '">' + esc(s.name) + ': result</button>' : '<span class="t-mini ' + (s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + esc(s.state) + (s.state === 'in progress' ? ' (' + Math.max(0, s.n - 1) + ' answered)' : '') + '</span>'; }).join('') + '</div>' +
-        '<div class="t-asgbtn">' + (a.status === 'published' ? '<button type="button" class="hz-link" data-aclose="' + esc(a.assignment_id) + '">Close</button>' : '') + '</div></div>';
+        '<div class="t-asgbtn">' + (a.status === 'published' ? '<button type="button" class="hz-link" data-aclose="' + esc(a.assignment_id) + '">Cancel</button>' : '') + '</div></div>';
       return '<div class="t-asg"><div><b>' + esc(a.title) + '</b> <span class="muted">' + a.n + ' questions · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
         '<div class="t-asgst">' + a.students.map(function (s) { return '<span class="t-mini ' + (s.state === 'done' ? 'right' : s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + (s.state === 'done' ? s.first_try + '/' + a.n + ' → ' + s.best + '/' + a.n : s.state) + '</span>'; }).join('') + '</div>' +
-        '<div class="t-asgbtn t-rowbtns">' + (a.status === 'published' ? '<button type="button" class="t-sb" data-aclose="' + esc(a.assignment_id) + '">Close</button>' : '') +
+        '<div class="t-asgbtn t-rowbtns">' + (a.status === 'published' ? '<button type="button" class="t-sb" data-aclose="' + esc(a.assignment_id) + '">Cancel</button>' : '') +
         '<button type="button" class="t-sb go" data-ascope="' + esc(a.assignment_id) + '">What to go over</button></div></div>';
     }).join('');
   }
@@ -319,10 +319,13 @@
     $$('[data-ascope]', tb).forEach(function (b) { b.onclick = function () { T.tab = 'go'; openClass(T.target, 'a:' + b.getAttribute('data-ascope')); }; });
     $$('[data-aclose]', tb).forEach(function (b) { b.onclick = function () {
       var id = b.getAttribute('data-aclose'), a = T.cv.assignments.filter(function (x) { return x.assignment_id === id; })[0];
-      save({ fn: 'closeAssignment', args: [id, false], label: 'Closing "' + (a ? a.title : id) + '"',
-        apply: function () { if (a) a.status = 'closed'; renderTab(); toast('Closed: students no longer see it.', 2000); },
-        undo: function () { if (a) a.status = 'published'; if (T.view === 'class') renderTab(); },
-        done: function () { refreshLater(/^(home|cv\|)/); } });
+      dialog('Cancel "' + (a ? a.title : id) + '"?', '<p>Hidden for students. Sets and history stay.</p>', [{ label: 'Keep it', value: 0, cls: 'btn-outline' }, { label: 'Cancel assignment', value: 1 }]).then(function (x) {
+        if (!x.v) return;
+        save({ fn: 'cancelAssignment', args: [id, false], label: 'Cancel "' + (a ? a.title : id) + '"',
+          apply: function () { if (a) a.status = 'cancelled'; renderTab(); toast('Cancelled', 2000); },
+          undo: function () { if (a) a.status = 'published'; if (T.view === 'class') renderTab(); },
+          done: function () { refreshLater(/^(home|cv\||asgs)/); } });
+      });
     }; });
   }
 
@@ -600,14 +603,14 @@
   function openBuilder(target, preset) {
     track(function () { openBuilder(target, preset); }, 'build', 'b|' + target);
     T.view = 'build'; X.nav('t-build'); closePanel(); ++NAV; if (!T.home) spin('Loading…');
-    T.preset = preset || null;
+    T.preset = preset || null; T.editId = preset && preset.editId || null;
     var go = function () {
       var h = T.home;
       var opts = '<option value="">— choose a student or a class —</option><optgroup label="Classes">' + h.classes.filter(function (c) { return c.active; }).map(function (c) { return '<option value="' + esc(c.class_id) + '">' + esc(c.name) + '</option>'; }).join('') + '</optgroup>' +
         '<optgroup label="Students">' + h.students.filter(function (s) { return s.active; }).map(function (s) { return '<option value="st:' + esc(s.code) + '">' + esc(s.name) + '</option>'; }).join('') + '</optgroup>';
       var today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
       var hw = 'Homework – ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      body().innerHTML = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><h1>New assignment</h1>' +
+      body().innerHTML = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><h1>' + (T.editId ? 'Change questions' : 'New assignment') + '</h1>' +
         '<div class="t-seg b-kind" role="group" aria-label="Kind of assignment"><button type="button" data-kind="questions" class="on">Questions</button><button type="button" data-kind="placement" id="b-kind-pl">Placement test</button></div>' +
         '<p class="sub" id="b-sub"></p>' +
         '<div class="t-form"><label>To<select id="b-to" class="field">' + opts + '</select></label><label>Title<input id="b-title" class="field" maxlength="80" value="' + esc(hw) + '"></label>' +
@@ -712,8 +715,16 @@
       if (!t.queue.length) return;
       var out = t.picked[i]; t.picked[i] = t.queue.shift(); t.queue.push(out); renderPick();
     }; });
+    var ed = T.editId;
+    if (ed) $('#b-publish').textContent = 'Save questions';
     $('#b-publish').onclick = function () {
       var qids = []; r.topics.forEach(function (t) { t.picked.forEach(function (x) { qids.push(x.qid); }); });
+      if (ed) {                                                          // #71 Edit → Change questions: same assignment, new list
+        var tps = T.pickTopics.slice();
+        save({ fn: 'editAssignment', args: [ed, { qids: qids, topics: tps }], label: 'Change the questions',
+          apply: function () { stale(/^(asgs|cv\||home)/); T.editId = null; openAsgTab(); toast('Saved ✓', 1500); }, undo: function () {}, done: function () { stale(/^(asgs|cv\||home)/); } });
+        return;
+      }
       publishNow({ target: $('#b-to').value, title: $('#b-title').value, available_from: $('#b-from').value, due: $('#b-due').value, qids: qids, topics: T.pickTopics.concat(r.topics.some(function (t) { return t.review; }) ? [{ code: 'REVIEW', n: r.topics.filter(function (t) { return t.review; })[0].picked.length, diffs: '' }] : []) }, qids.length + ' questions');
     };
   }
@@ -730,6 +741,75 @@
       apply: function () { if (C[key]) C[key].d.assignments.push(tmp); T.tab = 'asg'; var top = T.hist && T.hist[T.hist.length - 1]; if (top && top.tag === 'build') T.hist.pop(); openClass(a.target); },
       undo: function () { if (C[key]) C[key].d.assignments = C[key].d.assignments.filter(function (x) { return x !== tmp; }); if (T.view === 'class' && T.cv) renderClass(); },
       done: function () { tmp.status = 'published'; toast('Published: ' + what + '.', 2500); refreshLater(/^(home|cv\|)/); } });
+  }
+
+  /* ================= #71 the Assignment tab: New assignment · Current (Edit / Cancel / Delete) · Past ================= */
+  function targetOpts(sel) {
+    var h = T.home || { classes: [], students: [] };
+    return '<optgroup label="Classes">' + h.classes.filter(function (c) { return c.active; }).map(function (c) { return '<option value="' + esc(c.class_id) + '"' + (sel === c.class_id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</optgroup>' +
+      '<optgroup label="Students">' + h.students.filter(function (s) { return s.active; }).map(function (s) { return '<option value="st:' + esc(s.code) + '"' + (sel === 'st:' + s.code ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</optgroup>';
+  }
+  function openAsgTab() {
+    track(function () { openAsgTab(); }, 'asgs', 'asgs');
+    T.view = 'asgs'; X.nav('t-asgs'); closePanel();
+    if (!T.home) call('teacherHome', A.code).then(function (r) { T.home = r; cput('home', r); }).catch(function () {});
+    return load('asgs', 'teacherAssignments', [], renderAsgs, 'Loading…');
+  }
+  function asgWhen(a) { return (a.from ? esc(a.from) : '') + (a.due ? ' – ' + esc(a.due) : ''); }
+  function renderAsgs(r) {
+    T.asgs = r;
+    var row = function (a, past) {
+      return '<div class="t-arow' + (past ? ' past' : '') + '" data-aid="' + esc(a.assignment_id) + '"><div class="t-amain"><b>' + esc(a.title) + '</b><span class="muted">' + esc(a.who) + ' · ' + asgWhen(a) +
+        (a.kind === 'placement' ? ' · Placement' : ' · ' + a.n + ' q') + (past ? ' · ' + esc(a.status) : '') + '</span></div><span class="t-adone" title="done / students">' + a.done + '/' + a.total + '</span>' +
+        (past ? '' : '<span class="t-abtns"><button type="button" class="t-sb" data-aedit="' + esc(a.assignment_id) + '">Edit</button><button type="button" class="t-sb" data-acancel="' + esc(a.assignment_id) + '">Cancel</button>' +
+          (a.started ? '' : '<button type="button" class="t-sb t-del" data-adel="' + esc(a.assignment_id) + '">Delete</button>') + '</span>') + '</div>';
+    };
+    var h = '<div class="t-head"><h1>Assignment</h1><div class="t-actions"><button type="button" class="btn-blue" id="t-asg-new">New assignment</button></div></div>' +
+      '<h2 class="t-h2">Current</h2>' + (r.current.length ? '<div class="t-alist" id="t-acur">' + r.current.map(function (a) { return row(a, false); }).join('') + '</div>' : '<div class="empty">None open</div>') +
+      '<details class="t-past" id="t-apast"><summary>Past (' + r.past.length + ')</summary>' + (r.past.length ? '<div class="t-alist">' + r.past.map(function (a) { return row(a, true); }).join('') + '</div>' : '') + '</details>';
+    body().innerHTML = h;
+    $('#t-asg-new').onclick = function () { openBuilder(''); };
+    var find = function (id) { return r.current.filter(function (a) { return a.assignment_id === id; })[0]; };
+    $$('[data-aedit]', body()).forEach(function (b) { b.onclick = function () { asgEdit(find(b.getAttribute('data-aedit'))); }; });
+    $$('[data-acancel]', body()).forEach(function (b) { b.onclick = function () {
+      var a = find(b.getAttribute('data-acancel'));
+      dialog('Cancel "' + a.title + '"?', '<p>Hidden for students. Sets and history stay.</p>', [{ label: 'Keep it', value: 0, cls: 'btn-outline' }, { label: 'Cancel assignment', value: 1 }]).then(function (x) {
+        if (!x.v) return;
+        save({ fn: 'cancelAssignment', args: [a.assignment_id, false], label: 'Cancel "' + a.title + '"',
+          apply: function () { r.current = r.current.filter(function (y) { return y !== a; }); a.status = 'cancelled'; r.past.unshift(a); renderAsgs(r); toast('Cancelled', 1800); },
+          undo: function () { r.past = r.past.filter(function (y) { return y !== a; }); a.status = 'published'; r.current.unshift(a); if (T.view === 'asgs') renderAsgs(r); },
+          done: function () { stale(/^(home|cv\||asgs)/); } });
+      });
+    }; });
+    $$('[data-adel]', body()).forEach(function (b) { b.onclick = function () {
+      var a = find(b.getAttribute('data-adel'));
+      dialog('Delete "' + a.title + '"?', '<p>Nobody has started it.</p>', [{ label: 'Keep it', value: 0, cls: 'btn-outline' }, { label: 'Delete', value: 1 }]).then(function (x) {
+        if (!x.v) return;
+        save({ fn: 'deleteAssignment', args: [a.assignment_id, false], label: 'Delete "' + a.title + '"',
+          apply: function () { r.current = r.current.filter(function (y) { return y !== a; }); renderAsgs(r); toast('Deleted', 1800); },
+          undo: function () { r.current.unshift(a); if (T.view === 'asgs') renderAsgs(r); },
+          done: function () { stale(/^(home|cv\||asgs)/); } });
+      });
+    }; });
+  }
+  /** Edit: title · due · students; "Change questions" (the builder) only while nobody has started it. */
+  function asgEdit(a) {
+    var r = T.asgs, canQ = !a.started && a.kind !== 'placement';
+    dialog('Edit "' + a.title + '"', '<label class="t-lab">Title<input class="field" name="title" maxlength="80" value="' + esc(a.title) + '"></label>' +
+      '<label class="t-lab">Due<input class="field" type="date" name="due" value="' + esc(a.due) + '"></label>' +
+      '<label class="t-lab">Students<select class="field" name="target">' + targetOpts(a.target) + '</select></label>' +
+      (canQ ? '<p><button type="button" class="btn-outline" id="t-aq">Change questions</button></p>' : '<p class="muted">Started: questions fixed</p>'),
+      [{ label: 'Close', value: 0, cls: 'btn-outline' }, { label: 'Save', value: 1, check: function (v) { return !!String(v.title || '').trim(); } }],
+      function (m) { var q = $('#t-aq', m); if (q) q.onclick = function () { $('#modal-root').classList.remove('on'); $('#modal-root').innerHTML = ''; openBuilder(a.target, { topics: (a.topics || []).filter(function (t) { return t.code !== 'REVIEW'; }), editId: a.assignment_id, title: a.title }); }; })
+      .then(function (x) {
+        if (!x.v) return;
+        var f = { title: String(x.vals.title).trim(), due: x.vals.due || '', target: x.vals.target }, old = { title: a.title, due: a.due, target: a.target, who: a.who };
+        var who = (x.vals.target || '').indexOf('st:') === 0 ? ((T.home.students.filter(function (s) { return 'st:' + s.code === x.vals.target; })[0] || {}).name || a.who) : ((T.home.classes.filter(function (c) { return c.class_id === x.vals.target; })[0] || {}).name || a.who);
+        save({ fn: 'editAssignment', args: [a.assignment_id, f], label: 'Edit "' + f.title + '"',
+          apply: function () { a.title = f.title; a.due = f.due; a.target = f.target; a.who = who; renderAsgs(r); toast('Saved ✓', 1500); },
+          undo: function () { a.title = old.title; a.due = old.due; a.target = old.target; a.who = old.who; if (T.view === 'asgs') renderAsgs(r); },
+          done: function () { stale(/^(home|cv\||asgs)/); } });
+      });
   }
 
   /* ================= placement report ================= */
@@ -792,7 +872,7 @@
   /* ================= entry ================= */
   function init() {
     X = window.SMLX; A = X.A; $ = X.$; $$ = X.$$; el = X.el; esc = X.esc; call = X.call; toast = X.toast;
-    $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openBuilder(''); }; });
+    $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openAsgTab(); }; });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
   }
   window.SMLT = { side: side, tag: tagStu, tagAll: tagAll, mtypes: function () { return { types: (T.home && T.home.mistake_types) || [], ph: (T.home && T.home.mistake_placeholder) || '— choose a mistake type —' }; }, levelChanged: function () { stale(/^(cv\||go\||prof\||tree\||home)/); }, back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };

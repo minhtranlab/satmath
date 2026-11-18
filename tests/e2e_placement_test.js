@@ -19,7 +19,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     const { page: tp } = await E.newPage('desktop1280');
     await login(tp, E.url, 'TEACH-FX-9');
     await tp.waitForSelector('#t-students');
-    await tp.click('.t-nav [data-go="build"]');
+    await tp.click('.t-nav [data-go="asg"]'); await tp.waitForSelector('#t-asg-new'); await tp.click('#t-asg-new');
     await tp.waitForSelector('#b-kind-pl');
     await tp.click('#b-kind-pl');
     await tp.selectOption('#b-to', 'st:FX-T01');
