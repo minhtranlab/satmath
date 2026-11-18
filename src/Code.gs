@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.15.0 (2026-11-18, tidy sign-in, map without words + equal blocks, Recommended = Focus now, Assignment tab with Edit / Cancel / Delete, Ask backfill)';
+var APP_VERSION = 'v0.15.1 (2026-11-18, the new logo: favicons, header marks, sign-in mark)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -39,6 +39,7 @@ function doGet(e) {
   return t.evaluate()
     .setTitle(getSettings_().app_name || 'SAT Math Lib')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=5')
+    .setFaviconUrl('https://minhtranlab.github.io/satmath/icon-32.png')            // #73 the logo (a PNG on the public site)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 

@@ -13,7 +13,7 @@ check(urls.length === 2 && urls.every(u => u === LIVE), 'site/index.html loads o
 check(/<meta name="robots" content="noindex, nofollow">/.test(html) && /<title>SAT Math Lib<\/title>/.test(html) && /name="viewport"[^>]+width=device-width/.test(html), 'title "SAT Math Lib", mobile viewport, robots noindex, nofollow');
 check(!/<script[^>]+src=|<link[^>]+stylesheet|fonts\.g|analytics|gtag/i.test(html), 'no outside scripts, fonts or trackers');
 check(!/stem_html|"key"|data:image|TEST-[A-Z0-9]{6}|teacher_code|token|api[_-]?key/i.test(html.replace(/<!--[\s\S]*?-->/g, '')), 'no question data, codes, keys or tokens in the page');
-check(fs.readdirSync(SITE).sort().join(',') === 'icon-180.png,icon.svg,index.html', 'site/ = index.html + 2 icons, nothing else');
+check(fs.readdirSync(SITE).sort().join(',') === 'favicon.ico,icon-180.png,icon-192.png,icon-32.png,icon-512.png,icon.svg,index.html', 'site/ = index.html + the logo icons (#73), nothing else');
 check(/XFrameOptionsMode\.ALLOWALL/.test(fs.readFileSync(path.join(__dirname, '..', 'src', 'Code.gs'), 'utf8')), 'Code.gs: the app may be shown inside the wrapper (ALLOWALL)');
 
 (async () => {

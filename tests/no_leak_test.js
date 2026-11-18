@@ -17,11 +17,11 @@ for (const f of files) {
   if (/(^|\/)questions\.json$/.test(f) && !inFixtures) bad(f, 'question bank outside tests/fixtures');
   if (/(^|\/)questions\/[^/]+\.json$/.test(f) && !inFixtures) bad(f, 'library batch file outside tests/fixtures');
   if (/^(taxonomy|sources|design)\//.test(f)) bad(f, 'project-folder path');
-  const siteIcon = /^site\/icon-\d+\.png$/.test(f) && fs.statSync(path.join(ROOT, f)).size < 10000; // #25: the nice link's home-screen icon only
-  if (/\.(png|jpe?g|gif|webp|pdf)$/i.test(f) && !inFixtures && !siteIcon) bad(f, 'image/PDF outside tests/fixtures');
+  const siteIcon = /^site\/(icon-\d+\.png|favicon\.ico)$/.test(f) && fs.statSync(path.join(ROOT, f)).size < 20000; // #25 / #73: the logo icons only
+  if (/\.(png|jpe?g|gif|webp|pdf|ico)$/i.test(f) && !inFixtures && !siteIcon) bad(f, 'image/PDF outside tests/fixtures');
   if (/(^|\/)\.clasprc\.json$|creds?\.json$|\.pem$|\.p12$/.test(f)) bad(f, 'credentials file');
   if (/\.json$/.test(f) && /^(APCAB|SAT|HM\d|CB)/.test(path.basename(f))) bad(f, 'library / form JSON (Drive file) in the repo');
-  if (/\.(png|jpe?g|gif|webp|pdf)$/i.test(f)) continue;
+  if (/\.(png|jpe?g|gif|webp|pdf|ico)$/i.test(f)) continue;
 
   const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
   // 2. fixtures must be the made-up mock forms only

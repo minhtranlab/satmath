@@ -1642,7 +1642,7 @@
   function pct(a, b) { return b ? Math.round(100 * a / b) : 0; }
   function xy(r, n) { return '<span class="xy">' + r + '/' + n + '</span>'; }
   function brandBar(btnId, btnLabel) {
-    return '<div class="topbar-simple"><div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px;font-size:14px">SM</span><span>' +
+    return '<div class="topbar-simple"><div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px" aria-hidden="true"></span><span>' +
       esc($('.app-name').textContent) + '</span></div><button class="btn-outline" id="' + btnId + '" type="button">' + btnLabel + '</button></div>';
   }
   /** A question cell / chip (#24 D, E): status colour + S (slow) / R (rushed) badge; opens the question. */
