@@ -92,6 +92,7 @@ console.log('[server: payloads — the key only on Show answer]');
     await page.$eval('[data-res]', e => e.click());
     await page.waitForSelector('#result-body [data-qid]');
     E.st.rpcLog = [];
+    const isSpr = a.Q[a.qids[2]].type === 'spr';                       // a grid-in has no choice to mark (the draw is random)
     await page.$eval('#result-body [data-qid="' + a.qids[2] + '"]', e => e.click());
     await page.waitForSelector('#scr-test.going #go-show'); await waitMath(page);
     let bar = await page.$eval('#scr-test', e => e.innerText);
@@ -103,10 +104,10 @@ console.log('[server: payloads — the key only on Show answer]');
     await shot(page, 'go50_report_open');
     await page.click('#go-stu');
     await page.waitForFunction(() => /Test Student|FX|: /.test(document.querySelector('#go-strip').innerText) && !/Loading/.test(document.querySelector('#go-strip').innerText));
-    check(/\d+ s/.test(await page.$eval('#go-strip', e => e.innerText)) && await page.$('.ch-row.stu-pick') && !/✓|✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Student\'s answer → the student\'s entry + time, marked on the choice (still no ✓/✗)');
+    check(/\d+ s/.test(await page.$eval('#go-strip', e => e.innerText)) && (isSpr || await page.$('.ch-row.stu-pick')) && !/✓|✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Student\'s answer → the student\'s entry + time, marked on the choice (still no ✓/✗)');
     check(!E.st.rpcLog.some(r => r.fn === 'teacherKey'), 'still no key fetched');
     await page.click('#go-show'); await page.waitForSelector('.go-key');
-    check(!E.st.rpcLog.some(r => r.fn === 'teacherKey') && await page.$('#scr-test .q.on .ch.rv-key') && /✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Show answer → at once from memory (#62, no call), the key highlighted, ✗ on the student\'s try');
+    check(!E.st.rpcLog.some(r => r.fn === 'teacherKey') && (isSpr ? /Correct answer/.test(await page.$eval('#fb-go', e => e.innerText)) : await page.$('#scr-test .q.on .ch.rv-key')) && /✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Show answer → at once from memory (#62, no call), the key highlighted, ✗ on the student\'s try');
     await shot(page, 'go50_report_shown');
     // a choice is clickable for the teacher
     const rowsL = await page.$$('#scr-test .q.on .ch-row'); if (rowsL.length) { await rowsL[0].$eval('.ch', e => e.click()); check(await rowsL[0].$eval('.ch', e => e.classList.contains('sel')), 'the teacher can click a choice'); }
