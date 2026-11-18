@@ -12,11 +12,11 @@
  *   progress   = 4 weeks × Easy / Medium / Hard first-try %, a point only with ≥ 3 answers at that difficulty that week
  *   rushed     = wrong first tries with the R badge (profile FAST_WRONG) ÷ wrong first tries (60 days)
  *   slow       = right first tries with the S badge (SLOW_RIGHT); extra = mean(time to the final answer − normal time), m:ss;
- *                an answer with more than 20 min on the question (minus time away) is listed but not in the mean (left the page)
+ *                an answer with more than 10 min to the final answer is listed but not in the mean (Minh 18 Nov 21:29)
  *   My mistakes = the teacher's tags in the 60 days ("Not A Mistake" not counted), shown from 3 tags: per type count + share,
  *                last 4 weeks vs the 4 weeks before, the skill(s) where it happens most, the questions. No tips (Minh #69).
  * Only this student's rows go into the payload — no codes, no keys, nothing of anyone else. */
-var MS_ = { WINDOW: 60, MIN_N: 5, WEEK_MIN: 3, MIN_TAGS: 3, UPS: 28, TOP: 80, MID: 50, LEFT: 1200 };
+var MS_ = { WINDOW: 60, MIN_N: 5, WEEK_MIN: 3, MIN_TAGS: 3, UPS: 28, TOP: 80, MID: 50, LEFT: 600 };
 var MS_LV_ = ['E', 'M', 'H'];
 
 function msDayStr_(ms) { return fmtDate_(new Date(ms), 'yyyy-MM-dd'); }
@@ -122,7 +122,7 @@ function mySkillsOf_(codeN) {
 
   // Why I miss questions (60 days)
   var wrong = A.filter(function (a) { return !a.ok; }), rushed = wrong.filter(function (a) { return a.p === 'FAST_WRONG'; });
-  var slow = A.filter(function (a) { return a.ok && a.p === 'SLOW_RIGHT'; }), slowT = slow.filter(function (a) { return a.extra !== null && a.t_on <= MS_.LEFT; });   // > 20 min on one question = left the page: listed, not averaged
+  var slow = A.filter(function (a) { return a.ok && a.p === 'SLOW_RIGHT'; }), slowT = slow.filter(function (a) { return a.extra !== null && a.t <= MS_.LEFT; });   // > 10 min on one question (Minh): listed in Review these, not averaged
   var why = {
     wrong: wrong.length, rushed: rushed.length, rushed_pct: wrong.length ? Math.round(100 * rushed.length / wrong.length) : 0,
     slow: slow.length, slow_extra: slowT.length ? msMmss_(slowT.reduce(function (s, a) { return s + a.extra; }, 0) / slowT.length) : '',

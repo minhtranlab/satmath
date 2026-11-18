@@ -25,7 +25,7 @@ console.log('[server: v2 formulas on fixtures]');
     rowsFor('FX-T01', 'P.C', 'P.C.2', 'M', [[1, 1], [1, 1], [1, 2], [0, 2], [0, 2]]),                                // 60 % at M
     rowsFor('FX-T01', 'H.A', 'H.A.1', 'M', [[1, 1, 'SLOW_RIGHT', { time_try1_sec: 200, pace_ratio: 2 }], [1, 1, 'SLOW_RIGHT', { time_try1_sec: 150, pace_ratio: 1.5 }],
                                               [1, 2], [1, 2], [1, 3], [1, 4], [0, 4],
-                                              [1, 2, 'SLOW_RIGHT', { time_try1_sec: 3000, pace_ratio: 10 }]]),                   // 7 / 8 = 88 % at M; 50 min = left the page
+                                              [1, 2, 'SLOW_RIGHT', { time_try1_sec: 26754, pace_ratio: 4.49, away_sec: 26000 }]]),   // 7 / 8 = 88 % at M; 7 h (mostly away) → listed, not averaged
     rowsFor('FX-T01', 'H.A', 'H.A.2', 'H', [[1, 8], [1, 8], [1, 15], [1, 15], [1, 16]]),
     rowsFor('FX-T01', 'S.C', 'S.C.1', 'E', rep(5, [1, 10])),
     rowsFor('FX-T01', 'S.C', 'S.C.2', 'M', [[0, 1], [0, 1]]),                                                           // only 2 at M
@@ -57,7 +57,7 @@ console.log('[server: v2 formulas on fixtures]');
   check(w0.E === 56 && w0.M === 60 && w0.H === null && w1.E === 100 && w1.H === null && w1.Hn === 2 && w2.H === 100 && d.weeks[0].E === null,
     'weekly lines: this week E 56 % · M 60 % · H none; a week with 2 Hard answers has no point (gap); 3 → a point');
   check(d.why.wrong === 12 && d.why.rushed === 4 && d.why.rushed_pct === 33, 'rushed: 4 of 12 wrong answers (33 %), window 60 days');
-  check(d.why.slow === 3 && d.why.slow_extra === '1:15' && d.why.slow_items.length === 3, 'slow: +1:15 over normal (100 s and 50 s over); the 50-min one is listed but not averaged (left the page)');
+  check(d.why.slow === 3 && d.why.slow_extra === '1:15' && d.why.slow_items.length === 3, 'slow: +1:15 over normal (100 s and 50 s over); the 7-hour one (> 10 min, even with time away) is listed but not averaged');
   const ids = R.filter(r => r.student_code === 'FX-T01' && r.profile === 'FAST_WRONG').map(r => r.qid).sort();
   check(JSON.stringify(d.why.rushed_items.map(x => x.qid).sort()) === JSON.stringify(ids) && d.why.slow_items.map(x => x.qid).sort().join() === 'FXQ21,FXQ22,FXQ28', '"Review these" lists = exactly those questions');
   check(!/FX-T03|TEACH|"key"|student_code|"accepted"|"tip"/.test(JSON.stringify(d)), 'payload: nothing of other students (FX-T03), no teacher code, no keys, no tips (set ids carry only the student\'s own code, as everywhere in the app)');
