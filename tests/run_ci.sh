@@ -24,4 +24,5 @@ run node fix47_test.js        # Reference sheet in every set kind + viewer; defa
 run node pace48_test.js       # time to the final answer (revisit / change / blank), pace + placement bands from it; leave-window log (practice silent, placement note, ⚠)
 run node goover50_test.js    # #50 go over on the test screen (key only on Show answer), level boxes → Item_Overrides read everywhere, Undo, iPad
 run node goover62_test.js    # #62 teacher tools: Notes pad (MathQuill, copy rich + plain), pen on the question (4 colours, gone on the next question), instant Show answer
+run node goover66_test.js    # #66 the time next to every R / S badge (Result, Sets, What to go over, Grid, Details), go-over data in memory
 echo "ALL SUITES PASSED"

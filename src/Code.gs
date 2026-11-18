@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.10.3 (2026-11-18, figures inside answer choices and between stem paragraphs; OLD2 live)';
+var APP_VERSION = 'v0.10.4 (2026-11-18, time next to every R / S badge for the teacher; go-over answers + time in memory)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -1136,6 +1136,8 @@ function teacherReview(code, setId) {
   var rs = {}; responsesOf_(setId).forEach(function (x) { rs[String(x.qid)] = x; });
   r.questions.forEach(function (q) { q.meta = goMeta_(q.qid); q.wrong = Number((rs[q.qid] || {}).try1_correct) !== 1; delete q.answer; delete q.status; });   // wrong on the first try
   r.keys = goKeys_(r.questions.map(function (q) { return q.qid; }));   // #62 (Minh's call): teacher only, kept in memory, shown on "Show answer" at once
+  // #66: the student's entries (all tries) + time of every question, kept in memory: "Student's answer" and the time at once
+  try { r.rows = classView(code, 'st:' + normCode_(s.student_code), 's:' + setId).rows; } catch (e) { r.rows = null; }
   return r;
 }
 /** #62 the keys (+ accepted forms, CB explanation) of a go-over set — ONLY in the teacher's go-over payloads (requireTeacher_ first). */

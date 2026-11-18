@@ -248,7 +248,7 @@
         '<div class="t-rm"><b>' + esc(q.subskill_name || q.skill_name) + '</b><span class="muted"> · ' + diffName(q.difficulty) + '</span><div class="t-sum">' + esc(q.summary) +
         (q.untagged ? ' · <span class="t-untag">' + q.untagged + ' untagged</span>' : '') + '</div></div>' +
         '<div class="t-rs">' + q.students.map(function (s) {
-          return '<span class="t-mini ' + (s.right1 ? 'right' : s.best ? 'fixed' : 'wrong') + '" title="' + esc(s.name) + '">' + esc(s.name.split(/\s+/)[0]) + (s.asked && s.ask_status === 'open' ? ' ?' : '') + (s.badge ? ' ' + s.badge : '') + '</span>';
+          return '<span class="t-mini ' + (s.right1 ? 'right' : s.best ? 'fixed' : 'wrong') + '" title="' + esc(s.name + ' · ' + X.tTitle(s.time_s, s.norm_s, s.total_s, s.away_s)) + '">' + esc(s.name.split(/\s+/)[0]) + (s.asked && s.ask_status === 'open' ? ' ?' : '') + (s.badge ? ' <b class="t-bt">' + s.badge + ' ' + X.mmss(s.time_s) + '</b>' : '') + '</span>';
         }).join('') + '</div></div>';
     });
     if (g === 4) h += '</details>';
@@ -278,7 +278,7 @@
           if (!s) return '<td class="t-gc none"></td>';
           var path = s.tries.length ? s.tries.map(function (t) { return esc(t.a || '–'); }).join(' → ') : '–';
           return '<td class="t-gc ' + (s.right1 ? 'right' : s.best ? 'fixed' : 'wrong') + (gridKeep(s) ? '' : ' dim') + '"><span class="t-gpath">' + path + ' ' + (s.right1 ? '✓' : s.best ? '✓ later' : '✗') + '</span>' +
-            '<span class="t-gmeta">' + s.time_s + ' s' + (s.away_s ? ' · left ' + s.away_s + ' s' : '') + (s.badge ? ' · ' + s.badge : '') + (s.asked && s.ask_status === 'open' ? ' · ?' : '') + (s.mistake_type ? ' · <i class="t-tagdot" title="' + esc(s.mistake_type) + '"></i>' : '') + '</span></td>';
+            '<span class="t-gmeta" title="' + esc(X.tTitle(s.time_s, s.norm_s, s.total_s, s.away_s)) + '">' + (s.badge ? '<b class="t-bt ' + s.badge + '">' + s.badge + '</b> ' : '') + X.mmss(s.time_s) + (s.away_s ? ' · left ' + s.away_s + ' s' : '') + (s.asked && s.ask_status === 'open' ? ' · ?' : '') + (s.mistake_type ? ' · <i class="t-tagdot" title="' + esc(s.mistake_type) + '"></i>' : '') + '</span></td>';
         }).join('') + '</tr>';
       }).join('') + '</table></div>';
     tb.innerHTML = h;
@@ -368,7 +368,7 @@
     pin.innerHTML = '<h3 class="t-h3">Students</h3>' + row.students.map(function (s, i) {
       var tries = s.tries.length ? s.tries.map(function (t) { return '<span class="' + (t.ok ? 'ok' : 'no') + '">' + esc(t.a || '–') + '</span>'; }).join(' → ') : '<span class="no">blank</span>';
       return '<div class="t-ps" data-i="' + i + '"><div class="t-psh"><b>' + esc(s.name) + '</b><span class="muted">' + esc(s.set_title) + ' · ' + esc(s.date) + '</span></div>' +
-        '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · ' + s.time_s + ' s to the answer' + (s.pace ? ' (' + Math.round(s.pace * 100) + '% of normal)' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + (s.badge ? ' ' + X.bdg(s.badge) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
+        '<div class="t-pst">Tries: ' + tries + (s.locked ? ' <span class="t-red">locked</span>' : '') + ' · Time ' + X.bdgT(s.badge, s.time_s, s.norm_s, s.total_s, s.away_s) + (s.norm_s ? ' <span class="muted">normal ' + X.mmss(s.norm_s) + ' (' + Math.round(100 * s.time_s / s.norm_s) + ' %)</span>' : '') + (s.away_s ? ' · left the window ' + X.durStr(s.away_s) : '') + ' <span class="muted">' + esc(s.profile) + '</span></div>' +
         (s.asked ? '<div class="t-pask">Asked' + (s.ask_note ? ': “' + esc(s.ask_note) + '”' : '') + ' <button type="button" class="hz-link" data-resolve="' + i + '">' + (s.ask_status === 'resolved' ? 'Open again' : 'Resolve') + '</button>' + (s.ask_status === 'resolved' ? ' <span class="muted">(resolved)</span>' : '') + '</div>' : '') +
         '<div class="t-ptag"><select class="field" data-tag="' + i + '"><option value="">' + esc(ph) + '</option>' + types.map(function (t) { return '<option' + (t === s.mistake_type ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>' +
         '<input class="field" data-note="' + i + '" maxlength="300" placeholder="Note (optional)" value="' + esc(s.mistake_note) + '"><button type="button" class="btn-outline" data-save="' + i + '">Save</button></div></div>';
@@ -448,9 +448,10 @@
           '<td>' + (k.n ? dotHtml(k.dot) + k.right + '/' + k.n : '') + '</td><td><button type="button" class="hz-link t-lv-one" data-k="' + i + '" title="' + esc(diffsFor(k.level).split(',').map(diffName).join(' + ')) + '">Assign</button></td></tr>' +
           (k.subs.length ? '<tr class="t-subs" id="t-sub-' + i + '" hidden><td colspan="7">' + k.subs.map(function (x) { return '<span>' + dotHtml(x.dot) + esc(x.name) + ' ' + x.right + '/' + x.n + '</span>'; }).join('') + '</td></tr>' : '');
       }).join('') + '</table></div>';
-      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<div class="t-tw"><table class="t-table" id="t-sets"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th>Left the window</th><th></th></tr>' + r.sets.map(function (x, i) {
+      h += '<h2 class="t-h2">Sets</h2>' + (r.sets.length ? '<div class="t-tw"><table class="t-table" id="t-sets"><tr><th>Date</th><th>Set</th><th>First Try</th><th>Best</th><th>Time</th><th>Slow / rushed</th><th>Left the window</th><th></th></tr>' + r.sets.map(function (x, i) {
         return '<tr><td class="muted">' + esc(x.date) + '</td><td>' + esc(x.title) + '</td><td>' + (x.done ? x.first_try + '/' + x.n : '<span class="muted">' + esc(x.progress || 'open') + '</span>') + '</td><td>' + (x.done ? x.best + '/' + x.n : '') + '</td>' +
           '<td>' + (x.time_min ? x.time_min + ' min' : '') + (x.done && x.answer_min !== null ? '<div class="muted t-small">answering ' + x.answer_min + ' min</div>' : '') + '</td>' +
+          '<td class="t-rs2">' + (x.rs || []).map(function (q) { return '<span class="t-rsq" title="' + esc('Q' + q.no + ' · ' + X.tTitle(q.t, q.nm)) + '">Q' + q.no + ' ' + X.bdgT(q.b, q.t, q.nm) + '</span>'; }).join('') + '</td>' +
           '<td class="t-away">' + (x.done && x.answer_min !== null ? (x.away_n ? x.away_n + '× · ' + X.durStr(x.away_sec) + (x.away_at ? '<div class="muted t-small">at ' + esc(x.away_at) + '</div>' : '') : '<span class="muted">—</span>') : '') + '</td>' +
           '<td class="t-rbtd">' + (x.done ? rowBtns(x.kind === 'placement' ? 'data-plrep="' + esc(x.set_id) + '"' : 'data-res="' + i + '"', x.kind === 'placement' ? 'data-plgo="' + esc(x.set_id) + '"' : 'data-sgo="' + i + '"') : '') + '</td></tr>';
       }).join('') + '</table></div>' : '<div class="empty">No sets yet.</div>');
@@ -687,6 +688,11 @@
   /* ================= placement report ================= */
   var PL_DOMS = ['ALG', 'ADV', 'PSD', 'GEO'], PL_SHORT = { ALG: 'Algebra', ADV: 'Advanced Math', PSD: 'Problem-Solving & Data', GEO: 'Geometry & Trig' };
   var PL_WORD = { H: 'Strong', M: 'Medium', E: 'Weak', '<E': 'Weak' };
+  function plBandTip(b, x) {                                            // #66 "1:35 · normal ≤ 1:30 (Medium)"
+    var d = String(x.difficulty || '').toUpperCase(), lim = (b || {})[d]; if (!lim) return '';
+    var add = x.type === 'spr' ? Number(b.spr) || 0 : 0;
+    return ' · fast ≤ ' + X.mmss(lim[0] + add) + ' · normal ≤ ' + X.mmss(lim[1] + add) + ' (' + diffName(d) + ')';
+  }
   function plLvl(l) {
     if (!l) return '<span class="muted">—</span>';
     return '<span class="pl-lvl ' + ({ H: 's', M: 'm' }[l] || 'w') + '">' + esc(PL_WORD[l] || l) + (l === '<E' ? ' · below Easy' : '') + '</span>';
@@ -720,7 +726,7 @@
       h += '<h2 class="t-h2">Questions in order</h2><table class="t-table pl-items" id="pl-items"><tr><th>#</th><th>Question</th><th>Area · slot</th><th>Sub-skill</th><th>Answer</th><th>Time</th></tr>' + r.items.map(function (x) {
         return '<tr data-q="' + esc(x.qid) + '" tabindex="0"><td class="muted">' + x.no + '</td><td>' + codeHtml(x.code) + '</td><td>' + esc(PL_SHORT[x.dom] || x.dom) + ' · <b>' + esc(x.slot) + '</b></td><td class="muted">' + esc(x.subskill_name) + '</td>' +
           '<td><span class="t-mini ' + (x.right ? 'right' : '') + '">' + (x.blank ? 'blank' : esc(x.answer)) + ' ' + (x.right ? '✓' : '✗') + '</span></td>' +
-          '<td>' + x.time_s + ' s <span class="pl-band ' + esc(x.band) + '">' + esc(x.band) + '</span>' + (x.away_sec ? ' <span class="t-awayq' + (x.away_flag ? ' flag' : '') + '" title="Left the window on this question">' + (x.away_flag ? '⚠ ' : '') + 'left ' + X.durStr(x.away_sec) + '</span>' : '') + '</td></tr>';
+          '<td title="' + esc(X.mmss(x.time_s) + plBandTip(r.bands, x)) + '"><b>' + X.mmss(x.time_s) + '</b> <span class="pl-band ' + esc(x.band) + '">' + esc(x.band) + '</span>' + (x.away_sec ? ' <span class="t-awayq' + (x.away_flag ? ' flag' : '') + '" title="Left the window on this question">' + (x.away_flag ? '⚠ ' : '') + 'left ' + X.durStr(x.away_sec) + '</span>' : '') + '</td></tr>';
       }).join('') + '</table>';
       var b = r.bands || {};
       h += '<p class="t-line muted">Time bands (Settings): Easy fast ≤ ' + (b.E || [])[0] + ' s, normal ≤ ' + (b.E || [])[1] + ' s · Medium ≤ ' + (b.M || [])[0] + ' / ' + (b.M || [])[1] + ' s · Hard ≤ ' + (b.H || [])[0] + ' / ' + (b.H || [])[1] + ' s (Hard: time recorded only) · grid-in + ' + b.spr + ' s. A slow right answer counts half a step.</p>';

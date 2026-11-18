@@ -31,7 +31,11 @@ function resultView_(s, rows, asTeacher) {
   var n = rows.length;
   var first = rows.filter(function (r) { return Number(r.try1_correct) === 1; }).length;
   var best = rows.filter(function (r) { return Number(r.best_correct) === 1; }).length;
-  var ref = function (r) { return { qid: String(r.qid), code: 'Q' + r.order, status: qStatusOf_(r), badge: qBadge_(String(r.profile)) }; };
+  var ref = function (r) {
+    var o = { qid: String(r.qid), code: 'Q' + r.order, status: qStatusOf_(r), badge: qBadge_(String(r.profile)) };
+    if (asTeacher) { o.t = Math.round(Number(r.time_try1_sec) || 0); o.nm = normSec_(r); }     // #66 teacher: S · 2:35
+    return o;
+  };
   // domain → skill → sub-skill
   var tree = {}, order = [];
   rows.forEach(function (r) {

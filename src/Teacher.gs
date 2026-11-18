@@ -213,6 +213,7 @@ function classView(code, target, scope) {
       set_title: setTitle_(setOf[String(r.set_id)] || {}), date: dateStr_(r.submitted_at),
       tries: tl.map(function (t) { return { a: clean_(t.answer), ok: Number(t.correct) === 1 }; }),
       try1: clean_(r.try1_answer), right1: right1, best: best, n_tries: nt, locked: isYes_(r.locked), time_s: Math.round(Number(r.time_try1_sec) || 0), away_s: Math.round(Number(r.away_sec) || 0),
+      norm_s: normSec_(r), total_s: Math.round(Number(r.time_total_sec) || 0),   // #66 S · 2:35 · normal 1:10
       pace: Number(r.pace_ratio) || null, profile: p, badge: qBadge_(p), flags: String(r.flags || ''), asked: !!r.asked, ask_note: clean_(r.ask_note),
       ask_status: String(r.ask_status || ''), mistake_type: clean_(r.mistake_type), mistake_note: clean_(r.mistake_note) });
   });
@@ -375,6 +376,8 @@ function studentProfile(code, sc) {
     time += Number(r.time_total_sec) || 0; nTries += Number(r.n_tries) || 0;
   });
   var fixLeft = {}; resp.forEach(function (r) { if (Number(r.best_correct) !== 1 && !isYes_(r.locked)) fixLeft[r.set_id] = (fixLeft[r.set_id] || 0) + 1; });
+  var rsOf = {};                                                     // #66 the R / S questions of each set, with their time
+  resp.forEach(function (r) { var b = qBadge_(String(r.profile)); if (b) (rsOf[String(r.set_id)] = rsOf[String(r.set_id)] || []).push({ no: Number(r.order) || 0, qid: String(r.qid), b: b, t: Math.round(Number(r.time_try1_sec) || 0), nm: normSec_(r) }); });
   var placements = []; try { placements = plSummaries_(c); } catch (e) {}
   var sets = readTable_('Sets').rows.filter(function (s) { return normCode_(s.student_code) === c && !isHidden_(s); })
     .sort(function (a, b) { return (toMs_(b.submitted_at) || toMs_(b.created_at)) - (toMs_(a.submitted_at) || toMs_(a.created_at)); }).map(function (s) {
@@ -382,7 +385,8 @@ function studentProfile(code, sc) {
                n: Number(s.n) || 0, first_try: isFinished_(s) ? Number(s.first_try) || 0 : null, best: isFinished_(s) ? Number(s.best_score) || 0 : null,
                time_min: Number(s.time_used_min) || 0, fix_left: String(s.kind) === 'placement' ? 0 : fixLeft[String(s.set_id)] || 0, progress: String(s.progress || ''),
                answer_min: s.time_answer_min === '' || s.time_answer_min === undefined ? null : Number(s.time_answer_min) || 0,
-               away_n: Number(s.away_n) || 0, away_sec: Number(s.away_sec) || 0, away_at: String(s.away_at || '') };
+               away_n: Number(s.away_n) || 0, away_sec: Number(s.away_sec) || 0, away_at: String(s.away_at || ''),
+               rs: (rsOf[String(s.set_id)] || []).sort(function (a, b) { return a.no - b.no; }) };
     });
   var review = readTable_('Review').rows.filter(function (r) { return normCode_(r.student_code) === c && String(r.status) === 'open'; }).length;
   return { ok: true, student: { code: c, name: String(st.name || ''), active: isYes_(st.active), classes: String(st.classes || '') },
@@ -603,3 +607,6 @@ function assignmentTitle_(aid) {
   if (!_asgTitle) { _asgTitle = {}; try { readTable_('Assignments').rows.forEach(function (a) { _asgTitle[String(a.assignment_id)] = String(a.title || ''); }); } catch (e) {} }
   return _asgTitle[String(aid)] || 'Assignment';
 }
+
+/** #66 the normal time of an answer = its time / pace ratio (the ratio #48 computed against Time_Norms) — for "normal 1:10 (220 %)". */
+function normSec_(r) { var p = Number(r.pace_ratio) || 0, t = Number(r.time_try1_sec) || 0; return p > 0 && t > 0 ? Math.round(t / p) : null; }

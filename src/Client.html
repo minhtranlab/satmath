@@ -1466,11 +1466,21 @@
     R: '<svg class="b" viewBox="0 0 14 18" aria-label="rushed" role="img"><rect width="14" height="18" rx="2" fill="#e30613"/><path d="M2.82 14H5.53V10.7H6.47L8.23 14H11.18L9.14 10.27C10.21 9.76 10.85 8.79 10.85 7.4C10.85 5.28 9.36 4 7.13 4H2.82ZM5.53 8.59V6.17H6.48C7.44 6.17 8.01 6.54 8.01 7.4C8.01 8.26 7.44 8.59 6.48 8.59Z" fill="#fff"/></svg>',
     S: '<svg class="b" viewBox="0 0 14 18" aria-label="slow" role="img"><rect x=".6" y=".6" width="12.8" height="16.8" rx="1.6" fill="#ffcc00" stroke="#111" stroke-width="1.2"/><path d="M7.13 14C9.6 14 11.08 12.93 11.08 11C11.08 9.52 10.19 8.48 8.03 8.02L7.24 7.85C6.31 7.65 5.93 7.38 5.93 6.92C5.93 6.49 6.29 6.17 7.1 6.17C7.96 6.17 8.37 6.55 8.41 7.18H10.95C10.94 5.27 9.47 4 7.1 4C4.79 4 3.16 5.25 3.16 7.1C3.16 8.63 4.22 9.48 5.94 9.85L6.92 10.06C8 10.29 8.39 10.56 8.39 11C8.39 11.49 7.94 11.83 7.09 11.83C6.07 11.83 5.48 11.35 5.43 10.45H2.92C2.93 12.9 4.59 14 7.13 14Z" fill="#111"/></svg>'
   };
+  /** #66 m:ss · the hover text "2:35 · normal 1:10 (220 %)" · a badge with its time ("S 2:35") — teacher views */
+  function mmss(sec) { sec = Math.round(Number(sec) || 0); return Math.floor(sec / 60) + ':' + ('0' + (sec % 60)).slice(-2); }
+  function tTitle(t, nm, tot, away) {
+    return mmss(t) + ' to the final answer' + (nm ? ' · normal ' + mmss(nm) + ' (' + Math.round(100 * t / nm) + ' %)' : '') +
+      (tot && tot - t > 2 ? ' · total ' + mmss(tot) : '') + (away ? ' · left the window ' + durStr(away) : '');
+  }
+  function bdgT(b, t, nm, tot, away) {
+    if (t === undefined || t === null) return b ? bdg(b) : '';
+    return '<span class="bdgt' + (b ? ' ' + b : '') + '" title="' + esc(tTitle(t, nm, tot, away)) + '">' + (b ? bdg(b) + ' ' : '') + mmss(t) + '</span>';
+  }
   function bdg(b) { return BDG_SVG[b] ? '<span class="bdg ' + b + '" title="' + (b === 'S' ? 'Slow' : 'Rushed') + '">' + BDG_SVG[b] + '</span>' : ''; }
   /** a question cell's centre symbol: the badge where it applies, else ✓ / ✗ (blank: nothing) */
   function cellSym(status, badge) { return badge ? bdg(badge) : status === 'right' ? '✓' : status === 'wrong' ? '✗' : ''; }
   function qcell(status, badge) { return '<span class="rcell xs ' + status + '"><i class="rs">' + cellSym(status, badge) + '</i></span>'; }
-  function qchip(q) { return '<button type="button" class="qchip ' + q.status + '" data-qid="' + esc(q.qid) + '">' + esc(q.code) + '</button>'; }
+  function qchip(q) { return '<button type="button" class="qchip ' + q.status + '" data-qid="' + esc(q.qid) + '"' + (q.t !== undefined ? ' title="' + esc(tTitle(q.t, q.nm)) + '"' : '') + '>' + esc(q.code) + (q.badge && q.t !== undefined ? ' <small>' + q.badge + ' ' + mmss(q.t) + '</small>' : '') + '</button>'; }
   var GRID_KEY = [['right', '', 'Right'], ['wrong', '', 'Wrong'], ['wrong', 'R', 'Rushed and wrong'], ['wrong', 'S', 'Didn\'t know (slow and wrong)'], ['right', 'S', 'Slow but right'], ['blank', '', 'Blank']];
   function gridKeyHtml() { return '<div class="grid-key">' + GRID_KEY.map(function (k) { return '<span>' + qcell(k[0], k[1]) + k[2] + '</span>'; }).join('') + '</div>'; }
   function practiseHtml(x) {
@@ -1570,7 +1580,10 @@
       res.review.forEach(function (p) {
         var r = p.questions.filter(function (q) { return q.status === 'right'; }).length;
         h += '<div class="card res-part"><h3><span>' + esc(p.title || 'Part ' + p.part) + '</span><span>' + r + ' / ' + p.questions.length + '</span></h3><div class="rgrid">' +
-          p.questions.map(function (q) { return '<button type="button" class="rcell ' + q.status + '" data-qid="' + esc(q.qid) + '" data-badge="' + (q.badge || '') + '" title="' + esc(q.code) + '"><span class="rn">' + q.no + '</span><i class="rs">' + cellSym(q.status, q.badge) + '</i></button>'; }).join('') + '</div>' + gridKeyHtml() + '</div>';
+          p.questions.map(function (q) {
+            var tm = teacher && q.t !== undefined;                       // #66 the teacher sees the time under the cell (S / R: always)
+            return '<button type="button" class="rcell ' + q.status + (tm ? ' tm' : '') + '" data-qid="' + esc(q.qid) + '" data-badge="' + (q.badge || '') + '" title="' + esc(q.code + (tm ? ' · ' + tTitle(q.t, q.nm) : '')) + '"><span class="rn">' + q.no + '</span><i class="rs">' + cellSym(q.status, q.badge) + '</i>' +
+              (tm ? '<span class="rtm' + (q.badge ? ' ' + q.badge : '') + '">' + mmss(q.t) + '</span>' : '') + '</button>'; }).join('') + '</div>' + gridKeyHtml() + '</div>';
       });
     }
     h += '</div>';
@@ -1766,9 +1779,10 @@
       return c;
     });
     A.goPend = null;
-    var G = { d: d, all: all, stu: stu, o: o, keys: {}, pre: d.keys || {}, shown: {}, rows: o.rows || null, drawer: false, undo: null,
+    var G = { d: d, all: all, stu: stu, o: o, keys: {}, pre: d.keys || {}, shown: {}, rows: d.rows || o.rows || null, drawer: false, undo: null,
               filter: typeof o.wrongOnly === 'boolean', wrong: o.wrongOnly === true };
     if (G.wrong && (!all.some(function (q) { return stu[q.qid].wrong; }) || (o.qid && stu[o.qid] && stu[o.qid].wrong === false))) G.wrong = false;
+    if (!G.rows && o.side && o.side.rows) o.side.rows().then(function (r) { if (!G.rows) { G.rows = r || []; goRefresh(); } }).catch(function () {});   // #66 preload: Student's answer at once
     var scr = $('#scr-test'); scr.classList.add('viewing', 'going'); scr.classList.remove('ro', 'fixing');
     show('scr-test');
     goShow(G, o.qid);
@@ -1811,7 +1825,9 @@
     if (m && m.allowed && m.allowed.length && m.allowed.indexOf(m.difficulty) < 0) notes.push('<span class="warn">⚠ ' + DN[m.difficulty] + ' is not offered for this skill in practice (Skill_Profile) — saved anyway.</span>');
     if (notes.length) h += '<span class="go-note">' + notes.join(' ') + '</span>';
     $('#view-bar').innerHTML = h;
-    $('#fb-go').innerHTML = '<button type="button" class="btn-outline" id="go-stu" aria-pressed="' + sh + '">Student\'s answer</button>' +
+    var one = G.rows ? goWho(G, q) : null, s1 = one && one.length === 1 ? one[0] : null;   // #66 one student: the time at once
+    $('#fb-go').innerHTML = (s1 ? '<span class="go-time">Time ' + bdgT(s1.badge, s1.time_s, s1.norm_s, s1.total_s, s1.away_s) + '</span>' : '') +
+      '<button type="button" class="btn-outline" id="go-stu" aria-pressed="' + sh + '">Student\'s answer</button>' +
       (k ? '<span class="go-key">Correct answer: <b>' + esc(k.key.join(' or ')) + '</b></span>' + (k.rationale_html ? '<button type="button" class="hz-link" id="go-rat">CB explanation</button>' : '')
          : '<button type="button" class="btn-blue" id="go-show">Show answer</button>');
     // the strip above the bottom bar: what the student(s) entered (after "Student's answer")
@@ -1825,7 +1841,7 @@
         if (fin) { var f = String(fin).toUpperCase(); (picks[f] = picks[f] || []).push(String(s.name || 'Student').split(/\s+/)[0]); }
         var path = tries.length ? tries.map(function (t) { return esc(t.a || '–') + (k ? (t.ok ? ' <span class="ok">✓</span>' : ' <span class="no">✗</span>') : ''); }).join(' → ') : 'blank';
         return '<span class="gs-one"><b>' + esc(s.name || 'Student') + '</b>: ' + path + (tries.length > 1 ? ' <span class="muted">(' + tries.length + ' tries)</span>' : '') +
-          ' · ' + fmtTime(s.time_s) + (s.away_s ? ' · left the window ' + durStr(s.away_s) : '') + (s.badge ? ' · ' + (s.badge === 'S' ? 'slow' : s.badge === 'R' ? 'rushed' : esc(s.badge)) : '') + '</span>';
+          ' · ' + bdgT(s.badge, s.time_s, s.norm_s, s.total_s, s.away_s) + (s.badge ? ' ' + (s.badge === 'S' ? 'slow' : 'rushed') : '') + (s.away_s ? ' · left the window ' + durStr(s.away_s) : '') + '</span>';
       }).join('');
     }
     $('#go-strip').innerHTML = strip;
@@ -1881,7 +1897,7 @@
   function goDrawerFill(q, toRat) {
     var G = VW.go, el = $('#go-dr-body'), m = q.meta || {}, k = G.keys[q.qid];
     var h = '<p class="gd-meta">' + esc(m.subskill_name || m.skill_name || '') + (m.difficulty ? ' · ' + DN[m.difficulty] + ' ' + m.level : '') +
-      (m.norm_sec ? ' · normal time ' + m.norm_sec + ' s' : '') + (m.cb_id ? ' · CB id ' + esc(m.cb_id) : '') + '</p><div id="gd-side"></div>' +
+      (m.cb_id ? ' · CB id ' + esc(m.cb_id) : '') + '</p><div id="gd-side"></div>' +
       (k && k.rationale_html ? '<details class="gd-rat"' + (toRat ? ' open' : '') + '><summary><b>College Board explanation</b> (teacher only)</summary>' + k.rationale_html + '</details>' : '');
     el.innerHTML = h;
     var side = $('#gd-side');
@@ -2317,7 +2333,7 @@
   function initTeacher() {
     // the teacher page (TeacherPage.html) uses these helpers of the student client
     window.SMLX = { durStr: durStr, awayLine: awayLine, nav: navSet, A: A, $: $, $$: $$, el: el, esc: esc, call: call, toast: toast, modal: modal, errMsg: errMsg, typeset: typeset, enqueue: enqueue, whenSaved: whenSaved, WQ: WQ,
-                    figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell, goOver: goOver };
+                    figHtml: figHtml, noWrapMath: noWrapMath, show: show, renderResult: renderResult, bdg: bdg, qcell: qcell, goOver: goOver, mmss: mmss, tTitle: tTitle, bdgT: bdgT };
     if (window.SMLT) window.SMLT.init();
   }
 

@@ -137,7 +137,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await tp.$eval('#t-sets [data-plgo]', e => e.click());
     await tp.waitForSelector('#scr-test.going #go-show'); await waitMath(tp);
     check(/of 15/.test(await tp.$eval('#nav-label', e => e.textContent)) && !!(await tp.$('#go-wrong')) && !(await tp.$('#scr-test .ch.rv-key')), 'Placement "Go over" → the test screen over its 15 questions in order (Wrong only box; nothing wrong here → all), no key on screen');
-    await tp.click('#go-stu'); await tp.waitForFunction(() => /\d+ s/.test(document.querySelector('#go-strip').innerText));
+    await tp.click('#go-stu'); await tp.waitForFunction(() => /\d+:\d\d/.test(document.querySelector('#go-strip').innerText));
     await tp.click('#go-show'); await tp.waitForSelector('.go-key');
     check(true, 'Student\'s answer + Show answer work on Placement questions');
     await tp.click('#btn-view-back'); await tp.waitForSelector('#t-sets');

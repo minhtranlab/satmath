@@ -104,7 +104,7 @@ console.log('[server: payloads — the key only on Show answer]');
     await shot(page, 'go50_report_open');
     await page.click('#go-stu');
     await page.waitForFunction(() => /Test Student|FX|: /.test(document.querySelector('#go-strip').innerText) && !/Loading/.test(document.querySelector('#go-strip').innerText));
-    check(/\d+ s/.test(await page.$eval('#go-strip', e => e.innerText)) && (isSpr || await page.$('.ch-row.stu-pick')) && !/✓|✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Student\'s answer → the student\'s entry + time, marked on the choice (still no ✓/✗)');
+    check(/\d+:\d\d/.test(await page.$eval('#go-strip', e => e.innerText)) && (isSpr || await page.$('.ch-row.stu-pick')) && !/✓|✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Student\'s answer → the student\'s entry + time, marked on the choice (still no ✓/✗)');
     check(!E.st.rpcLog.some(r => r.fn === 'teacherKey'), 'still no key fetched');
     await page.click('#go-show'); await page.waitForSelector('.go-key');
     check(!E.st.rpcLog.some(r => r.fn === 'teacherKey') && (isSpr ? /Correct answer/.test(await page.$eval('#fb-go', e => e.innerText)) : await page.$('#scr-test .q.on .ch.rv-key')) && /✗/.test(await page.$eval('#go-strip', e => e.innerText)), 'Show answer → at once from memory (#62, no call), the key highlighted, ✗ on the student\'s try');
@@ -129,7 +129,7 @@ console.log('[server: payloads — the key only on Show answer]');
     // drawer
     check(await page.$eval('#go-drawer', e => !e.classList.contains('on')), 'Details drawer closed by default');
     await page.click('#go-det'); await page.waitForSelector('#go-dr-body .t-ps'); await sleep(300);
-    check(/Tries:/.test(await page.$eval('#go-dr-body', e => e.innerText)) && /s to the answer/.test(await page.$eval('#go-dr-body', e => e.innerText)) && await page.$('#go-dr-body [data-tag="0"]') && await page.$('#go-dr-body [data-save="0"]'), 'Details: tries, time, mistake type + note + Save');
+    check(/Tries:/.test(await page.$eval('#go-dr-body', e => e.innerText)) && /Time \S*\s*\d+:\d\d/.test(await page.$eval('#go-dr-body', e => e.innerText)) && await page.$('#go-dr-body [data-tag="0"]') && await page.$('#go-dr-body [data-save="0"]'), 'Details: tries, time, mistake type + note + Save');
     await shot(page, 'go50_details');
     await page.click('#go-dr-x');
     // Back / Next inside the set; Wrong only off → all 5
@@ -162,7 +162,7 @@ console.log('[server: payloads — the key only on Show answer]');
     await page.click('[data-open]'); await page.waitForSelector('#scr-test.going #go-show');
     check(/Back to Asked/.test(await page.$eval('#btn-view-back', e => e.textContent)) && !(await page.$('#scr-test .ch.rv-key')), 'Asked → Open → test screen ("Back to Asked")');
     await page.click('#go-stu'); await page.waitForFunction(() => !/Loading/.test(document.querySelector('#go-strip').innerText) && document.querySelector('#go-strip').innerText.length > 3);
-    check(/\d+ s/.test(await page.$eval('#go-strip', e => e.innerText)), 'Asked: Student\'s answer shows the student\'s try');
+    check(/\d+:\d\d/.test(await page.$eval('#go-strip', e => e.innerText)), 'Asked: Student\'s answer shows the student\'s try');
     await page.click('#go-det'); await page.waitForSelector('#go-dr-body .t-pask');
     check(/Why not B\?/.test(await page.$eval('#go-dr-body .t-pask', e => e.innerText)), 'Asked: the student\'s note in Details (with Resolve)');
     await page.click('#go-dr-x');
