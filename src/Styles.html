@@ -891,7 +891,7 @@ button.t-mini{border:0;cursor:pointer;font:inherit;font-size:12px}
 .go-mkr select { font: 14px var(--hz-sans, 'Noto Sans', Arial, sans-serif); border: 1px solid #c9cedb; border-radius: 7px; padding: 4px 6px; min-height: 32px; min-width: 0; }
 .go-mkall { border-top: 1px solid #eef0f5; padding-top: 8px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
 /* ===== My skills v2 (#69): one app-blue scale for levels (Easy light → Hard dark), red/amber only for rushed / slow,
-   green only for gains, grey = not enough answers. The three My skills screens also follow a dark device theme. ===== */
+   green only for gains, grey = not enough answers. Always white like the rest of the app (Minh 18 Nov 21:27: no dark). ===== */
 .ms-h2row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 44px 0 14px; }
 .ms-h2row .hz-h2 { margin: 0 !important; }
 .ms-entry { font-size: 15px !important; padding: 7px 16px !important; }
@@ -900,15 +900,6 @@ button.t-mini{border:0;cursor:pointer;font:inherit;font-size:12px}
   --ms-up: #1f9d61; --ms-up-t: #17804e; --ms-rush: #c0352d; --ms-slow: #9a6b00;
   --ms-bg: #ffffff; --ms-card: #ffffff; --ms-soft: #f6f7fb; --ms-top: #eef2fd; --ms-on-acc: #ffffff;
   background: var(--ms-bg); color: var(--hz-ink); min-height: 100vh;
-}
-@media (prefers-color-scheme: dark) {
-  #scr-skills, #scr-skill, #scr-mist {
-    --hz-ink: #e7ecf4; --hz-muted: #a3adbf; --hz-faint: #7f899c; --hz-line: #2e3646; --hz-line2: #262d3b; --hz-acc: #8ea2ff;
-    --lv-e: #3d6d96; --lv-m: #5d93e0; --lv-h: #a9bcff; --ms-none: #465062; --ms-emp: #262d3b; --ms-out: #5b6578;
-    --ms-up: #4cc98d; --ms-up-t: #4cc98d; --ms-rush: #f27770; --ms-slow: #f0b93d;
-    --ms-bg: #12161f; --ms-card: #1b212d; --ms-soft: #222937; --ms-top: #232c4d; --ms-on-acc: #12161f;
-    color-scheme: dark;
-  }
 }
 .ms-main { max-width: 980px; }
 .ms-back { margin: 4px 0 10px; display: inline-block; }

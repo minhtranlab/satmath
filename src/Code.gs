@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.13.0 (2026-11-18, My skills v2: 9-step ladders by level, gains vs last week, Focus at the current level, Easy/Medium/Hard weekly lines, rushed / slow with Review these, blue levels)';
+var APP_VERSION = 'v0.13.1 (2026-11-18, always white · My skills v2: 9-step ladders by level, gains vs last week, Focus at the current level, Easy/Medium/Hard weekly lines, rushed / slow with Review these, blue levels)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */

@@ -133,7 +133,7 @@ console.log('[server: practice by sub-skill]');
         check(!/FX-T0|TEACH/.test(await page.content()), dev + ': no codes on the page');
       } else {
         const bg = await page.$eval('#scr-skills', e => getComputedStyle(e).backgroundColor);
-        check(bg === 'rgb(18, 22, 31)', dev + ': dark device theme → dark My skills page (' + bg + ')');
+        check(bg === 'rgb(255, 255, 255)', dev + ': a phone in dark mode still gets the white page (Minh: no dark) (' + bg + ')');
       }
       check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), dev + (dark ? ' dark' : '') + ': no sideways scroll');
       await full(page, 'ms69_skills' + tag);
