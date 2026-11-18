@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.10.2 (2026-11-17, Sets list: Result … Go over apart, Placement too)';
+var APP_VERSION = 'v0.10.3 (2026-11-18, figures inside answer choices and between stem paragraphs; OLD2 live)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -450,8 +450,11 @@ function clientQuestion_(q, withFigs) {
     qid: q.qid, part: q.part, display_no: q.display_no, type: q.type || 'mcq',
     stem_html: q.stem_html || '', passage_html: q.passage_html || '',
     figures: (q.figures || []).map(function (f, i) {
-      return { fid: q.qid + '#' + i, src: withFigs ? figSrc_(f) : '', alt: f.alt || '', position: f.position || 'before_stem',
+      var o = { fid: q.qid + '#' + i, src: withFigs ? figSrc_(f) : '', alt: f.alt || '', position: f.position || 'before_stem',
                width: f.width || null, caption: f.caption || '' };
+      if (o.position === 'in_choice') o.choice = String(f.choice || '');        // a graph as an answer choice (OLD2-2-09, CB …)
+      if (o.position === 'in_stem') o.after_p = Number(f.after_p) || 0;         // between the stem's paragraphs
+      return o;
     }),
     choices: (q.choices || []).map(function (c) { return { label: c.label, html: c.html }; })
   };

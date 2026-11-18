@@ -906,15 +906,17 @@
       (q.code ? '<span class="q-code" title="Question code">' + esc(q.code) + '</span>' : '') + '</div>' +
       '<div class="q-askrow"><input class="ask-in" maxlength="' + ((A.test && A.test.ask_note_max) || 200) + '" placeholder="What do you want to ask? (optional)" aria-label="Note for your teacher">' +
       '<span class="ask-hint">Your teacher will see that you asked about this question.</span></div>';
-    var before = q.figures.filter(function (f) { return f.position !== 'after_stem'; }).map(figHtml).join('');
+    // figure places (SCHEMA): before_stem (default) · after_stem · in_stem (after `after_p` stem blocks) · in_choice (inside choice `choice`)
+    var before = q.figures.filter(function (f) { return ['after_stem', 'in_stem', 'in_choice'].indexOf(f.position) < 0; }).map(figHtml).join('');
     var after = q.figures.filter(function (f) { return f.position === 'after_stem'; }).map(figHtml).join('');
+    var chFig = function (L) { return q.figures.filter(function (f) { return f.position === 'in_choice' && f.choice === L; }).map(figHtml).join(''); };
     var body = '<div class="q-text">' + before + '<div class="stem">' + noWrapMath(q.stem_html) + '</div>' + after + '</div>';
     var ans;
     if (q.type === 'spr') {
       ans = '<div class="spr-box"><input class="spr-in" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="6" aria-label="Your answer"><div class="spr-prev">Answer Preview: <b class="spr-out"></b></div></div>';
     } else {
       ans = '<div class="choices">' + q.choices.map(function (c) {
-        return '<div class="ch-row" data-l="' + esc(c.label) + '"><button type="button" class="ch"><span class="ltr">' + esc(c.label) + '</span><span class="ctext">' + noWrapMath(c.html) + '</span></button>' +
+        return '<div class="ch-row" data-l="' + esc(c.label) + '"><button type="button" class="ch"><span class="ltr">' + esc(c.label) + '</span><span class="ctext">' + noWrapMath(c.html) + chFig(c.label) + '</span></button>' +
           '<button type="button" class="strike" aria-label="Eliminate ' + esc(c.label) + '">' + esc(c.label) + '</button><button type="button" class="undo">Undo</button></div>';
       }).join('') + '</div>';
     }
@@ -925,6 +927,12 @@
       box.innerHTML = '<div class="q-pass q-text-pass">' + noWrapMath(q.passage_html) + '</div><div class="q-divider"></div><div class="q-side">' + head + body + ans + '</div>';
       bindDivider(box);
     } else box.innerHTML = head + body + ans;
+    q.figures.filter(function (f) { return f.position === 'in_stem'; }).forEach(function (f) {
+      var st = $('.stem', box), kids = st ? Array.prototype.filter.call(st.children, function (c) { return /^(P|TABLE|DIV|UL|OL|BLOCKQUOTE|FIGURE)$/.test(c.tagName); }) : [];
+      var n = Math.max(0, Math.min(Number(f.after_p) || 0, kids.length));
+      if (!st) return;
+      if (n === 0) st.insertAdjacentHTML('afterbegin', figHtml(f)); else kids[n - 1].insertAdjacentHTML('afterend', figHtml(f));
+    });
     // bindings
     $('.q-mark', box).onclick = function () { toggleMark(q.qid); };
     $('.q-ask', box).onclick = function () { toggleAsk(q.qid); };
