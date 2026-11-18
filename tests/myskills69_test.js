@@ -151,6 +151,7 @@ console.log('[server: practice by sub-skill]');
         await page.click('#ms-rush .ms-rv'); await page.waitForSelector('#scr-mist.on .mm-q');
         check((await page.$$('#mi-main .mm-q')).length === nR && /R \d:\d\d/.test(await page.$eval('#mi-main .mm-q', e => e.innerText)), '"Review these" → exactly the rushed question (with its time)');
         await page.click('#mi-main [data-ms-q="0"]'); await page.waitForSelector('#scr-test.viewing #btn-view-back');
+        await page.waitForFunction(() => /Back to the list/.test(document.querySelector('#btn-view-back').textContent), null, { timeout: 8000 }).catch(() => {});
         check(/Back to the list/.test(await page.$eval('#btn-view-back', e => e.textContent)), 'Open → the review screen ("Back to the list")');
         await page.click('#btn-view-back'); await page.waitForSelector('#scr-mist.on .mm-q');
         await page.click('#mi-main [data-ms-back="skills"]'); await page.waitForSelector('#scr-skills.on #ms-mist .mm-see');
