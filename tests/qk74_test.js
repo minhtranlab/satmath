@@ -35,4 +35,19 @@ check(G.call('mySkills', ['FX-T01']).ok && G.call('studentProfile', ['TEACH-FX-9
 const again = C.qkImportPlan_(csv);
 check(again.plan.length === 0 && again.report.counts.same === hb.length - 1, 'a second run changes nothing (' + again.report.counts.same + ' same)');
 check(C.qkLevelsImport_() === 'qk71: no script properties here', 'the update step is safe where it cannot run');
+// the whole update step, with a CSV "on Drive" and script properties (as on Apps Script; Drive is read-only there)
+{
+  const G2 = makeGas(), C2 = G2.ctx, props = {};
+  const text = 'qid,final,in_placement\n' + hb.map(q => q + ',M2,').join('\n') + '\n' + qb[0] + ',E1,Y\n';
+  C2.PropertiesService = { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) };
+  C2.DriveApp = { getFolderById: () => ({ getFilesByName: n => { let done = n !== 'QK71_levels.csv'; return { hasNext: () => !done, next: () => { done = true; return { getBlob: () => ({ getDataAsString: () => text }) }; } }; }, createFile() { throw new Error('read-only'); } }) };
+  C2.Utilities.parseCsv = t => t.trim().split('\n').map(l => l.split(','));
+  C2.QK_IMPORT_MODE_ = 'dry';
+  const d1 = C2.qkLevelsImport_(); G2.fresh();
+  check(/^qk71 dry: \+\d+ new, 0 changed, 0 same, 0 teacher kept, 1 placement skipped/.test(d1) && /H\.B E\d+>\d+ M\d+>\d+ H\d+>\d+/.test(d1) && /under 10: /.test(d1) && !C2.readTableSheet_('Item_Overrides').rows.length, 'update step, dry: the report line, nothing written (' + d1.slice(0, 90) + '…)');
+  C2.QK_IMPORT_MODE_ = 'apply';
+  const d2 = C2.qkLevelsImport_(); G2.fresh();
+  check(/^qk71 apply: \+/.test(d2) && C2.readTableSheet_('Item_Overrides').rows.length === hb.length && props.qk_import_QK71, 'update step, apply: rows written, marked done');
+  check(/^qk71: already imported/.test(C2.qkLevelsImport_()), 'next deploys: already imported');
+}
 process.exit(H.summary() ? 1 : 0);

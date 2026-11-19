@@ -5,8 +5,9 @@
  *   - rows a teacher set by hand (set_by "teacher") are never overwritten; Placement items (in_placement = Y) are skipped;
  *   - the Questions tab (cb_difficulty = College Board's label) and the Drive JSON are not touched.
  * QK_IMPORT_MODE_ 'dry' = compute and write the report only; 'apply' = write the rows (then the report).
- * The report (live pool per skill × difficulty before → after, counts) goes to QK71_import_report.json in the same folder. */
-var QK_IMPORT_ = { tag: 'QK71', file: 'QK71_levels.csv', report: 'QK71_import_report.json', prop: 'qk_import_QK71' };
+ * The report (counts + live pool per skill × difficulty before > after + the cells under 10) is the step's line in the update notes
+ * (Settings › code_version). The script has Drive read-only: nothing is written to Drive. */
+var QK_IMPORT_ = { tag: 'QK71', file: 'QK71_levels.csv', prop: 'qk_import_QK71' };
 var QK_IMPORT_MODE_ = 'dry';
 
 /** Pure part (tests run it on a copy): csv = [{qid, final, in_placement}] → { plan, report }. Reads the tabs, writes nothing. */
@@ -85,8 +86,8 @@ function qkLevelsImport_() {
   var P = qkImportPlan_(csv), rep = P.report;
   rep.mode = QK_IMPORT_MODE_; rep.at = nowIso_();
   if (QK_IMPORT_MODE_ === 'apply') { rep.written = qkImportApply_(P.plan); props.setProperty(QK_IMPORT_.prop, rep.at + ' · ' + JSON.stringify(rep.written)); }
-  var text = JSON.stringify(rep, null, 1), old = folder.getFilesByName(QK_IMPORT_.report);
-  if (old.hasNext()) old.next().setContent(text); else folder.createFile(QK_IMPORT_.report, text, 'application/json');
   var c = rep.counts;
-  return 'qk71 ' + rep.mode + ': +' + c.add + ' new, ' + c.update + ' changed, ' + c.same + ' same, ' + c.teacher + ' teacher kept, ' + c.placement + ' placement skipped, ' + c.unknown + ' unknown';
+  var tab = rep.table.map(function (r) { return r.skill + ' ' + ['E', 'M', 'H'].map(function (d) { return d + r.before[d] + '>' + r.after[d]; }).join(' '); }).join('; ');
+  return 'qk71 ' + rep.mode + ': +' + c.add + ' new, ' + c.update + ' changed, ' + c.same + ' same, ' + c.teacher + ' teacher kept, ' + c.placement + ' placement skipped, ' + c.unknown + ' unknown, ' + c.bad + ' bad' +
+    ' | live pool before>after: ' + tab + ' | under 10: ' + (rep.low.join(', ') || 'none');
 }
