@@ -30,4 +30,5 @@ run node myskills70_test.js  # My skills v3 (#68 D, #69, #70): position + Placem
 run node clean70_test.js     # #70 no narrator text, light only, set time = Σ (time − away) with a 20-min cap
 run node minor71_test.js     # #71 sign-in, equal map blocks, Recommended = Focus, Assignment tab (edit / cancel / delete), Ask backfill
 run node logo73_test.js      # #73 the new logo: site favicons, web app favicon, header marks, sign-in mark
+run node qk74_test.js        # #74 QK re-rating → Item_Overrides on a copy: teacher rows kept, Placement skipped, picker/builder read it, idempotent
 echo "ALL SUITES PASSED"
