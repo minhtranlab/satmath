@@ -8,7 +8,7 @@
  * The report (counts + live pool per skill × difficulty before > after + the cells under 10) is the step's line in the update notes
  * (Settings › code_version). The script has Drive read-only: nothing is written to Drive. */
 var QK_IMPORT_ = { tag: 'QK71', file: 'QK71_levels.csv', prop: 'qk_import_QK71' };
-var QK_IMPORT_MODE_ = 'dry';
+var QK_IMPORT_MODE_ = 'apply';
 
 /** Pure part (tests run it on a copy): csv = [{qid, final, in_placement}] → { plan, report }. Reads the tabs, writes nothing. */
 function qkImportPlan_(csv) {
