@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.15.6 (2026-11-20, library: batch OLDP1 from Older Paper, 72 items live + 32 version B)';
+var APP_VERSION = 'v0.15.7 (2026-11-20, library: batch OLDP2 from Older Paper, 67 items live + 66 version B)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
