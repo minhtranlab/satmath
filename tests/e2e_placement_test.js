@@ -97,7 +97,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     check(!leak.length, 'no key / short code in ' + E.st.rpcLog.filter(r => /^(getSet|placementNext|homeData|getResult|autosave|startAssignment)$/.test(r.fn)).length + ' student payloads' + (leak.length ? ' — ' + leak[0].fn : ''));
 
     console.log('teacher report');
-    await tp.click('.t-nav [data-go="home"]'); await tp.waitForSelector('#t-students');
+    await tp.click('#t-brand'); await tp.waitForSelector('#t-students');
     await tp.click('#t-students [data-prof="FX-T01"]');
     await tp.waitForSelector('#t-sets .t-plrow [data-plrep]');
     check(/Placement/.test(await tp.$eval('#t-sets .t-plrow', e => e.innerText)) && !(await tp.$('.t-plsum')), 'profile: the Placement is a row of the Sets list (no separate table)');
@@ -125,7 +125,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
       g.fresh(); g.call('submit', ['FX-T01', sp.set_id, { state: { v: 1, current_part: 'P', phase: 'review', part_starts: { P: Date.now() - 300000 }, ended: {}, parts: { P: { cur: 0, ans, elim: {}, mark: {}, ask: {}, hl: {} } } }, events: evs, ev_from: 0, copy: t.copy }]); g.fresh();
     }
     await tp.click('#pl-prof'); await tp.waitForSelector('#t-sets');
-    await tp.click('.t-nav [data-go="home"]'); await tp.waitForSelector('#t-students'); await tp.click('#t-students [data-prof="FX-T01"]');
+    await tp.click('#t-brand'); await tp.waitForSelector('#t-students'); await tp.click('#t-students [data-prof="FX-T01"]');
     await tp.waitForFunction(() => document.querySelectorAll('#t-sets [data-sgo]').length >= 1 && document.querySelectorAll('#t-sets [data-plgo]').length >= 1, null, { timeout: 20000 });
     const gap = await tp.evaluate(() => { const one = (a, b) => { const x = document.querySelector(a).getBoundingClientRect(), y = document.querySelector(b).getBoundingClientRect(); return { gap: Math.round(y.left - x.right), h: Math.round(x.height) }; };
       return { practice: one('#t-sets [data-res]', '#t-sets [data-sgo]'), placement: one('#t-sets [data-plrep]', '#t-sets [data-plgo]'), labels: [...document.querySelectorAll('#t-sets .t-rowbtns')].map(e => e.innerText.replace(/\s+/g, ' ')) }; });

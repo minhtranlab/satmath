@@ -31,4 +31,6 @@ run node clean70_test.js     # #70 no narrator text, light only, set time = Σ (
 run node minor71_test.js     # #71 sign-in, equal map blocks, Recommended = Focus, Assignment tab (edit / cancel / delete), Ask backfill
 run node logo73_test.js      # #73 the new logo: site favicons, web app favicon, header marks, sign-in mark
 run node qk74_test.js        # #74 QK re-rating → Item_Overrides on a copy: teacher rows kept, Placement skipped, picker/builder read it, idempotent
+run node qk98_test.js        # #98 several level files in one update step (QK98 → QK93h), each once, later file wins, one row per qid
+run node refresh97_test.js    # #97 teacher Refresh (student + class view, fresh read, tab/scroll kept) + logo = home, no "Classes" link
 echo "ALL SUITES PASSED"

@@ -36,7 +36,7 @@
 
   <!-- ============ Home ============ -->
   <section id="scr-home" class="screen hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span id="home-name"></span><button class="hz-link" id="btn-logout" type="button">Sign out</button></div></header>
+    <header class="hz-top"><div class="hz-wm" data-top="home" role="link" tabindex="0" title="Home"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span id="home-name"></span><button class="hz-link" id="btn-logout" type="button">Sign out</button></div></header>
     <main class="hz-main">
       <p class="hz-hello" id="home-hello"></p>
       <div id="home-list"><div class="spinner"></div></div>
@@ -45,20 +45,20 @@
 
   <!-- ============ #68 My skills (the approved #67 prototype) ============ -->
   <section id="scr-skills" class="screen hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills" aria-current="page">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span class="ms-who"></span></div></header>
+    <header class="hz-top"><div class="hz-wm" data-top="home" role="link" tabindex="0" title="Home"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills" aria-current="page">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span class="ms-who"></span></div></header>
     <main class="hz-main ms-main" id="ms-main"></main>
   </section>
   <section id="scr-skill" class="screen hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span class="ms-who"></span></div></header>
+    <header class="hz-top"><div class="hz-wm" data-top="home" role="link" tabindex="0" title="Home"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span class="ms-who"></span></div></header>
     <main class="hz-main ms-main" id="sk-main"></main>
   </section>
   <section id="scr-mist" class="screen hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span class="ms-who"></span></div></header>
+    <header class="hz-top"><div class="hz-wm" data-top="home" role="link" tabindex="0" title="Home"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist">History</button></span><span class="ms-who"></span></div></header>
     <main class="hz-main ms-main" id="mi-main"></main>
   </section>
 
   <section id="scr-hist" class="screen hz">
-    <header class="hz-top"><div class="hz-wm"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist" aria-current="page">History</button></span><span class="ms-who"></span></div></header>
+    <header class="hz-top"><div class="hz-wm" data-top="home" role="link" tabindex="0" title="Home"><i></i>SAT Math Lib</div><div class="hz-who"><span class="sm-nav"><button class="hz-link" type="button" data-top="home">Home</button><button class="hz-link" type="button" data-top="skills">My skills</button><button class="hz-link" type="button" data-top="hist" aria-current="page">History</button></span><span class="ms-who"></span></div></header>
     <main class="hz-main ms-main" id="hist-main"></main>
   </section>
 
@@ -205,8 +205,8 @@
   <!-- ============ Teacher ============ -->
   <section id="scr-teacher" class="screen">
     <div class="topbar-simple t-top">
-      <div class="brand" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px" aria-hidden="true"></span><span class="app-name">SAT Math Lib</span><span class="t-badge">Teacher</span></div>
-      <nav class="t-nav"><button class="btn-plain" type="button" data-go="home">Classes</button><button class="btn-plain" type="button" data-go="asks">Asked <span id="t-asks-n"></span></button><button class="btn-plain" type="button" data-go="asg">Assignment</button><button class="btn-plain" id="t-logout" type="button">Sign out</button></nav>
+      <div class="brand t-brand" id="t-brand" role="link" tabindex="0" title="Home" style="font-size:20px"><span class="brand-mark" style="width:28px;height:28px" aria-hidden="true"></span><span class="app-name">SAT Math Lib</span><span class="t-badge">Teacher</span></div>
+      <nav class="t-nav"><button class="btn-plain" type="button" data-go="asks">Asked <span id="t-asks-n"></span></button><button class="btn-plain" type="button" data-go="asg">Assignment</button><button class="btn-plain" id="t-logout" type="button">Sign out</button></nav>
     </div>
     <div class="t-body" id="t-body"><div class="spinner"></div></div>
     <div id="t-panel" class="t-panel" aria-hidden="true"><div class="t-panel-in" id="t-panel-in"></div></div>

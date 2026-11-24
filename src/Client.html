@@ -599,6 +599,7 @@
     go('');
   }
   function initMySkills() {
+    document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('.hz-wm[data-top]')) e.target.click(); });   // #97 logo = home (keyboard)
     document.addEventListener('click', function (e) {
       if (!e.target.closest || e.target.closest('#t-body')) return;      // the teacher's copy of these blocks has its own clicks
       var t;

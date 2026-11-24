@@ -18,7 +18,8 @@
      write queue (X.enqueue): on screen at once, saved in the background. ---- */
   var C = {}, NAV = 0, PF = [], pfBusy = false;
   function cget(k) { return C[k] ? C[k].d : null; }
-  function cput(k, d) { C[k] = { d: d, at: Date.now() }; }
+  function cput(k, d) { C[k] = { d: d, at: Date.now() }; UPD[k] = Date.now(); }
+  var UPD = {};                                                        // #97 when each view last came from the server
   function stale(re) { Object.keys(C).forEach(function (k) { if (re.test(k)) C[k].at = 0; }); }
   function busyTyping() { var a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && body().contains(a)); }
   function load(key, fn, args, render, msg) {
@@ -49,6 +50,23 @@
   /** After a save: the screens it touched refresh quietly once nothing is waiting to be saved. */
   function refreshLater(re) { stale(re); X.whenSaved(function () { if (T.view === 'home') showHome(); else if (T.view === 'class' && T.target) openClass(T.target, T.scopeArg, true); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); }); }
   function save(job) { job.args = [A.code].concat(job.args || []); return X.enqueue(job); }
+  /* ---- #97 Refresh: this view again, read from the Sheet itself (not the snapshots); tab, filter, scroll stay ---- */
+  function viewKey() { return T.view === 'class' ? 'cv|' + T.target + '|' + (T.scopeArg || '') : T.view === 'profile' ? 'prof|' + T.pcode : ''; }
+  function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function refreshBtn() { var t = UPD[viewKey()]; return '<span class="t-refresh"><button class="btn-outline" type="button" id="t-refresh">Refresh</button><span class="t-upd" id="t-upd">' + (t ? 'Updated ' + hhmm(t) : '') + '</span></span>'; }
+  function refreshView() {
+    var key = viewKey(), b = $('#t-refresh'); if (!key) return Promise.resolve();
+    var view = T.view, fn = view === 'class' ? 'classView' : 'studentProfile', args = view === 'class' ? [T.target, T.scopeArg || '', true] : [T.pcode, true];
+    if (b) { b.disabled = true; b.textContent = 'Refreshing…'; }
+    var nav = NAV, y = window.scrollY;
+    return call.apply(null, [fn, A.code].concat(args)).then(function (r) {
+      cput(key, r);
+      if (nav !== NAV || viewKey() !== key) return;
+      if (view === 'class') { T.cv = r; renderClass(); } else renderProfile(r);
+      window.scrollTo(0, y);
+    }).catch(function (e) { toast(X.errMsg(e), 3000); var bb = $('#t-refresh'); if (bb) { bb.disabled = false; bb.textContent = 'Refresh'; } });
+  }
+  function bindRefresh() { var b = $('#t-refresh'); if (b) b.onclick = refreshView; }
   function fail(e) { body().innerHTML = '<div class="empty">' + esc(X.errMsg(e)) + '</div>'; }
   function dotHtml(c) { return '<i class="sm-dot ' + (c || 'n') + '"></i>'; }
   function diffName(d) { return { E: 'Easy', M: 'Medium', H: 'Hard' }[d] || d; }
@@ -215,13 +233,13 @@
     var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(r.target.title) + '</h1>' +
       '<div class="t-chips">' + r.members.map(function (m) { return '<button type="button" class="t-chip" data-prof="' + esc(m.code) + '">' + esc(m.name) + '</button>'; }).join('') + '</div></div>' +
       '<div class="t-actions">' + (isCls ? (clsRow() && !clsRow().active ? '<button class="btn-blue" type="button" id="t-restore-cl">Restore class</button>' : '<button class="btn-outline" type="button" id="t-arch-cl">Archive class</button><button class="btn-outline" type="button" id="t-edit-cl">Edit class</button>') : '') +
-      (r.target.kind !== 'all' ? '<button class="btn-blue" type="button" id="t-new-asg">New assignment</button>' : '') + '</div></div>';
+      (r.target.kind !== 'all' ? '<button class="btn-blue" type="button" id="t-new-asg">New assignment</button>' : '') + refreshBtn() + '</div></div>';
     h += '<div class="t-bar"><label>Look at <select id="t-scope" class="field">' + r.scopes.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === r.scope ? ' selected' : '') + '>' + esc(s.label) + '</option>'; }).join('') + '</select></label>' +
       '<input id="t-search" class="field" placeholder="Find a question: E326, M12, CB id…" autocomplete="off" value="' + esc(T.filter) + '"></div>';
     h += '<div class="t-tabs" role="tablist">' + [['go', 'What to go over'], ['grid', 'Grid'], ['asg', 'Assignments (' + r.assignments.length + ')']].map(function (t) {
       return '<button type="button" role="tab" data-tab="' + t[0] + '" class="' + (T.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</div><div id="t-tabbody"></div>';
     body().innerHTML = h;
-    $('#t-back').onclick = showHome;
+    $('#t-back').onclick = showHome; bindRefresh();
     $$('[data-prof]', body()).forEach(function (b) { b.onclick = function () { openProfile(b.getAttribute('data-prof')); }; });
     var cr = function () { return clsRow() || { class_id: r.target.id, name: r.target.title, members: r.members, active: true }; };
     var ec = $('#t-edit-cl'); if (ec) ec.onclick = function () { editClass(cr()); };
@@ -471,7 +489,7 @@
     {
       var s = r.student, t = r.totals, pct = function (a, b) { return b ? Math.round(100 * a / b) + '%' : '–'; };
       var h = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><div class="t-head"><div><h1>' + esc(s.name) + '</h1><div class="muted">' + stuCode(s.code) + ' · ' + esc(s.classes || 'no class') + (s.active ? '' : ' · <b>off</b>') + '</div></div>' +
-        '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-ren">Rename</button><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button></div></div>';
+        '<div class="t-actions"><button class="btn-outline" type="button" id="t-p-ren">Rename</button><button class="btn-outline" type="button" id="t-p-act">' + (s.active ? 'Turn off' : 'Turn on') + '</button><button class="btn-outline" type="button" id="t-p-asg">New assignment</button><button class="btn-blue" type="button" id="t-p-go">What to go over</button>' + refreshBtn() + '</div></div>';
       h += '<div class="t-stats"><div><b>' + t.answers + '</b>answers</div><div><b>' + pct(t.first_try_right, t.answers) + '</b>first try</div><div><b>' + pct(t.best_right, t.answers) + '</b>best</div>' +
         '<div><b>' + t.tries + '</b>tries</div><div><b>' + t.time_min + '</b>minutes</div><div><b>' + r.review_open + '</b>in Review</div><div><b>' + r.asks_open + '</b>asked</div></div>';
       h += recBox(s.code, r.recommend);
@@ -484,7 +502,7 @@
           '<td class="t-rbtd">' + (x.done ? rowBtns(pl ? 'data-plrep="' + esc(x.set_id) + '"' : 'data-res="' + i + '"', pl ? 'data-plgo="' + esc(x.set_id) + '"' : 'data-sgo="' + i + '"') : '') + '</td></tr>';
       }).join('') + '</table></div>' : '<div class="empty">No sets yet</div>');
       body().innerHTML = h; bindCopies(body()); bindCodes(body()); myBind(r);
-      $('#t-back').onclick = showHome;
+      $('#t-back').onclick = showHome; bindRefresh();
       $('#t-p-go').onclick = function () { openClass('st:' + s.code, 'all'); };
       $('#t-p-asg').onclick = function () { openBuilder('st:' + s.code); };
       $('#t-p-act').onclick = function () { setStudent(r, { active: !s.active }); };
@@ -873,6 +891,7 @@
   function init() {
     X = window.SMLX; A = X.A; $ = X.$; $$ = X.$$; el = X.el; esc = X.esc; call = X.call; toast = X.toast;
     $$('.t-nav [data-go]').forEach(function (b) { b.onclick = function () { var g = b.getAttribute('data-go'); if (g === 'home') showHome(); else if (g === 'asks') showAsks(); else openAsgTab(); }; });
+    var brand = $('#t-brand'); if (brand) { brand.onclick = function () { showHome(); }; brand.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showHome(); } }; }   // #97 logo = home
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
   }
   window.SMLT = { side: side, tag: tagStu, tagAll: tagAll, mtypes: function () { return { types: (T.home && T.home.mistake_types) || [], ph: (T.home && T.home.mistake_placeholder) || '— choose a mistake type —' }; }, levelChanged: function () { stale(/^(cv\||go\||prof\||tree\||home)/); }, back: function () { if (!T.hist || T.hist.length < 2) return false; T.hist.pop(); T.backing = true; T.hist[T.hist.length - 1].go(); return true; }, init: init, openPlacement: function (id) { openPlacement(id); }, show: function () { X.nav('t-' + (T.view || 'home')); if (T.view === 'class' && T.cv) renderClass(); else if (T.view === 'profile' && T.pcode) openProfile(T.pcode); else showHome(); } };

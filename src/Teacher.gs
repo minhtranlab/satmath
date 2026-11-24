@@ -171,7 +171,9 @@ function priorityOrder_(rows, single) {
   });
 }
 
-function classView(code, target, scope) {
+/** fresh = the Refresh button (#97): read the Sheet itself for this call instead of the snapshots. */
+function classView(code, target, scope, fresh) {
+  if (fresh) _forceFresh = true;
   cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var T = resolveTarget_(target), mem = {}, names = {};
@@ -359,7 +361,8 @@ function asksInbox(code) {
 }
 
 /* ============================== student profile ============================== */
-function studentProfile(code, sc) {
+function studentProfile(code, sc, fresh) {
+  if (fresh) _forceFresh = true;                                    // the Refresh button (#97)
   cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   requireTeacher_(code);
   var st = findStudent_(sc); if (!st) throw new Error('FORM: Student not found.');

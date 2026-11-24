@@ -136,7 +136,7 @@ const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = req
     await page.click('[data-res]');
     await page.waitForFunction(() => /No open questions/.test(document.querySelector('#t-body').innerText));
     check(true, 'Resolve → inbox empty');
-    await page.click('.t-nav [data-go="home"]');
+    await page.click('#t-brand');
     await page.waitForSelector('[data-prof="FX-T03"]');
     await page.$eval('[data-prof="FX-T03"]', e => e.click());
     await page.waitForSelector('#t-my .ms-lrow');
