@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.16.0 (2026-11-24, teacher Refresh + logo = home; library release 1 of 2: OLDP5–8, OLDP-T4–T6, HM B items, redrawn figures, QK levels)';
+var APP_VERSION = 'v0.17.0 (2026-11-24, real-test module: Module 1 / Module 2 easier / harder / full with adaptive Module 2, timed, score range)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -268,7 +268,17 @@ var SETTINGS_DEFAULTS_ = {
   pl_spr_extra_sec: 15, pl_slow_credit: 0.5, pl_max_per_domain: 6, pl_easy_cap: 3, pl_strong_run: 2, pl_wrong_stop: 2,
   pl_pattern: 'ALG,PSD,ALG,GEO', pl_adv_medium_if: 'H',
   // #48 leaving the window (all sets: recorded for the teacher; only the Placement test tells the student)
-  away_min_sec: 2, away_flag_sec: 20, away_notice_placement: 'Yes'
+  away_min_sec: 2, away_flag_sec: 20, away_notice_placement: 'Yes',
+  // #101 real-test module (📐 #102 blueprint, Brain 24/11): slots "target allowed", bands = domain quota (H Algebra, P Advanced, Q Data, S Geometry)
+  mod_minutes: 35, mod_gridin_slots: '5, 6, 11, 12, 17, 22', mod_route_raw: 13,
+  mod_levels_m1: 'E2 E1-E3, E2 E1-E3, E2 E1-E3, E2 E1-E3, E2 E1-E3, E2 E1-E3, E2 E2-E3, E2 E2-E3, E3 E2-M1, M1 E3-M1, E3 E2-M1, M1 E3-M1, M1 E3-M2, M1 E3-M1, M1 M1-M2, M3 M2-M3, M3 M3-H1, M3 M3-H1, M3 M3-H1, H1 M3-H2, H2 H1-H2, H1 M3-H2',
+  mod_levels_m2h: 'M1 E3-M1, M1 E3-M1, M1 E3-M1, M1 M1-M2, M1 M1-M2, M2 M1-M2, M2 M1-M3, M2 M1-M3, M2 M2-M3, M3 M2-M3, M3 M2-M3, M3 M2-H1, M3 M3-H1, H1 M3-H1, H1 M3-H1, H1 H1-H2, H1 H1-H2, H2 H1-H2, H2 H1-H2, H2 H1-H3, H2 H2-H3, H2 H2-H3',
+  mod_levels_m2e: 'E1 E1-E2, E1 E1-E2, E2 E1-E2, E2 E1-E2, E2 E1-E3, E2 E1-E3, E2 E1-E3, E2 E1-E3, E2 E2-E3, E2 E2-E3, E3 E2-E3, E3 E2-M1, E3 E2-M1, M1 E3-M1, M1 E3-M1, M1 E3-M2, M1 M1-M2, M2 M1-M2, M2 M1-M3, M2 M2-M3, M3 M2-M3, M3 M2-H1',
+  mod_bands_m1: '1-9: H4 P2 Q2 S1 | 10-15: H2 P2 Q1 S1 | 16-22: H1 P3 Q1 S2', mod_bands_m2h: '1-9: H4 P2 Q2 S1 | 10-15: H2 P2 Q1 S1 | 16-22: H1 P3 Q1 S2',
+  mod_bands_m2e: '1-11: H4 P3 Q3 S1 | 12-18: H2 P2 Q1 S2 | 19-22: H1 P2 Q0 S1',
+  mod_gridin_domains: 'H 2, P 2, S 1, Q 1', mod_skill_caps: 'P.C 5, H.B 3, P.B 3, Q.E 1, Q.F 1, Q.G 0, other 2', mod_sub_cap: 2,
+  mod_min_skills: 12, mod_min_forms: 10, mod_form_cap: 4, mod_min_figures: 3, mod_exclude_cb_pt: 'Yes',
+  mod_level_step: 0.5, mod_prior_sd: 3, mod_range_one: 60, mod_range_full: 40, mod_easy_cap: 660, mod_hard_floor: 450
 };
 var _settings = null;
 function getSettings_() {
@@ -429,6 +439,7 @@ function setTitle_(s) {
   if (kind === 'review') return 'Review';
   if (kind === 'mixed') return MIXED_TITLE;
   if (kind === 'placement') return PL_TITLE;
+  if (kind === MOD_KIND) return modTitle_(s);
   return s.assignment_id ? assignmentTitle_(s.assignment_id) : 'Assignment';
 }
 
@@ -524,7 +535,7 @@ function getSet(code, setId, opts) {
   var qs = setQuestions_(s);
   if (!qs.length) throw new Error('FORM: The questions of this set are not available. Ask your teacher.');
   var S = getSettings_(), pl = String(s.kind) === 'placement';
-  var prof = setProfile_(s, qs.length);
+  var prof = String(s.kind) === MOD_KIND ? modProfile_(s, qs.length) : setProfile_(s, qs.length);
   if (pl) {
     prof.placement = true; prof.n_range = '8–24';
     prof.parts[0].directions_html = '<p>This test finds your level in the four areas of SAT Math. You get one question at a time; the next one ' +
@@ -916,15 +927,24 @@ function gradeSet_(s, state, events) {
   return { rows: rows, right: right, n: qs.length };
 }
 
-/** Submit a set. Idempotent: a second submit returns the stored result. payload: { state, events, ev_from, device, copy } */
+/** Submit a set. Idempotent: a second submit returns the stored result. payload: { state, events, ev_from, device, copy }
+ *  #101 Module 1 of a full real-test module → {module_next: Module 2 set id, set: its getSet} (Module 2 opens at once). */
 function submit(code, setId, payload) {
+  var r = submitCore_(code, setId, payload);
+  if (r && r.module_next) { try { r.set = getSet(code, r.module_next, { device: payload && payload.device }); } catch (e) { /* the page opens it with its own call */ } }
+  return r;
+}
+function submitCore_(code, setId, payload) {
   payload = payload || {};
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
     var s = requireSet_(code, setId);
     if (String(s.kind) === 'placement') return isFinished_(s) ? placementStudentView_(s) : { ok: false, msg: 'Answer the questions one by one.' };
-    if (isFinished_(s)) return resultView_(s, responsesOf_(setId), false);
+    if (isFinished_(s)) {
+      if (String(s.kind) === MOD_KIND) { var nx0 = modOpenNext_(s); if (nx0) return { ok: true, module_next: nx0 }; }
+      return resultView_(s, responsesOf_(setId), false);
+    }
     if (staleCopy_(s, payload)) return otherCopy_();
     var qs = setQuestions_(s);
     cleanEvents_(qs, payload.events);
@@ -947,6 +967,10 @@ function submit(code, setId, payload) {
     var done = {}; Object.keys(s).forEach(function (k) { done[k] = s[k]; }); Object.keys(fields).forEach(function (k) { done[k] = fields[k]; });
     try { reviewAfterSubmit_(done, g.rows); } catch (e) { console.error('REVIEW UPDATE FAILED ' + setId + ': ' + (e && e.stack || e)); }
     try { afterSubmit_(done, g.rows); } catch (e) { console.error('LEVELS UPDATE FAILED ' + setId + ': ' + (e && e.stack || e)); }
+    if (String(s.kind) === MOD_KIND) {                                // #101 the module's raw score, the route to Module 2, the score
+      var mx = modAfterSubmit_(done, g.rows);
+      if (mx && mx.next && mx.next.set_id) return { ok: true, module_next: mx.next.set_id };
+    }
     return resultView_(done, g.rows, false);
   } finally { lock.releaseLock(); }
 }
@@ -989,6 +1013,7 @@ function getReview(code, setId) {
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
   if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no question review. Your teacher goes over it with you.');
+  if (String(s.kind) === MOD_KIND) return modReviewData_(s, false);          // #101 both modules of the test
   return reviewData_(s, responsesOf_(setId));
 }
 

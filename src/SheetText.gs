@@ -45,6 +45,29 @@ var SETTING_MEANINGS_ = {
   pl_wrong_stop: 'Placement: the domain stops at the Nth wrong answer at the same level.',
   pl_pattern: 'Placement: order of the domains (repeats; ALG turns go to ADV once Algebra is done).',
   pl_adv_medium_if: 'Placement: Advanced Math starts at Medium when the Algebra result is this level (H = Strong).',
+  mod_minutes: 'Real-test module: minutes per module (timer; at 0:00 the module is submitted).',
+  mod_gridin_slots: 'Real-test module: positions of the grid-in (typed answer) questions (6 of 22 ≈ 25 %, College Board positions).',
+  mod_route_raw: 'Full test (Module 1 + 2): Module 1 right answers needed for the harder Module 2 (fewer → the easier one).',
+  mod_levels_m1: 'Module 1: one entry per question in order, "target allowed" (levels E1–E3, M1–M3, H1–H3); the count = questions per module.',
+  mod_levels_m2h: 'Module 2 (harder): one entry per question, "target allowed".',
+  mod_levels_m2e: 'Module 2 (easier): one entry per question, "target allowed".',
+  mod_bands_m1: 'Module 1: domains per band of positions (H Algebra, P Advanced Math, Q Problem-Solving and Data, S Geometry and Trig).',
+  mod_bands_m2h: 'Module 2 (harder): domains per band of positions.',
+  mod_bands_m2e: 'Module 2 (easier): domains per band of positions.',
+  mod_gridin_domains: 'Real-test module: wished domains of the grid-in questions (when the library has them).',
+  mod_skill_caps: 'Real-test module: most questions of one College Board skill ("other" = every skill not listed).',
+  mod_sub_cap: 'Real-test module: most questions of one sub-skill (and never two in a row).',
+  mod_min_skills: 'Real-test module: aim for at least this many different skills.',
+  mod_min_forms: 'Real-test module: aim for at least this many ways of asking (question forms).',
+  mod_form_cap: 'Real-test module: most questions asked the same way (and never 3 in a row).',
+  mod_min_figures: 'Real-test module: aim for at least this many questions with a figure or table (early in the module).',
+  mod_exclude_cb_pt: 'Yes = real-test modules never use the 432 College Board practice-test items (students often take those tests in Bluebook).',
+  mod_level_step: 'Score estimate: ability distance between two neighbour levels (E1 … H3) in the difficulty adjustment.',
+  mod_prior_sd: 'Score estimate: how far the ability may go from the middle (keeps all-right / all-wrong finite).',
+  mod_range_one: 'Score estimate: ± points shown for one module alone.',
+  mod_range_full: 'Score estimate: ± points shown for Module 1 + Module 2.',
+  mod_easy_cap: 'Score estimate: highest middle of the range after an easier Module 2.',
+  mod_hard_floor: 'Score estimate: lowest middle of the range after a harder Module 2 (full test).',
   code_version: 'Code version + commit whose Sheet update has run (set automatically after each deploy).'
 };
 
@@ -66,13 +89,15 @@ var README_ROWS_ = [
   ['Skill_Profile', 'One row per skill: which difficulties exist on the real SAT (allowed), how often it comes up (weight = % of Mixed Practice items), max_set (practice by skill offers only this many). Edit freely; the app reads it at once.'],
   ['Placement_Forms', 'The placement test: one row per form (A first time, B retake) × domain × slot (E1–E3, M1–M4, H1–H4) with the question code. Edit a code here to swap an item.'],
   ['Placements', 'One row per finished placement test: level per domain (H Strong, M Medium, E Weak, <E below Easy), level per tested skill, "teach first" skills, the path.'],
-  ['Other tabs', 'Classes, Assignments (kind placement = a placement test), Skill_Summary: filled by the app (teacher page).'],
+  ['Modules', 'One row per real-test module a student got (Module 1, Module 2 easier / harder): its questions\' levels, the substitutions the builder made, raw score, route, and on the last module of a test the score range (estimate, not a College Board score).'],
+  ['Item_Forms', 'Written by every deploy: the way each question asks (form), figure / table, words — the real-test module builder reads it (no question text here).'],
+  ['Other tabs', 'Classes, Assignments (kind placement = a placement test, kind module = a real-test module), Skill_Summary: filled by the app (teacher page).'],
   ['Dictionary', 'Every column of every tab explained.']
 ];
 
 var DICT_ = {
   Students: { student_code: 'Code the student types to sign in (unique).', name: 'Name shown in the app.', active: 'Yes = can sign in.', classes: 'Classes of the student (filled by the app).', created_in: 'app / sheet', created_at: 'When the student was added.', note: 'Free text.' },
-  Sets: { set_id: 'S-<date>-<code>-<n>.', kind: 'practice / assignment / review', skill: 'College Board skill code of a practice set.', n: 'Questions in the set.', qids: 'The questions, in order.', status: 'in_progress / submitted / abandoned', first_try: 'Right on the first try.', best_score: 'Right on any try (first try + fixed later).', time_used_min: 'Minutes on the questions (time away not counted).', time_answer_min: 'Minutes until each final answer was chosen (all questions).', time_check_min: 'Minutes on answered questions after their final answer (checking).', time_blank_min: 'Minutes on questions left blank.', away_n: 'Times the student left the set window (≥ away_min_sec).', away_sec: 'Seconds away from the window in total.', away_at: 'Questions open when the student left, e.g. Q7, Q12.', state_json: 'Saved answers (used to resume).', progress: 'Live progress, e.g. "3/10 answered · Q4".' },
+  Sets: { set_id: 'S-<date>-<code>-<n>.', kind: 'practice / mixed / assignment / review / placement / module (real-test module)', skill: 'College Board skill code of a practice set.', n: 'Questions in the set.', qids: 'The questions, in order.', status: 'in_progress / submitted / abandoned', first_try: 'Right on the first try.', best_score: 'Right on any try (first try + fixed later).', time_used_min: 'Minutes on the questions (time away not counted).', time_answer_min: 'Minutes until each final answer was chosen (all questions).', time_check_min: 'Minutes on answered questions after their final answer (checking).', time_blank_min: 'Minutes on questions left blank.', away_n: 'Times the student left the set window (≥ away_min_sec).', away_sec: 'Seconds away from the window in total.', away_at: 'Questions open when the student left, e.g. Q7, Q12.', state_json: 'Saved answers (used to resume).', progress: 'Live progress, e.g. "3/10 answered · Q4".' },
   Responses: { ask_code: 'Short code of a question the student asked about (students never see codes; this is for you).', try1_answer: 'Answer on the first try.', try1_correct: '1 right / 0 wrong / blank.', best_correct: '1 = right on some try.', time_try1_sec: 'Seconds to the final answer in the set (first try): revisits after it without a change do not count.', time_answer_sec: 'Same: seconds to the final answer (0 = blank). Rushed / Slow and the Placement time bands use it.', time_total_sec: 'All seconds on the question (incl. checking after the answer, Fix tries).', away_n: 'Times the student left the window on this question.', away_sec: 'Seconds away on this question.', profile: 'RIGHT, SLOW_RIGHT, FAST_WRONG (rushed), SLOW_WRONG (didn\'t know), WRONG, BLANK — from Time_Norms.', flags: 'CHANGED_R_TO_W, CHANGED_W_TO_R, GUESS_LIKELY, ELIM_KEY, IDLE_LIKELY, LEFT_THEN_RIGHT (Placement: left the window ≥ away_flag_sec, then right).', mistake_type: 'Teacher\'s mistake type (dropdown).', asked: 'Yes = the student asked the teacher about this question.' },
   Questions: { qid: '<batch>-<number> (College Board: CB-<id>).', code: 'Short question code (E326, M12, H604): shown small on the question; use it in the teaching PDF.', key_file: 'The key as the library file gave it last time (a different key typed in `key` = yours, and it wins).', accepted_file: 'Same for the grid-in accepted forms.', batch: 'Library file.', skill: 'Official College Board skill (separate from sub-skill).', subskill: 'Sub-skill code (taxonomy).', difficulty: 'E / M / H.', level: '1–3 inside a difficulty.', key: 'App key (typed here = wins over the file).', accepted: 'Grid-in: every accepted form, separated by |.', status: 'live / hold / excluded / candidate.' },
   Levels: { level: 'E / M / H — which difficulty mix the next practice set of this skill gets.', recent_pct: 'Weighted accuracy of the latest 10 first tries in the skill (0–1).', good_streak: 'Good practice sets in a row (≥ good_set_pct).', history: 'Level changes, e.g. "M→H 14 Nov".' },
@@ -82,6 +107,10 @@ var DICT_ = {
   Skill_Profile: { allowed: 'Difficulties that exist on the SAT for this skill (E,M,H). No E: an Easy slot gets Medium level 1. No H: a Hard slot gets the hardest Medium (+ the few Hard items).', weight: 'Share of Mixed Practice items (%, the app scales the column to 100).', max_set: 'Practice by skill offers only this many questions (empty = 5/10/20).' },
   Placement_Forms: { form: 'A (first placement) or B (retake).', domain: 'ALG Algebra · ADV Advanced Math · PSD Problem-Solving and Data · GEO Geometry and Trig.', slot: 'E1–E3 Easy, M1–M4 Medium, H1–H4 Hard (H4: Advanced Math only).', code: 'Short code of the question (the app finds the qid).', qid: 'Library qid (used when it exists).' },
   Placements: { alg: 'Algebra result: H Strong · M Medium · E Weak · <E below Easy.', skill_levels: 'Level per tested skill (written to Levels).', teach_first: 'The 3 tested skills to teach first.', path: 'Every item in order: domain, slot, F right in time / S slow right / W wrong.', prev_set_id: 'The placement before this one (retake comparison).' },
+  Modules: { test_id: 'Set id of the first module of the test (Module 1 + Module 2 share it).', mode: 'What the teacher assigned: M1, M2E, M2H or FULL (Module 1 + adaptive Module 2).',
+             module: 'M1 / M2E (easier Module 2) / M2H (harder Module 2).', levels: 'Level of each question in order.', subs: 'Where the builder had to substitute (one line per slot).',
+             stats: 'Skills, question forms, figures, grid-ins, domains of the module.', raw: 'Right answers in this module.', route: 'Module 2 the student got (M2E / M2H).',
+             cb_raw: 'The College Board raw score (0–54) the estimate uses (raw scaled to 54 + difficulty adjustment).', score_lo: 'Score range (estimate), lower end.', score_hi: 'Score range, upper end.', score_mid: 'Middle of the range.' },
   Batches: { live: 'Yes = served to students.', n_live: 'Questions with status live.', file_id: 'Drive file id of the batch JSON.' }
 };
 function syncSheetTexts_() {

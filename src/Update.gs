@@ -43,7 +43,7 @@ function currentStamp_() {
 
 function doUpdate_() {
   var steps = [['tabs', ensureTabs_], ['settings', ensureSettingsRows_], ['texts', syncSheetTexts_], ['time norms', ensureTimeNorms_],
-               ['skills', syncSkills_], ['skill profile', ensureSkillProfile_], ['library', syncLibrary_], ['students', syncStudents_], ['tags', syncTaggedReview_], ['asks backfill', backfillAskTags_], ['qk levels', qkLevelsImportAll_],
+               ['skills', syncSkills_], ['skill profile', ensureSkillProfile_], ['library', syncLibrary_], ['item forms', modFormsSync_], ['students', syncStudents_], ['tags', syncTaggedReview_], ['asks backfill', backfillAskTags_], ['qk levels', qkLevelsImportAll_],
                ['dropdown', ensureMistakeDropdown_], ['check', checkSheet_], ['cache', flushTabCache_]];
   var notes = [], failed = 0, log = [];
   _forceFresh = true; _readMode = 'fresh'; _tables = {};               // the update reads and writes the Sheet itself (row numbers)

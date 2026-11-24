@@ -141,10 +141,11 @@
     }).join('') + '<button type="button" class="t-card all" data-class="all"><b>All students</b><span class="t-mem">' + r.students.filter(function (s) { return s.active; }).length + ' active students</span><span class="t-meta">Everything they did</span></button></div>';
     if (arch.length) h += '<p class="t-toggle"><label><input type="checkbox" id="t-show-arch"' + (T.showArch ? ' checked' : '') + '> Show archived classes (' + arch.length + ')</label></p>';
     h += '<div class="t-head t-head2"><h2 class="t-h2">Students</h2>' + (off.length ? '<label class="t-toggle"><input type="checkbox" id="t-show-off"' + (T.showOff ? ' checked' : '') + '> Show inactive (' + off.length + ')</label>' : '') + '</div>' +
-      '<table class="t-table" id="t-students"><tr><th>Name</th><th>Code</th><th>Classes</th><th>Last activity</th><th>Asked</th><th>Review</th><th></th></tr>' +
+      '<table class="t-table" id="t-students"><tr><th>Name</th><th>Code</th><th>Classes</th><th>Last activity</th><th>Real-test score</th><th>Asked</th><th>Review</th><th></th></tr>' +
       r.students.filter(function (s) { return s.active || T.showOff; }).map(function (s) {
         return '<tr class="' + (s.active ? '' : 'off') + '"><td><button type="button" class="hz-link" data-prof="' + esc(s.code) + '">' + esc(s.name) + '</button>' + (s.active ? '' : ' <span class="muted">(off)</span>') + '</td>' +
-          '<td>' + stuCode(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
+          '<td>' + stuCode(s.code) + '</td><td>' + esc(s.classes) + '</td><td class="muted">' + esc(s.last) + '</td>' +
+          '<td class="t-modr">' + (s.mod ? '<b>' + s.mod.lo + '–' + s.mod.hi + '</b> <span class="muted t-small">' + esc(s.mod.date) + (s.mod.full ? '' : ' · 1 module') + '</span>' : '') + '</td><td>' + (s.asks ? '<b class="t-red">' + s.asks + '</b>' : '') + '</td><td>' + (s.review || '') + '</td>' +
           '<td><button type="button" class="hz-link" data-go-st="' + esc(s.code) + '">What to go over</button></td></tr>';
       }).join('') + '</table>';
     body().innerHTML = h;
@@ -326,6 +327,10 @@
       if (a.kind === 'placement') return '<div class="t-asg t-asgpl"><div><b>' + esc(a.title) + '</b> <span class="muted">Placement test · form ' + esc(a.form === 'auto' ? 'auto (A first time, B retake)' : a.form) + ' · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
         '<div class="t-asgst">' + a.students.map(function (s) { return s.state === 'done' ? '<button type="button" class="t-mini right" data-plrep="' + esc(s.set_id) + '">' + esc(s.name) + ': result</button>' : '<span class="t-mini ' + (s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + esc(s.state) + (s.state === 'in progress' ? ' (' + Math.max(0, s.n - 1) + ' answered)' : '') + '</span>'; }).join('') + '</div>' +
         '<div class="t-asgbtn">' + (a.status === 'published' ? '<button type="button" class="hz-link" data-aclose="' + esc(a.assignment_id) + '">Cancel</button>' : '') + '</div></div>';
+      if (a.kind === 'module') return '<div class="t-asg t-asgmod"><div><b>' + esc(a.title) + '</b> <span class="muted">Real-test module · ' + esc(a.mode_name || a.form) + ' · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
+        '<div class="t-asgst">' + a.students.map(function (s) { return s.state === 'done' ? '<button type="button" class="t-mini right" data-modres="' + esc(s.set_id) + '">' + esc(s.name) + ': ' + (s.range ? esc(s.range) : s.first_try + '/' + a.n) + '</button>' : '<span class="t-mini ' + (s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + esc(s.state) + '</span>'; }).join('') + '</div>' +
+        '<div class="t-asgbtn t-rowbtns">' + (a.status === 'published' ? '<button type="button" class="t-sb" data-aclose="' + esc(a.assignment_id) + '">Cancel</button>' : '') +
+        '<button type="button" class="t-sb go" data-ascope="' + esc(a.assignment_id) + '">What to go over</button></div></div>';
       return '<div class="t-asg"><div><b>' + esc(a.title) + '</b> <span class="muted">' + a.n + ' questions · from ' + esc(a.available_from) + (a.due ? ' · due ' + esc(a.due) : '') + ' · ' + esc(a.status) + '</span></div>' +
         '<div class="t-asgst">' + a.students.map(function (s) { return '<span class="t-mini ' + (s.state === 'done' ? 'right' : s.state === 'in progress' ? 'fixed' : '') + '">' + esc(s.name) + ': ' + (s.state === 'done' ? s.first_try + '/' + a.n + ' → ' + s.best + '/' + a.n : s.state) + '</span>'; }).join('') + '</div>' +
         '<div class="t-asgbtn t-rowbtns">' + (a.status === 'published' ? '<button type="button" class="t-sb" data-aclose="' + esc(a.assignment_id) + '">Cancel</button>' : '') +
@@ -334,6 +339,7 @@
   }
   function bindAsg(tb) {
     $$('[data-plrep]', tb).forEach(function (b) { b.onclick = function () { openPlacement(b.getAttribute('data-plrep')); }; });
+    $$('[data-modres]', tb).forEach(function (b) { b.onclick = function () { call('teacherResult', A.code, b.getAttribute('data-modres')).then(X.renderResult).catch(function (e) { toast(X.errMsg(e)); }); }; });
     $$('[data-ascope]', tb).forEach(function (b) { b.onclick = function () { T.tab = 'go'; openClass(T.target, 'a:' + b.getAttribute('data-ascope')); }; });
     $$('[data-aclose]', tb).forEach(function (b) { b.onclick = function () {
       var id = b.getAttribute('data-aclose'), a = T.cv.assignments.filter(function (x) { return x.assignment_id === id; })[0];
@@ -629,7 +635,7 @@
       var today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
       var hw = 'Homework – ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       body().innerHTML = '<button type="button" class="hz-link t-back" id="t-back">← Classes</button><h1>' + (T.editId ? 'Change questions' : 'New assignment') + '</h1>' +
-        '<div class="t-seg b-kind" role="group" aria-label="Kind of assignment"><button type="button" data-kind="questions" class="on">Questions</button><button type="button" data-kind="placement" id="b-kind-pl">Placement test</button></div>' +
+        '<div class="t-seg b-kind" role="group" aria-label="Kind of assignment"><button type="button" data-kind="questions" class="on">Questions</button><button type="button" data-kind="placement" id="b-kind-pl">Placement test</button><button type="button" data-kind="module" id="b-kind-mod">Real-test module</button></div>' +
         '<p class="sub" id="b-sub"></p>' +
         '<div class="t-form"><label>To<select id="b-to" class="field">' + opts + '</select></label><label>Title<input id="b-title" class="field" maxlength="80" value="' + esc(hw) + '"></label>' +
         '<label>Available from<input id="b-from" type="date" class="field" value="' + today + '"></label><label>Due (optional)<input id="b-due" type="date" class="field"></label></div>' +
@@ -639,7 +645,17 @@
       var kind = 'questions';
       var draw = function () {
         $$('[data-kind]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-kind') === kind); });
-        if (kind === 'placement') {
+        if (kind === 'module') {                                       // #101 built for each student when they start it
+          $('#b-sub').textContent = '';
+          $('#b-pick').innerHTML = '';
+          $('#b-tree').innerHTML = '<div class="t-form b-plform"><label>Module<select id="b-mod" class="field"><option value="FULL">Full Math section — Module 1, then Module 2 (easier or harder by Module 1)</option>' +
+            '<option value="M1">Module 1</option><option value="M2E">Module 2 easier</option><option value="M2H">Module 2 harder</option></select></label></div>' +
+            '<p class="b-pub"><button type="button" class="btn-blue" id="b-modpub">Publish the module</button></p>';
+          $('#b-modpub').onclick = function () {
+            if (!to.value) { toast('Choose a student or a class.', 2500); return; }
+            publishNow({ kind: 'module', target: to.value, title: $('#b-title').value, form: $('#b-mod').value, available_from: $('#b-from').value, due: $('#b-due').value, n_hint: $('#b-mod').value === 'FULL' ? 44 : 22 }, 'real-test module');
+          };
+        } else if (kind === 'placement') {
           $('#b-sub').textContent = '';
           $('#b-pick').innerHTML = '';
           $('#b-tree').innerHTML = '<div class="t-form b-plform"><label>Form<select id="b-form" class="field"><option value="auto">Auto — form A the first time, form B for a retake</option><option value="A">Form A</option><option value="B">Form B</option></select></label></div>' +
@@ -655,7 +671,8 @@
       };
       $$('[data-kind]').forEach(function (b) { b.onclick = function () {
         var k = b.getAttribute('data-kind'); if (k === kind) return;
-        var ti = $('#b-title'); if (k === 'placement' && ti.value === hw) ti.value = 'Placement test'; else if (k === 'questions' && ti.value === 'Placement test') ti.value = hw;
+        var ti = $('#b-title'), auto = [hw, 'Placement test', 'Real-test module'].indexOf(ti.value) >= 0;
+        if (auto) ti.value = k === 'placement' ? 'Placement test' : k === 'module' ? 'Real-test module' : hw;
         kind = k; draw();
       }; });
       to.onchange = function () { if (kind === 'questions') loadTree(to.value); };
@@ -749,7 +766,7 @@
 
   /** Publish: the class screen opens at once on Assignments with the new one marked "Publishing…"; saved in the background. */
   function publishNow(a, what) {
-    var key = 'cv|' + a.target + '|', tmp = { assignment_id: 'tmp-' + Date.now(), title: a.title || 'New assignment', kind: a.kind === 'placement' ? 'placement' : 'questions', form: a.form || '',
+    var key = 'cv|' + a.target + '|', tmp = { assignment_id: 'tmp-' + Date.now(), title: a.title || 'New assignment', kind: a.kind === 'placement' || a.kind === 'module' ? a.kind : 'questions', form: a.form || '',
       n: (a.qids || []).length || a.n_hint || 0, available_from: a.available_from || '', due: a.due || '', status: 'publishing…', students: [] };
     var h = T.home || { classes: [], students: [] }, names = {}; h.students.forEach(function (x) { names[x.code] = x.name; });
     var cls = h.classes.filter(function (c) { return c.class_id === a.target; })[0];
@@ -778,7 +795,7 @@
     T.asgs = r;
     var row = function (a, past) {
       return '<div class="t-arow' + (past ? ' past' : '') + '" data-aid="' + esc(a.assignment_id) + '"><div class="t-amain"><b>' + esc(a.title) + '</b><span class="muted">' + esc(a.who) + ' · ' + asgWhen(a) +
-        (a.kind === 'placement' ? ' · Placement' : ' · ' + a.n + ' q') + (past ? ' · ' + esc(a.status) : '') + '</span></div><span class="t-adone" title="done / students">' + a.done + '/' + a.total + '</span>' +
+        (a.kind === 'placement' ? ' · Placement' : a.kind === 'module' ? ' · Real-test module' : ' · ' + a.n + ' q') + (past ? ' · ' + esc(a.status) : '') + '</span></div><span class="t-adone" title="done / students">' + a.done + '/' + a.total + '</span>' +
         (past ? '' : '<span class="t-abtns"><button type="button" class="t-sb" data-aedit="' + esc(a.assignment_id) + '">Edit</button><button type="button" class="t-sb" data-acancel="' + esc(a.assignment_id) + '">Cancel</button>' +
           (a.started ? '' : '<button type="button" class="t-sb t-del" data-adel="' + esc(a.assignment_id) + '">Delete</button>') + '</span>') + '</div>';
     };
@@ -812,7 +829,7 @@
   }
   /** Edit: title · due · students; "Change questions" (the builder) only while nobody has started it. */
   function asgEdit(a) {
-    var r = T.asgs, canQ = !a.started && a.kind !== 'placement';
+    var r = T.asgs, canQ = !a.started && a.kind !== 'placement' && a.kind !== 'module';
     dialog('Edit "' + a.title + '"', '<label class="t-lab">Title<input class="field" name="title" maxlength="80" value="' + esc(a.title) + '"></label>' +
       '<label class="t-lab">Due<input class="field" type="date" name="due" value="' + esc(a.due) + '"></label>' +
       '<label class="t-lab">Students<select class="field" name="target">' + targetOpts(a.target) + '</select></label>' +

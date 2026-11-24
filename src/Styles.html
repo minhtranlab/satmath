@@ -743,6 +743,23 @@ canvas.pen-cv { position: absolute; left: 0; top: 0; z-index: 30; pointer-events
 #scr-test.placement .q-mark, #scr-test.placement .q-ask, #scr-test.placement .q-askrow, #scr-test.placement #btn-back { display: none; }
 #scr-test.placement #btn-nav { cursor: default; } #scr-test.placement #btn-nav svg { display: none; }
 #mm-save[hidden] { display: none !important; }
+/* #101 real-test module result: the range big, 4 domain bars, Go over */
+.mod-res { max-width: 760px; }
+.mod-score { border: 2px solid #324dc7; border-radius: 16px; padding: 18px 24px; margin: 16px auto 10px; text-align: center; max-width: 420px; background: #fff; }
+.mod-score .k { font: 700 14px 'Noto Sans', Arial, sans-serif; color: #5f6577; text-transform: uppercase; letter-spacing: .04em; }
+.mod-score .v { font: 800 52px/1.1 'Noto Sans', Arial, sans-serif; color: #191c26; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+.mod-score .s { color: #5f6577; font-size: 15px; }
+.mod-score.wait .v { color: #9aa0ae; }
+.mod-mods, .mod-res .t-pace { text-align: center; }
+.mod-doms { display: grid; gap: 12px; margin: 22px auto; max-width: 620px; }
+.mod-dom { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.mod-dom .n { font-weight: 700; color: #191c26; min-width: 0; }
+.mod-dom .xy { font-variant-numeric: tabular-nums; color: #191c26; font-weight: 700; }
+.mod-dom .bar { grid-column: 1 / -1; height: 12px; border-radius: 6px; background: #e8eaf1; overflow: hidden; }
+.mod-dom .bar i { display: block; height: 100%; background: #324dc7; border-radius: 6px; }
+.mod-go { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 8px 0 18px; }
+.mod-subs { max-width: 620px; margin: 6px auto; color: #3d4252; font-size: 14px; }
+.mod-subs summary { cursor: pointer; font-weight: 600; }
 .pl-doms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 16px; margin: 18px 0 22px; max-width: 760px; }
 .pl-dom { border: 1.5px solid #dde0ea; border-radius: 16px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: #fff; }
 .pl-dom .n { font: 700 16px 'Noto Sans', Arial, sans-serif; color: #191c26; min-height: 2.6em; }

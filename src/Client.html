@@ -288,6 +288,7 @@
   function durStr(sec) { sec = Math.round(Number(sec) || 0); var m = Math.floor(sec / 60), x = sec % 60; return m ? m + ' min' + (x ? ' ' + x + ' s' : '') : x + ' s'; }
   function awayLine(n, sec, at) { return n ? 'Left the window: ' + n + '× · ' + durStr(sec) + (at ? ' · at ' + at : '') : 'Left the window: never'; }
   function focusCard(a) {
+    if (a.module) return moduleCard(a);
     var c = el('article', { class: 'hz-focus', id: a.placement ? 'placement-card' : 'assigned' });
     var diffs = (a.diffs || '').split(',').filter(String).map(function (d) { return { E: 'Easy', M: 'Medium', H: 'Hard' }[d]; });
     var facts = a.placement ? ['<b>One</b> question at a time', 'No timer', 'Take your time']
@@ -300,6 +301,21 @@
       '<p class="hz-of">' + esc(sub) + (sub && due ? ' · ' : '') + due + '</p>' +
       '<ul class="hz-facts">' + facts.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>' +
       '<div class="hz-ring' + (a.set_id ? ' prog' : '') + '"' + (a.set_id && a.n ? ' style="--p:' + Math.round(100 * (a.answered || 0) / a.n) + '"' : '') + '>' + ring + '</div>';
+    var b = el('button', { class: 'hz-btn big', type: 'button' }, a.set_id ? 'Continue' : 'Start');
+    b.onclick = function () { startAsg(a, b); };
+    c.appendChild(b);
+    return c;
+  }
+  /** #101 a real-test module: 22 questions, timed; a full test = Module 1, then Module 2 at once. */
+  function moduleCard(a) {
+    var c = el('article', { class: 'hz-focus', id: 'assigned' }), two = a.n_modules === 2;
+    var facts = two ? ['<b>2</b> modules', '<b>22</b> questions each', '<b>' + a.minutes + ' min</b> each'] : ['<b>22</b> questions', '<b>' + a.minutes + ' min</b>'];
+    var sub = two ? 'Module 1, then Module 2' : 'One module';
+    var ring = a.set_id ? '<div>' + (two ? 'Module ' + a.on_module : (a.answered || 0) + '/22') + '<small>' + (two ? 'in progress' : 'done') + '</small></div>' : '<div>' + a.minutes + '<small>minutes</small></div>';
+    c.innerHTML = '<div><p class="hz-eyebrow">Assigned by your teacher</p><h1>' + esc(a.title) + '</h1>' +
+      '<p class="hz-of">' + esc(sub) + (a.due ? ' · due ' + esc(a.due) : '') + '</p>' +
+      '<ul class="hz-facts">' + facts.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="hz-ring' + (a.set_id ? ' prog' : '') + '">' + ring + '</div>';
     var b = el('button', { class: 'hz-btn big', type: 'button' }, a.set_id ? 'Continue' : 'Start');
     b.onclick = function () { startAsg(a, b); };
     c.appendChild(b);
@@ -752,6 +768,10 @@
       if (local && local.state && local.state.part_starts) Object.keys(local.state.part_starts).forEach(function (p) { if (!A.st.part_starts[p]) A.st.part_starts[p] = local.state.part_starts[p]; });
     } else {
       A.st = newState(res); A.events = []; A.evBase = 0; A.acked = 0;
+      if (res.profile.auto_begin) {                                    // #101 Module 2 of a full test starts at once (Bluebook)
+        A.st.part_starts[curPart()] = serverNow(); A.st.phase = 'test'; log('part_start', null, curPart());
+        setTimeout(function () { toast((pdef().title || 'Module 2') + ' has started.', 3500); }, 300);
+      }
     }
     // make sure every part has a state slot (profile may have changed)
     res.profile.parts.forEach(function (p) { if (!A.st.parts[p.part]) A.st.parts[p.part] = { cur: 0, ans: {}, elim: {}, mark: {}, ask: {}, hl: {}, elimMode: false }; });
@@ -1373,6 +1393,13 @@
     if (A.pl) { plNext(); return; }
     if (A.st.phase === 'review') {
       var last = A.st.part_idx >= A.st.seq_parts.length - 1 && !(A.profile.routing || []).some(function (r) { return r.from === curPart(); });
+      if (A.profile.module && last) {                                  // #101 a real-test module
+        var ub = qlist().filter(function (q) { return !pst().ans[q.qid]; }).length;
+        modal('Submit ' + esc(pdef().title || 'this module') + '?', (A.profile.next_module ? 'Module 2 starts right after.' : 'Your answers will be submitted.') +
+          ' Time left: <b>' + fmt(remainingMs()) + '</b>.' + (ub ? ' <b>' + ub + '</b> ' + (ub === 1 ? 'question is' : 'questions are') + ' blank.' : ''),
+          [{ label: 'Cancel', value: false, cls: 'btn-outline' }, { label: 'Submit', value: true }]).then(function (ok) { if (ok) endPart('submit'); });
+        return;
+      }
       modal(last ? (untimed() ? 'Submit this set?' : 'Submit your test?') : 'Move on to the next ' + word() + '?',
         (last ? (untimed() ? 'Your answers will be checked. After that you can fix the questions you got wrong.' : 'This is the last part. Your answers will be submitted.') : 'You will not be able to come back to <b>' + esc(pdef().title) + '</b>.') +
         (untimed() ? (function () { var u = qlist().filter(function (q) { return !pst().ans[q.qid]; }).length; return u ? ' <b>' + u + '</b> ' + (u === 1 ? 'question is' : 'questions are') + ' blank: they count as wrong for First Try.' : ''; })() : ' Time left in this part: <b>' + fmt(remainingMs()) + '</b>.'),
@@ -1553,6 +1580,39 @@
     $('#res-home').onclick = showHome;
   }
 
+  /** #101 real-test module: the score range big, the 4 domains as bars, Go over. Teacher: + raw per module, route, substitutions. */
+  function renderModuleResult(res) {
+    show('scr-result');
+    if (res.session_id && !res.teacher) { A.resC = A.resC || {}; A.resC[res.session_id] = res; }
+    A.result = res;
+    var t = !!res.teacher, sc = res.score;
+    var h = brandBar('res-home', t ? 'Back to students' : 'Back to home') + '<div class="page res-page mod-res">' +
+      '<h1>' + (t ? esc(res.student) + ' — Results' : 'Your Results') + '</h1>' +
+      '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>';
+    if (sc) h += '<div class="mod-score" id="mod-score"><div class="k">Estimated SAT Math score</div><div class="v">' + sc.lo + '–' + sc.hi + '</div>' +
+      (res.one_module ? '<div class="s">One module only: a wider range.</div>' : '') + '</div>';
+    else h += '<div class="mod-score wait" id="mod-score"><div class="k">Estimated SAT Math score</div><div class="v">–</div><div class="s">After Module 2</div></div>';
+    if (t) {
+      h += '<p class="t-pace mod-mods" id="mod-mods">' + (res.modules || []).map(function (m) { return esc(m.name || m.title) + ': <b>' + (m.done ? m.right + '/' + m.n : 'not done') + '</b>'; }).join(' · ') +
+        (res.route ? ' · route <b>' + esc(res.route) + '</b> (Module 1 ≥ ' + res.route_raw + ' → harder)' : '') + (res.cb_raw !== null && res.cb_raw !== undefined && sc ? ' · CB raw ≈ ' + res.cb_raw + ' / 54' : '') + '</p>';
+      if (res.pace) h += '<p class="t-pace">Time <b>' + res.pace.time_min + ' min</b> · ' + awayLine(res.pace.away_n, res.pace.away_sec, res.pace.away_at) + '</p>';
+    }
+    h += '<div class="mod-doms" id="mod-doms">' + (res.domains || []).map(function (d) {
+      return '<div class="mod-dom"><span class="n">' + esc(d.name) + '</span><span class="xy">' + d.right + '/' + d.n + '</span><span class="bar"><i style="width:' + pct(d.right, d.n) + '%"></i></span></div>';
+    }).join('') + '</div>';
+    if (t) h += '<div class="mod-go">' + (res.modules || []).filter(function (m) { return m.done; }).map(function (m) {
+      return '<button type="button" class="btn-blue" data-modgo="' + esc(m.set_id) + '">Go over ' + esc(m.title) + '</button>'; }).join('') + '</div>' +
+      (res.modules || []).map(function (m) { return m.subs && m.subs.length ? '<details class="mod-subs"><summary>' + esc(m.name || m.title) + ': ' + m.subs.length + ' substitution' + (m.subs.length > 1 ? 's' : '') + '</summary><ul>' +
+        m.subs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></details>' : ''; }).join('');
+    else h += '<div class="mod-go"><button type="button" class="btn-blue" id="btn-mod-go">Go over</button></div>';
+    h += '</div>';
+    $('#result-body').innerHTML = h;
+    $('#scr-result').scrollTop = 0;
+    $('#res-home').onclick = t ? showTeacher : showHome;
+    var g = $('#btn-mod-go'); if (g) g.onclick = function () { openReview(res.session_id, false); };
+    $$('#result-body [data-modgo]').forEach(function (b) { b.onclick = function () { openReview(b.getAttribute('data-modgo'), true); }; });
+  }
+
   /* ================= ending parts + submit ================= */
   function endPart(reason) {
     if (A.ending) return;
@@ -1614,6 +1674,7 @@
         if (res && res.other_copy) { onOtherCopy(); return; }
         LS.del(lsKey()); LS.del('tz_active');
         A.ending = false;
+        if (res && res.module_next) { openTest(res.module_next, {}, res.set); return; }   // #101 Module 1 in → Module 2 now
         renderResult(res);
       }).catch(function (e) {
         var m = $('#sub-msg');
@@ -1679,6 +1740,7 @@
     var b = $('#result-body');
     if (!res || !res.ok) { b.innerHTML = brandBar('res-home', 'Back to home') + '<div class="page"><p class="lead">' + esc((res && res.msg) || 'No result.') + '</p></div>'; $('#res-home').onclick = showHome; return; }
     if (res.placement) { renderPlacementResult(res); return; }
+    if (res.module) { renderModuleResult(res); return; }
     if (res.session_id && !A.teacher) { A.resC = A.resC || {}; A.resC[res.session_id] = res; }
     A.result = res;
     var teacher = !!res.teacher;

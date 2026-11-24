@@ -28,6 +28,7 @@ function paceOf_(rows) {
            away_n: f.away_n, away_sec: f.away_sec, away_at: f.away_at, has_answer_time: rows.some(function (r) { return r.time_answer_sec !== '' && r.time_answer_sec !== undefined; }) };
 }
 function resultView_(s, rows, asTeacher) {
+  if (String(s.kind) === MOD_KIND) return modResultView_(s, asTeacher);       // #101 real-test module: range + domains
   rows = rows.slice().sort(function (a, b) { return Number(a.order) - Number(b.order); });
   var n = rows.length;
   var first = rows.filter(function (r) { return Number(r.try1_correct) === 1; }).length;
