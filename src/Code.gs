@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.17.1 (2026-11-24, library release 2 of 2: OLDP9–OLDP13, QK99 levels)';
+var APP_VERSION = 'v0.17.2 (2026-11-24, real-test module: the normal assignment report under the score, a question grid per module)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -1035,11 +1035,12 @@ function fixState_(q, r, tries) {
 }
 
 /** The questions of a submitted set that were not right on try 1 — to fix them (never the key). */
-function getFix(code, setId) {
+function getFix(code, setId, one) {
   cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
   var s = requireSet_(code, setId);
   if (!isFinished_(s)) throw new Error('SESSION: This set has not been submitted yet.');
   if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no fixes.');
+  if (String(s.kind) === MOD_KIND && one !== true) return modFix_(code, s);   // #104 both modules of the test
   var rows = responsesOf_(setId), by = {};
   rows.forEach(function (r) { by[String(r.qid)] = r; });
   var allTries = readTable_('Tries').rows.filter(function (t) { return String(t.set_id) === String(setId); });
@@ -1065,7 +1066,9 @@ function checkTry(code, setId, qid, answer, timeSec) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    var s = requireSet_(code, setId);
+    var s0 = requireSet_(code, setId), testOf = null;
+    if (String(s0.kind) === MOD_KIND) { testOf = String(setId); setId = modSetOf_(setId, qid); }   // #104 the module that holds the question
+    var s = testOf ? requireSet_(code, setId) : s0;
     if (!isFinished_(s)) throw new Error('SESSION: Submit the set first.');
     if (String(s.kind) === 'placement') throw new Error('SESSION: The placement test has no fixes.');
     var q = setQuestions_(s).filter(function (x) { return x.qid === String(qid); })[0];
@@ -1073,7 +1076,7 @@ function checkTry(code, setId, qid, answer, timeSec) {
     if (!q || !r) throw new Error('SESSION: Question not found.');
     var tries = triesOf_(setId, qid), fx = fixState_(q, r, tries);
     var out = function (extra) {
-      var rows = responsesOf_(setId);
+      var rows = testOf ? modTestResponses_(setId) : responsesOf_(setId);
       var o = { ok: true, qid: q.qid, best: { right: rows.filter(function (x) { return Number(x.best_correct) === 1; }).length, n: rows.length } };
       Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
       return o;
@@ -1121,6 +1124,7 @@ function askTeacher(code, setId, qid, on, note) {
   lock.waitLock(20000);
   try {
     var s = requireSet_(code, setId);
+    if (String(s.kind) === MOD_KIND) { setId = modSetOf_(setId, qid); s = requireSet_(code, setId); }   // #104
     if (!isFinished_(s)) throw new Error('SESSION: This set is still open.');
     var r = responsesOf_(setId).filter(function (x) { return String(x.qid) === String(qid); })[0];
     if (!r) throw new Error('SESSION: Question not found.');
@@ -1170,15 +1174,16 @@ function teacherResult(code, setId) {
 }
 function teacherReview(code, setId) {
   cachedReads_();                                                   // read-only: snapshots, no Sheet (#42)
-  var s = teacherSet_(code, setId), r = reviewData_(s, responsesOf_(setId), true), st = findStudent_(s.student_code);
+  var s = teacherSet_(code, setId), md = String(s.kind) === MOD_KIND;
+  var r = md ? modReviewData_(s, true) : reviewData_(s, responsesOf_(setId), true), st = findStudent_(s.student_code);   // #104 both modules
   r.student = st ? String(st.name || '') : String(s.student_code); r.student_code = normCode_(s.student_code);
   // #50: nothing in this payload tells the answer — not the key, and not the student's answer (a right answer = the key);
   // "Wrong only" needs just wrong / not; the answers come with "Student's answer" (classView), the key with "Show answer" (teacherKey)
-  var rs = {}; responsesOf_(setId).forEach(function (x) { rs[String(x.qid)] = x; });
+  var rs = {}; (md ? modTestResponses_(setId) : responsesOf_(setId)).forEach(function (x) { rs[String(x.qid)] = x; });
   r.questions.forEach(function (q) { q.meta = goMeta_(q.qid); q.wrong = Number((rs[q.qid] || {}).try1_correct) !== 1; delete q.answer; delete q.status; });   // wrong on the first try
   r.keys = goKeys_(r.questions.map(function (q) { return q.qid; }));   // #62 (Minh's call): teacher only, kept in memory, shown on "Show answer" at once
   // #66: the student's entries (all tries) + time of every question, kept in memory: "Student's answer" and the time at once
-  try { r.rows = classView(code, 'st:' + normCode_(s.student_code), 's:' + setId).rows; } catch (e) { r.rows = null; }
+  try { r.rows = classView(code, 'st:' + normCode_(s.student_code), md ? 'a:' + s.assignment_id : 's:' + setId).rows; } catch (e) { r.rows = null; }
   return r;
 }
 /** #62 the keys (+ accepted forms, CB explanation) of a go-over set — ONLY in the teacher's go-over payloads (requireTeacher_ first). */

@@ -293,7 +293,8 @@ function questionPanel(code, qid) {
 
 /* ============================== tags · asks ============================== */
 function responseRow_(setId, qid) {
-  return readTable_('Responses').rows.filter(function (r) { return String(r.set_id) === String(setId) && String(r.qid) === String(qid); })[0];
+  var f = function (sid) { return readTable_('Responses').rows.filter(function (r) { return String(r.set_id) === String(sid) && String(r.qid) === String(qid); })[0]; };
+  return f(setId) || (modRecord_(setId) ? f(modSetOf_(setId, qid)) : undefined);       // #104 a module test: the other module's answer
 }
 /** Mistake type of one answer (Minh's 7, Settings.mistake_types). A real mistake also puts the item in the student's Review. */
 function tagMistake(code, setId, qid, type, note, undoAsk) {

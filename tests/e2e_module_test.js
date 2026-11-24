@@ -1,6 +1,7 @@
 // #101 browser: the teacher assigns a real-test module (Full: Module 1 → adaptive Module 2) → the student takes Module 1 on
 // the timed test screen (directions, 35:00, review page) → Module 2 starts by itself (harder route) → result: the range big,
-// 4 domain bars, Go over (both modules) → the teacher sees raw per module, route, range, the student's latest range.
+// 4 domain bars + (#104) the normal report below (First Try, types, a grid per module, Go over) → the teacher sees raw per
+// module, route, range, the time under every cell, the go-over, What to go over / Grid, the student's latest range.
 // A second student: one module on a phone, the timer runs out → submitted by itself. No key in any payload.
 process.env.LIB_DIR = require('./modlib').modLib();
 const { setup, shot, englishOnly, login, waitMath, check, summary, sleep } = require('./h');
@@ -81,14 +82,18 @@ const T = 'TEACH-FX-9';
     const range = await page.$eval('#mod-score .v', e => e.textContent);
     check(/^\d{3}–\d{3}$/.test(range) && +range.split('–')[1] - +range.split('–')[0] === 80, 'result: estimated score ' + range + ' (80 wide), big');
     check((await page.$$('#mod-doms .mod-dom')).length === 4 && await page.$eval('#mod-doms', e => /Algebra/.test(e.innerText) && /Geometry and Trigonometry/.test(e.innerText)), '4 domain bars');
-    check(!(await page.$('#result-body .rgrid')) && !(await page.$('#mod-mods')) && !(await page.$eval('#result-body', e => /route|raw|harder|easier/i.test(e.innerText))), 'nothing else: no grid, no raw per module, no route');
-    await shot(page, 'mod101_result');
-    await page.click('#btn-mod-go');
+    check(await page.$eval('#mod-route', e => e.textContent) === 'Module 2: harder' && !(await page.$('#mod-mods')), 'route shown to the student (Module 2: harder); no raw per module');
+    // #104 below the score: the normal assignment report
+    check(await page.$eval('#score-first .v', e => e.textContent.replace(/\s/g, '')) === '28/44' && !!(await page.$('#btn-fix')) && !!(await page.$('#result-body .res-types')),
+      'below: First Try 28/44, Best Score, Fix wrong answers, Results by skill, Types of mistakes');
+    const grids = await page.$$eval('#result-body .res-part', a => a.map(x => x.querySelector('h3').innerText.replace(/\s+/g, ' ') + ':' + x.querySelectorAll('.rgrid .rcell').length));
+    check(grids.length === 2 && /^Module 1 16 \/ 22:22$/.test(grids[0]) && /^Module 2 12 \/ 22:22$/.test(grids[1]), 'question grids by module: ' + grids.join(' | '));
+    await shot(page, 'mod104_result');
+    await page.evaluate(() => document.querySelectorAll('#result-body .res-part')[1].scrollIntoView()); await sleep(200); await shot(page, 'mod104_result_grids');
+    await page.click('#result-body .res-part:nth-of-type(2) .rcell, #result-body .res-part >> nth=1 >> .rcell').catch(async () => { const c = (await page.$$('#result-body .res-part'))[1]; await (await c.$('.rcell')).click(); });
     await page.waitForSelector('#v-question.on'); await waitMath(page);
-    check(await page.$eval('#tb-title', e => /Module 1/.test(e.textContent)) && !!(await page.$('#view-bar')), 'Go over: the questions on the test screen with the answer, from Module 1');
-    await shot(page, 'mod101_goover');
-    for (let i = 0; i < 22; i++) { await page.click('#btn-next'); await sleep(60); }
-    check(await page.$eval('#tb-title', e => /Module 2/.test(e.textContent)), 'Next goes on into Module 2');
+    check(await page.$eval('#tb-title', e => /Module 2/.test(e.textContent)) && !!(await page.$('#view-bar')), 'a Module 2 cell opens that question read-only (Go over of the whole test)');
+    await shot(page, 'mod104_goover');
     await page.click('#btn-view-back'); await page.waitForSelector('#mod-score');
     check(true, 'back to the result');
 
@@ -106,9 +111,23 @@ const T = 'TEACH-FX-9';
     const mm = await tp.$eval('#mod-mods', e => e.innerText);
     check(/Module 1: 16\/22/.test(mm) && /harder\): 12\/22/.test(mm) && /route harder/.test(mm) && await tp.$eval('#mod-score .v', e => e.textContent) === range, 'teacher result: Module 1 16/22 · Module 2 (harder) 12/22 · route harder · the range');
     await shot(tp, 'mod101_teacher_result');
-    await tp.click('[data-modgo]');
+    const tms = await tp.$$eval('#result-body .rgrid .rcell .rtm', a => a.length), tgr = await tp.$$eval('#result-body .res-part', a => a.length);
+    check(tms === 44 && tgr === 2 && !!(await tp.$('#res-pace')) && !!(await tp.$('#result-body .res-types')), 'teacher result below the score: pace line, types of mistakes, 2 module grids with the time under all 44 cells');
+    await shot(tp, 'mod104_teacher_result');
+    const c2 = (await tp.$$('#result-body .res-part'))[1]; await (await c2.$('.rcell')).click();
     await tp.waitForSelector('#scr-test.going', { timeout: 20000 });
-    check(true, 'teacher: Go over Module 1 opens the go-over screen');
+    check(await tp.$eval('#tb-title', e => /Module 2/.test(e.textContent)), 'teacher: a Module 2 cell opens the go-over screen on that question');
+    await shot(tp, 'mod104_teacher_goover');
+    await tp.click('#btn-view-back').catch(() => {}); await tp.waitForSelector('#res-home', { state: 'visible' });
+    await tp.click('#res-home'); await tp.waitForSelector('#t-p-go, #t-students [data-prof="FX-T01"]', { state: 'visible' });
+    if (!(await tp.$('#t-p-go'))) { await tp.click('#t-students [data-prof="FX-T01"]'); await tp.waitForSelector('#t-p-go'); }
+    await tp.click('#t-p-go');
+    await tp.waitForSelector('#t-tabbody'); await sleep(400);
+    check(await tp.$eval('#t-tabbody', e => (e.innerText.match(/[EMH]8\d{3}/g) || []).length >= 5), 'What to go over: the module answers are there like any set (question codes listed)');
+    await shot(tp, 'mod104_teacher_goover_tab');
+    await tp.click('[data-tab="grid"]'); await sleep(500);
+    check(await tp.$eval('#t-tabbody', e => (e.innerText.match(/[EMH]8\d{3}/g) || []).length >= 20), 'Grid: the module answers with time and slow / rush flags');
+    await shot(tp, 'mod104_teacher_grid');
 
     console.log('one module on a phone, time runs out');
     const st = C().readTable_('Settings').rows.find(x => x.key === 'mod_minutes'); C().updateRow_('Settings', st._row, { value: 0.15 }); G().fresh();

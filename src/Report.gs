@@ -28,13 +28,18 @@ function paceOf_(rows) {
            away_n: f.away_n, away_sec: f.away_sec, away_at: f.away_at, has_answer_time: rows.some(function (r) { return r.time_answer_sec !== '' && r.time_answer_sec !== undefined; }) };
 }
 function resultView_(s, rows, asTeacher) {
-  if (String(s.kind) === MOD_KIND) return modResultView_(s, asTeacher);       // #101 real-test module: range + domains
-  rows = rows.slice().sort(function (a, b) { return Number(a.order) - Number(b.order); });
+  if (String(s.kind) === MOD_KIND) return modResultView_(s, asTeacher);       // #104 the same report + the score on top (Module.gs)
+  return resultCore_(s, rows, asTeacher, null);
+}
+/** The result of a set — and (#104) of a real-test module test: mp = {title, parts: [{part, title, rows}]} → one grid per module
+ *  (like Test Zone groups by module), labels "M1 Q3"; everything else (skills, types, times, fix, asked) is the same code. */
+function resultCore_(s, rows, asTeacher, mp) {
+  rows = rows.slice().sort(function (a, b) { return (Number(a._m) || 0) - (Number(b._m) || 0) || Number(a.order) - Number(b.order); });
   var n = rows.length;
   var first = rows.filter(function (r) { return Number(r.try1_correct) === 1; }).length;
   var best = rows.filter(function (r) { return Number(r.best_correct) === 1; }).length;
   var ref = function (r) {
-    var o = { qid: String(r.qid), code: 'Q' + r.order, status: qStatusOf_(r), badge: qBadge_(String(r.profile)) };
+    var o = { qid: String(r.qid), code: r._lab || 'Q' + r.order, status: qStatusOf_(r), badge: qBadge_(String(r.profile)) };
     if (asTeacher) { o.t = Math.round(Number(r.time_try1_sec) || 0); o.nm = normSec_(r); }     // #66 teacher: S · 2:35
     return o;
   };
@@ -65,9 +70,10 @@ function resultView_(s, rows, asTeacher) {
   });
   var st = asTeacher ? findStudent_(s.student_code) : null;
   var v = {
-    ok: true, show: 'score_and_right_wrong', valid: true, session_id: String(s.set_id), title: setTitle_(s), date: dateStr_(s.submitted_at),
+    ok: true, show: 'score_and_right_wrong', valid: true, session_id: String(s.set_id), title: mp ? mp.title : setTitle_(s), date: dateStr_(s.submitted_at),
     first_try: { right: first, n: n }, best: { right: best, n: n }, groups: groups, types: types,
-    review: [{ part: SET_PART, title: setTitle_(s), questions: rows.map(function (r) { var x = ref(r); x.no = Number(r.order); return x; }) }]
+    review: mp ? mp.parts.map(function (p) { return { part: p.part, title: p.title, questions: p.rows.slice().sort(function (a, b) { return Number(a.order) - Number(b.order); }).map(function (r) { var x = ref(r); x.no = Number(r.order); return x; }) }; })
+               : [{ part: SET_PART, title: setTitle_(s), questions: rows.map(function (r) { var x = ref(r); x.no = Number(r.order); return x; }) }]
   };
   // fix wrong answers (§3): items not right on try 1 that are neither fixed nor locked
   v.kind = String(s.kind || 'practice');

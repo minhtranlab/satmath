@@ -34,5 +34,6 @@ run node qk74_test.js        # #74 QK re-rating → Item_Overrides on a copy: te
 run node qk98_test.js        # #98 several level files in one update step (QK98 → QK93h), each once, later file wins, one row per qid
 run node refresh97_test.js    # #97 teacher Refresh (student + class view, fresh read, tab/scroll kept) + logo = home, no "Classes" link
 run node module101_test.js   # #101 real-test module: builder = #102 blueprint (levels, grid-ins, domains, caps, forms), unseen + no CB practice-test item, substitutions logged, score + routes, full test flow, teacher views, Levels
+run node module104_test.js   # #104 a module = the same report as any assignment (+ score on top): blocks, slow / rush per cell, teacher times, Fix / Ask / go-over / tags across both modules, My mistakes
 run node e2e_module_test.js  # #101 browser: assign Full → Module 1 timed → Module 2 starts by itself (harder) → range + domains + Go over → teacher; phone: time runs out → submitted
 echo "ALL SUITES PASSED"

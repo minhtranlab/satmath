@@ -1580,37 +1580,21 @@
     $('#res-home').onclick = showHome;
   }
 
-  /** #101 real-test module: the score range big, the 4 domains as bars, Go over. Teacher: + raw per module, route, substitutions. */
-  function renderModuleResult(res) {
-    show('scr-result');
-    if (res.session_id && !res.teacher) { A.resC = A.resC || {}; A.resC[res.session_id] = res; }
-    A.result = res;
-    var t = !!res.teacher, sc = res.score;
-    var h = brandBar('res-home', t ? 'Back to students' : 'Back to home') + '<div class="page res-page mod-res">' +
-      '<h1>' + (t ? esc(res.student) + ' — Results' : 'Your Results') + '</h1>' +
-      '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>';
-    if (sc) h += '<div class="mod-score" id="mod-score"><div class="k">Estimated SAT Math score</div><div class="v">' + sc.lo + '–' + sc.hi + '</div>' +
-      (res.one_module ? '<div class="s">One module only: a wider range.</div>' : '') + '</div>';
-    else h += '<div class="mod-score wait" id="mod-score"><div class="k">Estimated SAT Math score</div><div class="v">–</div><div class="s">After Module 2</div></div>';
-    if (t) {
-      h += '<p class="t-pace mod-mods" id="mod-mods">' + (res.modules || []).map(function (m) { return esc(m.name || m.title) + ': <b>' + (m.done ? m.right + '/' + m.n : 'not done') + '</b>'; }).join(' · ') +
-        (res.route ? ' · route <b>' + esc(res.route) + '</b> (Module 1 ≥ ' + res.route_raw + ' → harder)' : '') + (res.cb_raw !== null && res.cb_raw !== undefined && sc ? ' · CB raw ≈ ' + res.cb_raw + ' / 54' : '') + '</p>';
-      if (res.pace) h += '<p class="t-pace">Time <b>' + res.pace.time_min + ' min</b> · ' + awayLine(res.pace.away_n, res.pace.away_sec, res.pace.away_at) + '</p>';
-    }
+  /** #104 real-test module: the score on top of the normal result (range, route, 4 domains; teacher: raw per module,
+   *  route rule, substitutions); everything below is the normal set report, one question grid per module. */
+  function modHeaderHtml(res) {
+    var t = !!res.teacher, sc = res.score, h = '<div class="mod-head" id="mod-head">';
+    h += sc ? '<div class="mod-score" id="mod-score"><div class="k">Estimated SAT Math score</div><div class="v">' + sc.lo + '–' + sc.hi + '</div>' +
+              (res.route ? '<div class="s" id="mod-route">Module 2: ' + esc(res.route) + '</div>' : '') + (res.one_module ? '<div class="s">One module only: a wider range.</div>' : '') + '</div>'
+            : '<div class="mod-score wait" id="mod-score"><div class="k">Estimated SAT Math score</div><div class="v">–</div><div class="s">After Module 2</div></div>';
+    if (t) h += '<p class="t-pace mod-mods" id="mod-mods">' + (res.modules || []).map(function (m) { return esc(m.name || m.title) + ': <b>' + (m.done ? m.right + '/' + m.n : 'not done') + '</b>'; }).join(' · ') +
+      (res.route ? ' · route <b>' + esc(res.route) + '</b> (Module 1 ≥ ' + res.route_raw + ' → harder)' : '') + (res.cb_raw !== null && res.cb_raw !== undefined && sc ? ' · CB raw ≈ ' + res.cb_raw + ' / 54' : '') + '</p>';
     h += '<div class="mod-doms" id="mod-doms">' + (res.domains || []).map(function (d) {
       return '<div class="mod-dom"><span class="n">' + esc(d.name) + '</span><span class="xy">' + d.right + '/' + d.n + '</span><span class="bar"><i style="width:' + pct(d.right, d.n) + '%"></i></span></div>';
     }).join('') + '</div>';
-    if (t) h += '<div class="mod-go">' + (res.modules || []).filter(function (m) { return m.done; }).map(function (m) {
-      return '<button type="button" class="btn-blue" data-modgo="' + esc(m.set_id) + '">Go over ' + esc(m.title) + '</button>'; }).join('') + '</div>' +
-      (res.modules || []).map(function (m) { return m.subs && m.subs.length ? '<details class="mod-subs"><summary>' + esc(m.name || m.title) + ': ' + m.subs.length + ' substitution' + (m.subs.length > 1 ? 's' : '') + '</summary><ul>' +
+    if (t) h += (res.modules || []).map(function (m) { return m.subs && m.subs.length ? '<details class="mod-subs"><summary>' + esc(m.name || m.title) + ': ' + m.subs.length + ' substitution' + (m.subs.length > 1 ? 's' : '') + '</summary><ul>' +
         m.subs.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></details>' : ''; }).join('');
-    else h += '<div class="mod-go"><button type="button" class="btn-blue" id="btn-mod-go">Go over</button></div>';
-    h += '</div>';
-    $('#result-body').innerHTML = h;
-    $('#scr-result').scrollTop = 0;
-    $('#res-home').onclick = t ? showTeacher : showHome;
-    var g = $('#btn-mod-go'); if (g) g.onclick = function () { openReview(res.session_id, false); };
-    $$('#result-body [data-modgo]').forEach(function (b) { b.onclick = function () { openReview(b.getAttribute('data-modgo'), true); }; });
+    return h + '</div>';
   }
 
   /* ================= ending parts + submit ================= */
@@ -1740,14 +1724,13 @@
     var b = $('#result-body');
     if (!res || !res.ok) { b.innerHTML = brandBar('res-home', 'Back to home') + '<div class="page"><p class="lead">' + esc((res && res.msg) || 'No result.') + '</p></div>'; $('#res-home').onclick = showHome; return; }
     if (res.placement) { renderPlacementResult(res); return; }
-    if (res.module) { renderModuleResult(res); return; }
     if (res.session_id && !A.teacher) { A.resC = A.resC || {}; A.resC[res.session_id] = res; }
     A.result = res;
     var teacher = !!res.teacher;
     var h = brandBar('res-home', teacher ? 'Back to students' : 'Back to home') + '<div class="page res-page">';
     h += '<h1>' + (teacher ? esc(res.student) + ' — Results' : 'Your Results') + '</h1>';
     if (res.first_try) { // SAT Math Lib: First Try + Best Score, never a key
-      h += '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>' +
+      h += '<p class="lead res-meta">' + esc(res.title || '') + (res.date ? ' · ' + esc(res.date) : '') + '</p>' + (res.module ? modHeaderHtml(res) : '') +
         '<div class="sm-scores"><div class="sm-score" id="score-first"><div class="k">First Try</div><div class="v">' + res.first_try.right + '<small>/' + res.first_try.n + '</small></div><div class="s">right the first time</div></div>' +
         '<div class="sm-score best" id="score-best"><div class="k">Best Score</div><div class="v">' + res.best.right + '<small>/' + res.best.n + '</small></div><div class="s">first try + fixed later</div></div></div>';
       if (teacher && res.pace) h += '<p class="t-pace" id="res-pace">Time <b' + (res.pace.capped ? ' title="capped: ' + res.pace.capped + ' over 20 min counted as 20 min"' : '') + '>' + res.pace.time_min + ' min</b>' + (res.pace.capped ? ' <span class="t-cap">capped</span>' : '') + ' · ' +

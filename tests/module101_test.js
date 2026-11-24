@@ -124,7 +124,11 @@ check(card2 && card2.set_id === a1.res.module_next && card2.on_module === 2, 'ho
 const b1 = answer('FX-T01', a1.res.module_next, 12);
 check(b1.res.module && b1.res.score && b1.res.score.hi - b1.res.score.lo === 80 && !b1.res.one_module && b1.res.domains.length === 4, 'Module 2 submit → result: range ' + b1.res.score.lo + '–' + b1.res.score.hi + ' (80 wide), 4 domains');
 check(b1.res.domains.reduce((a, d) => a + d.n, 0) === 44 && b1.res.domains.reduce((a, d) => a + d.right, 0) === 28, 'per domain: 28 / 44 right over both modules');
-check(!('modules' in b1.res) && !('route' in b1.res) && !/"key"|"code"\s*:\s*"[EMH]\d/.test(JSON.stringify(b1.res)), 'student result: no raw per module / route / key / code');
+check(!('modules' in b1.res) && b1.res.route === 'harder' && !/"key"|"code"\s*:\s*"[EMH]\d/.test(JSON.stringify(b1.res)), 'student result: route harder, no raw per module / substitutions / key / short code');
+// #104 the same report as any set, below the score: first try / best, skills, types of mistakes, one grid per module
+check(b1.res.first_try.n === 44 && b1.res.first_try.right === 28 && b1.res.groups.length >= 3 && b1.res.types.length === 5 && b1.res.review.length === 2 &&
+  b1.res.review.map(p => p.title + ' ' + p.questions.length).join(', ') === 'Module 1 22, Module 2 22' && b1.res.fix.open === 16, 'normal report below the score: First Try 28/44, skills, 5 types of mistakes, grids Module 1 22 + Module 2 22, Fix wrong answers (16)');
+check(b1.res.review[1].questions.every(q => / \(M2\)$/.test(q.code)) && b1.res.types.some(t => t.qs.some(q => /\(M1\)/.test(q.code))), 'question labels "Q3 (M1)" / "Q3 (M2)" in grids and chips');
 G.fresh();
 check(!G.call('homeData', ['FX-T01']).assignments.some(a => a.assignment_id === pub.assignment_id), 'home: the assignment is done');
 const tr = G.call('teacherResult', [T, b1.setId]);

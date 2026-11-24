@@ -350,33 +350,45 @@ function modProfile_(s, n) {
     'and your answers are submitted.</p>';
   return p;
 }
-/** Result of a module set (the whole test for a full one): the range, per domain, the modules (teacher: raw, route, substitutions). */
+/** #104 Result of a module set (the whole test for a full one) = the normal set report (resultCore_: skills, types of mistakes,
+ *  times + slow / rush, first try / best, fix, asked; one question grid per module) + the score header on top: range, route,
+ *  4 domains; teacher: raw per module, route, substitutions. */
 function modResultView_(s, asTeacher) {
   var rec = modRecord_(s.set_id) || { test_id: s.set_id, module: s.level_at_start, mode: '' };
   var tr = modTestRows_(rec.test_id || s.set_id), last = tr[tr.length - 1] || rec, setsById = {};
+  if (!tr.length) tr = [{ set_id: s.set_id, module: s.level_at_start || 'M1', n: s.n }];
   readTable_('Sets').rows.forEach(function (x) { setsById[String(x.set_id)] = x; });
-  var rows = [], mods = [];
-  tr.forEach(function (t) {
-    var ss = setsById[String(t.set_id)], rs = ss && isFinished_(ss) ? responsesOf_(t.set_id) : [];
-    rows = rows.concat(rs);
-    var o = { set_id: String(t.set_id), title: String(t.module) === 'M1' ? 'Module 1' : 'Module 2', right: rs.filter(function (r) { return Number(r.try1_correct) === 1; }).length,
-              n: Number(t.n) || rs.length, done: !!(ss && isFinished_(ss)) };
+  var all = [], parts = [], mods = [], lastSet = s, multi = tr.length > 1;
+  tr.forEach(function (t, i) {
+    var ss = setsById[String(t.set_id)], done = !!(ss && isFinished_(ss));
+    var rs = (done ? responsesOf_(t.set_id) : []).map(function (r) {
+      var c = {}; Object.keys(r).forEach(function (k) { c[k] = r[k]; }); c._m = i; c._lab = 'Q' + r.order + (multi ? ' (M' + (i + 1) + ')' : ''); return c;
+    });
+    if (done) { lastSet = ss; if (rs.length) parts.push({ part: 'M' + (i + 1), title: i ? 'Module 2' : 'Module 1', rows: rs }); }
+    all = all.concat(rs);
+    var o = { set_id: String(t.set_id), title: i ? 'Module 2' : 'Module 1', right: rs.filter(function (r) { return Number(r.try1_correct) === 1; }).length, n: Number(t.n) || rs.length, done: done };
     if (asTeacher) { o.module = String(t.module); o.name = MOD_NAMES_[String(t.module)] || ''; o.subs = String(t.subs || '').replace(/^'/, '').split('\n').filter(String); o.levels = String(t.levels || ''); }
     mods.push(o);
   });
+  var v = resultCore_(lastSet, all, asTeacher, { title: assignmentTitle_(s.assignment_id), parts: parts });
   var full = String(rec.mode) === 'FULL', finished = mods.every(function (m) { return m.done; }) && (!full || mods.length > 1);
-  var d = modDomains_(rows), sc = finished && last.score_lo !== '' && last.score_lo !== undefined ? { lo: Number(last.score_lo), hi: Number(last.score_hi) } : null;
-  var v = { ok: true, module: true, session_id: String(s.set_id), test_id: String(rec.test_id || s.set_id), title: assignmentTitle_(s.assignment_id), date: dateStr_(s.submitted_at),
-            score: sc, one_module: !full, finished: finished,
-            domains: MOD_DOMS_.map(function (k) { return { name: MOD_DOM_NAME_[k], right: d[k].right, n: d[k].n }; }), review_set: String(rec.test_id || s.set_id) };
-  if (asTeacher) {
-    var st = findStudent_(s.student_code);
-    v.teacher = true; v.student = st ? String(st.name || '') : String(s.student_code); v.student_code = normCode_(s.student_code);
-    v.modules = mods; v.mode = String(rec.mode || ''); v.route = full && mods.length > 1 ? (mods[1].module === 'M2H' ? 'harder' : 'easier') : '';
-    v.cb_raw = last.cb_raw === '' ? null : Number(last.cb_raw); v.pace = paceOf_(rows);
-    v.route_raw = Number(getSettings_().mod_route_raw) || 13;
-  }
+  var d = modDomains_(all), sc = finished && last.score_lo !== '' && last.score_lo !== undefined ? { lo: Number(last.score_lo), hi: Number(last.score_hi) } : null;
+  v.session_id = String(s.set_id); v.kind = MOD_KIND; v.module = true; v.score = sc; v.one_module = !full; v.finished = finished;
+  v.route = full && mods.length > 1 ? (String(tr[1].module) === 'M2H' ? 'harder' : 'easier') : '';
+  v.domains = MOD_DOMS_.map(function (k) { return { name: MOD_DOM_NAME_[k], right: d[k].right, n: d[k].n }; });
+  if (asTeacher) { v.modules = mods; v.mode = String(rec.mode || ''); v.cb_raw = last.cb_raw === '' || last.cb_raw === undefined ? null : Number(last.cb_raw); v.route_raw = Number(getSettings_().mod_route_raw) || 13; }
   return v;
+}
+/** #104 the set of the same test that holds this question (Result / Go over / Fix / Ask of a full test use one set id). */
+function modSetOf_(setId, qid) {
+  var rec = modRecord_(setId); if (!rec) return String(setId);
+  var hit = modTestRows_(rec.test_id).filter(function (t) { var ss = findSet_(t.set_id); return ss && setQids_(ss).indexOf(String(qid)) >= 0; })[0];
+  return hit ? String(hit.set_id) : String(setId);
+}
+/** #104 all answers of the test (both modules), for the "best" line of Fix. */
+function modTestResponses_(setId) {
+  var rec = modRecord_(setId); if (!rec) return responsesOf_(setId);
+  var out = []; modTestRows_(rec.test_id).forEach(function (t) { out = out.concat(responsesOf_(t.set_id)); }); return out;
 }
 /** Read-only review of the whole test (Module 1 + Module 2 as two parts), never a key. */
 function modReviewData_(s, asTeacher) {
@@ -386,7 +398,7 @@ function modReviewData_(s, asTeacher) {
     var ss = findSet_(t.set_id); if (!ss || !isFinished_(ss)) return;
     var d = reviewData_(ss, responsesOf_(t.set_id), asTeacher), part = 'M' + (i + 1), title = i ? 'Module 2' : 'Module 1';
     parts.push({ part: part, title: title, layout: d.parts[0].layout, spr_layout: d.parts[0].spr_layout, choices: 4, calculator: true, reference: true, annotate: false, directions_html: '' });
-    d.questions.forEach(function (q) { q.part = part; q.label = (tr.length > 1 ? 'M' + (i + 1) + ' · ' : '') + 'Q' + q.no; qs.push(q); });
+    d.questions.forEach(function (q) { q.part = part; q.label = 'Q' + q.no + (tr.length > 1 ? ' (M' + (i + 1) + ')' : ''); q.set_id = String(t.set_id); qs.push(q); });
   });
   return { ok: true, session_id: String(s.set_id), form_id: String(s.set_id), title: assignmentTitle_(s.assignment_id), question_font: 'serif', reference_sheet: 'sat_math',
            parts: parts, questions: qs, settings: { desmos_api_key: desmosKey_() } };
@@ -436,4 +448,23 @@ function modFormsSync_() {
   _modTab = null;
   var c = {}; rows.forEach(function (r) { c[r.form] = (c[r.form] || 0) + 1; });
   return 'item forms: ' + rows.length + ' items, ' + Object.keys(c).length + ' forms';
+}
+/** #104 Fix wrong answers of a module test: the open questions of both modules (each Check goes to the module that holds it). */
+function modFix_(code, s) {
+  var rec = modRecord_(s.set_id) || { test_id: s.set_id }, tr = modTestRows_(rec.test_id || s.set_id), d0 = null, qs = [], parts = [];
+  if (!tr.length) tr = [{ set_id: s.set_id }];
+  tr.forEach(function (t, i) {
+    var ss = findSet_(t.set_id); if (!ss || !isFinished_(ss)) return;
+    var d = getFix(code, String(t.set_id), true);
+    if (!d0) d0 = d;
+    var part = 'M' + (i + 1);
+    parts.push({ part: part, title: i ? 'Module 2' : 'Module 1', layout: d.parts[0].layout, spr_layout: d.parts[0].spr_layout, choices: 4, calculator: true, reference: true, annotate: false, directions_html: '' });
+    d.questions.forEach(function (q) { q.part = part; q.label = 'Q' + q.no + (tr.length > 1 ? ' (M' + (i + 1) + ')' : ''); qs.push(q); });
+  });
+  if (!d0) throw new Error('SESSION: This set has not been submitted yet.');
+  var all = modTestResponses_(s.set_id);
+  d0.session_id = String(s.set_id); d0.form_id = String(s.set_id); d0.title = assignmentTitle_(s.assignment_id); d0.parts = parts; d0.questions = qs;
+  d0.best = { right: all.filter(function (r) { return Number(r.best_correct) === 1; }).length, n: all.length };
+  delete d0.fk;                                                    // its key is sealed with one module's set id
+  return d0;
 }
