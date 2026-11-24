@@ -13,7 +13,8 @@ var QK_IMPORT_ = { tag: 'QK71', file: 'QK71_levels.csv', prop: 'qk_import_QK71' 
    QK93h = the version-B clean-up (an exact-copy B gets the level of its A item). */
 var QK_IMPORTS_ = [QK_IMPORT_,
   { tag: 'QK98', file: 'QK98_levels.csv', prop: 'qk_import_QK98' },
-  { tag: 'QK93h', file: 'QK93h_levels.csv', prop: 'qk_import_QK93h' }];
+  { tag: 'QK93h', file: 'QK93h_levels.csv', prop: 'qk_import_QK93h' },
+  { tag: 'QK99', file: 'QK99_levels.csv', prop: 'qk_import_QK99' }];               // #99: final_level of QK #93j + #93k (OLDP9–OLDP12; OLDP13 already in its file)
 var QK_IMPORT_MODE_ = 'apply';
 
 /** Pure part (tests run it on a copy): csv = [{qid, final, in_placement}] → { plan, report }. Reads the tabs, writes nothing. */
