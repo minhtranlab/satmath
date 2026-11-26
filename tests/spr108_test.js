@@ -74,7 +74,9 @@ console.log('[Sheet update: keys that cannot be typed + past answers re-graded]'
   const SH = hd('Sets'), srow = tab('Sets').find(r => r[SH.indexOf('set_id')] === sp.set_id), ft0 = Number(srow[SH.indexOf('first_try')]) + 1; srow[SH.indexOf('first_try')] = ft0; srow[SH.indexOf('best_score')] = ft0;
   G.fresh(); X._forceFresh = true;
   const m1 = X.gridinKeyCheck_(); const keysTab = G.table('Gridin_Keys');
-  check(/1 key\(s\) cannot be typed/.test(m1) && keysTab.length === 1 && keysTab[0].qid === q0 && /key_untypeable/.test(keysTab[0].problem) && keysTab[0].show_answer === '.6514 or 0.651', 'Gridin_Keys: ' + q0 + ' (441/677) key_untypeable, Show answer ".6514 or 0.651" — "' + m1 + '"');
+  check(/ 1 with an answer that cannot be typed exactly, 0 with nothing typeable/.test(m1) && keysTab.length === 1 && keysTab[0].qid === q0 && /no_exact_form: 441\/677/.test(keysTab[0].problem) && /key_too_long/.test(keysTab[0].problem) && keysTab[0].show_answer === '.6514 or 0.651', 'Gridin_Keys: ' + q0 + ' (441/677) no_exact_form + key_too_long, Show answer ".6514 or 0.651" — "' + m1 + '"');
+  const ET = (n, d) => X.gridinExactTypeable_({ n, d });
+  check(!ET(441, 677) && !ET(-49, 150) && ET(21, 250) && ET(4, 1000) && ET(451, 100) && ET(-25, 6) && ET(2592, 5) && ET(1, 16), 'exact form fits: 441/677 ✗, -49/150 ✗; 21/250 (.084), 451/100 (4.51), 2592/5 (518.4), 1/16 (.0625) ✓');
   G.fresh(); X._forceFresh = true;
   const m2 = X.gridinRegrade_(), lg = G.table('Gridin_Regrade');
   const r2 = G.table('Responses').find(r => r.set_id === sp.set_id && r.qid === q0);

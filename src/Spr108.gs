@@ -1,8 +1,8 @@
 /**
  * #108 grid-in answers by the official SAT entry rules (Test Zone #52) — two Sheet-update steps, safe to repeat:
- *  1. gridinKeyCheck_: every LIVE grid-in question whose key cannot be typed in the answer box (more than 5 characters, 6 with
- *     "-"), or whose accepted list has forms the new rule no longer counts (a short rounded decimal) → tab Gridin_Keys (rewritten
- *     each run). Data is not changed: 📥 Intake / ✅ QK fix the library.
+ *  1. gridinKeyCheck_: every LIVE grid-in question with an answer that has no exact form fitting the box (441/677: only a
+ *     box-filling decimal can be entered), nothing typeable, a key field that is a list or too long, accepted forms that cannot
+ *     be typed or that the rule no longer counts → tab Gridin_Keys (rewritten each run). Data is not changed: 📥 Intake / ✅ QK fix the library.
  *  2. gridinRegrade_: every past grid-in answer graded again with the new rule (first try, best after Fix, each Fix try) →
  *     tab Gridin_Regrade (one row per change, rewritten each run). GRIDIN_APPLY_ = false: a dry run (nothing else changes);
  *     true: Responses try1_correct / best_correct, Tries.correct and the set's First Try / Best Score are corrected for
@@ -15,29 +15,45 @@ var GRIDIN_APPLY_ = false;
 function gridinRoom_(k) { return String(k).charAt(0) === '-' ? 6 : 5; }
 function gridinFits_(k) { k = String(k); return /^-?[0-9.\/]+$/.test(k) && k.length <= gridinRoom_(k) && !!sprParse_(k); }
 
+/** Can this exact value be typed exactly (reduced fraction / integer, or its terminating decimal, in 5 / 6 characters)? */
+function gridinExactTypeable_(kv) {
+  var g = function (x, y) { return y ? g(y, x % y) : x; }, n = Math.abs(kv.n), d = kv.d, c = g(n, d) || 1, neg = kv.n < 0;
+  n /= c; d /= c;
+  var room = neg ? 6 : 5, frac = (neg ? '-' : '') + (d === 1 ? n : n + '/' + d);
+  if (frac.length <= room) return true;
+  var dd = d; while (dd % 2 === 0) dd /= 2; while (dd % 5 === 0) dd /= 5;
+  if (dd !== 1) return false;                                          // not a terminating decimal
+  var dec = String(n / d); if (/e/.test(dec)) return false;
+  dec = dec.replace(/^0\./, '.');
+  return ((neg ? '-' : '') + dec).length <= room;
+}
 function gridinKeyCheck_() {
   var rows = questionRows_().filter(function (r) { return String(r.type) === 'spr' && clean_(r.status) === 'live'; });
   var qs = libQuestions_(rows.map(function (r) { return String(r.qid); })), byQ = {};
   rows.forEach(function (r) { byQ[String(r.qid)] = r; });
-  var out = [], nKey = 0;
+  var out = [], n = { exact: 0, list: 0, long: 0, none: 0 };
   qs.forEach(function (q) {
     var keys = keyList_(q).map(function (k) { return String(k).trim().replace(/−/g, '-'); }).filter(String);
     var main = String(Array.isArray(q.key) ? q.key[0] : q.key).trim().replace(/−/g, '-'), show = sprShow_(keys), probs = [];
-    if (!gridinFits_(main)) { probs.push('key_untypeable'); nKey++; }
-    var tooLong = keys.filter(function (k) { return k !== main && !gridinFits_(k); });
+    var noExact = sprExactValues_(keys).filter(function (kv) { return !gridinExactTypeable_(kv); });
+    if (noExact.length) { probs.push('no_exact_form: ' + noExact.map(function (kv) { return kv.dec === null ? kv.n + '/' + kv.d : String(kv.n / kv.d); }).join(' | ')); n.exact++; }
+    if (!show.length || show.some(function (k) { return !gridinFits_(k) || !sprCorrect_(k, keys); })) { probs.push('no_typeable_answer'); n.none++; }
+    if (!gridinFits_(main)) {
+      if (/,|\sor\s/.test(main)) { probs.push('key_is_list'); n.list++; } else { probs.push('key_too_long'); n.long++; }
+    }
+    var tooLong = keys.filter(function (k) { return k !== main && !/,|\sor\s/.test(k) && !gridinFits_(k); });
     if (tooLong.length) probs.push('accepted_untypeable: ' + tooLong.join(' | '));
     var nowWrong = keys.filter(function (k) { return gridinFits_(k) && !sprCorrect_(k, keys); });
     if (nowWrong.length) probs.push('accepted_display_only: ' + nowWrong.join(' | '));
-    if (!show.length || show.some(function (k) { return !gridinFits_(k) || !sprCorrect_(k, keys); })) probs.push('no_typeable_answer');
     if (!probs.length) return;
     var r = byQ[q.qid] || {};
     out.push({ qid: q.qid, code: txt_(clean_(r.code)), batch: txt_(clean_(r.batch)), key: txt_(main), accepted: txt_(keys.join('|')),
                problem: probs.join('; '), show_answer: txt_(show.join(' or ')), checked_at: nowIso_() });
   });
   rewriteTable_('Gridin_Keys', function () { return false; }, out);
-  return 'grid-in keys: ' + qs.length + ' live, ' + nKey + ' key(s) cannot be typed, ' + out.length + ' row(s) in Gridin_Keys';
+  return 'grid-in keys: ' + qs.length + ' live, ' + n.exact + ' with an answer that cannot be typed exactly, ' + n.none + ' with nothing typeable, key field = a list ' + n.list +
+         ', key field too long ' + n.long + ', ' + out.length + ' row(s) in Gridin_Keys';
 }
-
 function gridinRegrade_() {
   var qtype = {}; questionRows_().forEach(function (r) { qtype[String(r.qid)] = String(r.type); });
   var resp = readTable_('Responses').rows.filter(function (r) { return qtype[String(r.qid)] === 'spr'; });
