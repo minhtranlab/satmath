@@ -139,7 +139,7 @@ async function goOver(E, dev, key, qids) {
       const cx2 = r.x + (s1.l + s1.r) / 2, cy2 = r.y + (s1.t + s1.b) / 2;
       await finger(cdp, loopPts(cx2, cy2, rx, ry));
       check(!(await page.$eval('#pen-del', e => e.hidden)), 'Finger draws on → a finger loop selects');
-      await page.tap('#pen-del'); await sleep(50);
+      await page.tap('#pen-del'); await page.waitForFunction(() => document.querySelector('#pen-del').hidden, null, { timeout: 3000 }).catch(() => {});   // a tap's click can come late on a touch screen
       check((await ink(page, R)).n === 0, 'Delete (tap) → gone');
       await page.tap('#pen-bar [data-pt="undo"]'); check((await ink(page, R)).n > 100, 'Undo → back');
       const fit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
