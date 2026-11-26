@@ -1172,11 +1172,13 @@
   }
   function bindDivider(box) {
     var div = $('.q-divider', box);
-    div.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); div.setPointerCapture(e.pointerId);
-      var mv = function (ev) { var r = box.getBoundingClientRect(); var pct = Math.min(75, Math.max(25, 100 * (ev.clientX - r.left) / r.width)); box.style.setProperty('--split', pct + '%'); };
-      var up = function () { div.removeEventListener('pointermove', mv); div.removeEventListener('pointerup', up); };
-      div.addEventListener('pointermove', mv); div.addEventListener('pointerup', up);
+    div.addEventListener('pointerdown', function (e) {                 // #107 finger / Pencil / mouse; moves by the drag (no jump), 25–75 %
+      e.preventDefault(); try { div.setPointerCapture(e.pointerId); } catch (x) {}
+      var r0 = box.getBoundingClientRect(), first = box.firstElementChild, x0 = e.clientX;
+      var p0 = first ? 100 * first.getBoundingClientRect().width / r0.width : 50;
+      var mv = function (ev) { var r = box.getBoundingClientRect(); var pct = Math.min(75, Math.max(25, p0 + 100 * (ev.clientX - x0) / r.width)); box.style.setProperty('--split', pct + '%'); };
+      var up = function () { div.removeEventListener('pointermove', mv); ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { div.removeEventListener(t, up); }); };
+      div.addEventListener('pointermove', mv); ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) { div.addEventListener(t, up); });
     });
   }
   function bindSpr(q, inp, box) {
@@ -2210,7 +2212,16 @@
      2 widths, eraser, Undo, Clear. The drawing belongs to the question on screen and is gone when another question opens.
      Notes: one pad per set (this browser only, localStorage), text + MathQuill math fields; Copy = rich HTML (math as
      images) + plain text. Nothing here is sent to the server. */
-  var PEN = { on: false, color: 'blue', w: 1, tool: 'pen', strokes: [], hist: [], cv: null, host: null, qid: null };
+  var PEN = { on: false, color: 'blue', w: 1, tool: 'pen', strokes: [], hist: [], cv: null, host: null, qid: null, penSeen: false };
+  /* #107 iPad (Minh 26/11): Apple Pencil draws at once, a finger scrolls. A finger draws only until a Pencil has been seen in
+     this session (phones, iPads without a pen) — or always / never by the "✋ Finger draws" switch (kept on this device). */
+  function penFingerPref() { try { return localStorage.getItem('sml_finger_draws') || ''; } catch (e) { return ''; } }
+  function penFingerDraws() { var p = penFingerPref(); return p === 'on' ? true : p === 'off' ? false : !PEN.penSeen; }
+  function penFingerSync() {
+    var on = penFingerDraws(), b = $('#pen-finger');
+    $('#scr-test').classList.toggle('finger-scrolls', !on);
+    if (b) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  }
   var PEN_C = { blue: '#1f5fd6', red: '#d0263c', green: '#1f8a4c', yellow: 'rgba(245,196,0,0.38)' };
   function penHost() {                                                    // Minh 17/11: the whole width (the white margins too), not only the question column
     var q = curQ(), b = q && qBox(q.qid); if (!b) return null;
@@ -2258,9 +2269,15 @@
       if (!cur.saved) { PEN.hist.push(PEN.strokes.slice()); cur.saved = true; }
       PEN.strokes = PEN.strokes.filter(function (s) { return hit.indexOf(s) < 0; }); penDraw();
     };
+    // #107 a Pencil touch must never become a text selection / scroll (iPadOS runs those on touch events)
+    var stylus = function (e) { var t = e.touches && e.touches[0]; if (PEN.on && t && t.touchType === 'stylus') { e.preventDefault(); if (!PEN.penSeen) { PEN.penSeen = true; penFingerSync(); } } };
+    c.addEventListener('touchstart', stylus, { passive: false }); c.addEventListener('touchmove', stylus, { passive: false });
     c.addEventListener('pointerdown', function (e) {
       if (!PEN.on || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      if (e.pointerType === 'pen' && !PEN.penSeen) { PEN.penSeen = true; penFingerSync(); }
+      if (e.pointerType === 'touch' && !penFingerDraws()) return;          // the finger scrolls (touch-action pan on the canvas)
       e.preventDefault(); penSize();
+      try { var sl = window.getSelection(); if (sl && !sl.isCollapsed) sl.removeAllRanges(); } catch (x) {}
       try { c.setPointerCapture(e.pointerId); } catch (x) {}
       var p = at(e);
       if (PEN.tool === 'eraser') { cur = { erase: true }; erase(p); return; }
@@ -2285,7 +2302,7 @@
     PEN.on = !!on;
     $('#scr-test').classList.toggle('pen-on', PEN.on);
     $('#pen-bar').hidden = !PEN.on; $('#tool-pen').classList.toggle('active', PEN.on);
-    if (PEN.on) { hideHlToolbar(); penCanvas(); }
+    if (PEN.on) { hideHlToolbar(); penCanvas(); penFingerSync(); }
   }
   function penBarSync() {
     $$('#pen-bar [data-pc]').forEach(function (b) { b.classList.toggle('on', PEN.tool === 'pen' && b.getAttribute('data-pc') === PEN.color); });
@@ -2302,6 +2319,7 @@
       else if (t === 'undo') { if (PEN.hist.length) { PEN.strokes = PEN.hist.pop(); penDraw(); } }
       else if (t === 'clear') { if (PEN.strokes.length) { PEN.hist.push(PEN.strokes.slice()); PEN.strokes = []; penDraw(); } }
       else if (t === 'off') penSet(false);
+      else if (t === 'finger') { var nv = penFingerDraws() ? 'off' : 'on'; try { localStorage.setItem('sml_finger_draws', nv); } catch (x) {} penFingerSync(); }
       penBarSync();
     }; });
     window.addEventListener('resize', function () { if (PEN.cv) penSize(); });
@@ -3096,7 +3114,7 @@
      note; trash when the selection is inside a highlight). One click applies and closes; click elsewhere / Esc closes. */
   function annotAllowed() { var b = $('#tool-annot'); return !!(A.st && A.st.phase === 'test' && b && !b.classList.contains('hidden') && $('#scr-test').classList.contains('on')); }
   function showSelToolbar() {
-    if (A.annotMode || !annotAllowed()) return;
+    if (A.annotMode || PEN.on || !annotAllowed()) return;          // #107 never while the pen is on
     var sel = window.getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount) return;
     var o = selectionOffsets(); if (!o) return;
     var inside = (pst().hl[o.qid] || []).filter(function (h) { return (h.r || 's') === o.r && h.s <= o.s && o.e <= h.e; }).pop();
@@ -3129,7 +3147,7 @@
       if (!A.st || A.st.phase !== 'test') return;
       var o = selectionOffsets(); if (o) A.lastSel = { o: o, t: Date.now() };
     });
-    var maybeAuto = function () { if (!A.annotMode) return; setTimeout(function () { var o = selectionOffsets(); if (o) addHighlight(o); }, 30); };
+    var maybeAuto = function () { if (!A.annotMode || PEN.on) return; setTimeout(function () { var o = selectionOffsets(); if (o) addHighlight(o); }, 30); };
     document.addEventListener('mouseup', maybeAuto);
     document.addEventListener('touchend', maybeAuto);
     // #36: the toolbar at the selection — mouse / trackpad (mouseup), touch (after the handles settle), keyboard (Shift + arrows)
@@ -3139,7 +3157,7 @@
     document.addEventListener('keyup', function (e) { if (e.shiftKey || /^Arrow|Shift/.test(e.key)) setTimeout(showSelToolbar, 10); });
     document.addEventListener('selectionchange', function () {
       clearTimeout(A.selT);
-      if (!A.touch) return;
+      if (!A.touch || PEN.on) return;
       A.selT = setTimeout(function () { if (!A.ptrDown) showSelToolbar(); }, 450);
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('#hl-toolbar').classList.contains('on')) { hideHlToolbar(); } });

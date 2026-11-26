@@ -36,4 +36,5 @@ run node refresh97_test.js    # #97 teacher Refresh (student + class view, fresh
 run node module101_test.js   # #101 real-test module: builder = #102 blueprint (levels, grid-ins, domains, caps, forms), unseen + no CB practice-test item, substitutions logged, score + routes, full test flow, teacher views, Levels
 run node module104_test.js   # #104 a module = the same report as any assignment (+ score on top): blocks, slow / rush per cell, teacher times, Fix / Ask / go-over / tags across both modules, My mistakes
 run node e2e_module_test.js  # #101 browser: assign Full → Module 1 timed → Module 2 starts by itself (harder) → range + domains + Go over → teacher; phone: time runs out → submitted
+run node ipad107_test.js     # #107 iPad: Apple Pencil draws at once (no selection / toolbar), a finger scrolls; "✋ Finger draws" switch (kept per device); divider: 32 px finger target, 25–75 %
 echo "ALL SUITES PASSED"
