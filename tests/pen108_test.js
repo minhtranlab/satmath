@@ -144,7 +144,7 @@ async function goOver(E, dev, key, qids) {
       check(!(await page.$eval('#pen-del', e => e.hidden)), 'Finger draws on → a finger loop selects');
       await page.$eval('#pen-del', e => e.click()); await sleep(50);   // (the emulator's tap → click on this button is unreliable in CI; the button = a plain click handler)
       check((await ink(page, R)).n === 0, 'Delete (tap) → gone');
-      await page.tap('#pen-bar [data-pt="undo"]'); await sleep(400); check((await ink(page, R)).n > 100, 'Undo → back');
+      await page.$eval('#pen-bar [data-pt="undo"]', e => e.click()); await sleep(50); check((await ink(page, R)).n > 100, 'Undo → back');
       const fit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
       check(fit, 'pen bar with Select fits the iPad screen');
       await shot(page, 'pen108_ipad');
