@@ -91,6 +91,8 @@ var README_ROWS_ = [
   ['Placements', 'One row per finished placement test: level per domain (H Strong, M Medium, E Weak, <E below Easy), level per tested skill, "teach first" skills, the path.'],
   ['Modules', 'One row per real-test module a student got (Module 1, Module 2 easier / harder): its questions\' levels, the substitutions the builder made, raw score, route, and on the last module of a test the score range (estimate, not a College Board score).'],
   ['Item_Forms', 'Written by every deploy: the way each question asks (form), figure / table, words — the real-test module builder reads it (no question text here).'],
+  ['Gridin_Keys', 'Written by every deploy: live grid-in questions whose key cannot be typed in the answer box (5 characters, 6 with "-"), or with accepted forms the SAT rule does not count. Fix them in the library; the app shows only typeable answers.'],
+  ['Gridin_Regrade', 'Written by every deploy: past grid-in answers whose grade changes under the official SAT entry rules (#108), and whether the change was applied.'],
   ['Other tabs', 'Classes, Assignments (kind placement = a placement test, kind module = a real-test module), Skill_Summary: filled by the app (teacher page).'],
   ['Dictionary', 'Every column of every tab explained.']
 ];
@@ -107,6 +109,8 @@ var DICT_ = {
   Skill_Profile: { allowed: 'Difficulties that exist on the SAT for this skill (E,M,H). No E: an Easy slot gets Medium level 1. No H: a Hard slot gets the hardest Medium (+ the few Hard items).', weight: 'Share of Mixed Practice items (%, the app scales the column to 100).', max_set: 'Practice by skill offers only this many questions (empty = 5/10/20).' },
   Placement_Forms: { form: 'A (first placement) or B (retake).', domain: 'ALG Algebra · ADV Advanced Math · PSD Problem-Solving and Data · GEO Geometry and Trig.', slot: 'E1–E3 Easy, M1–M4 Medium, H1–H4 Hard (H4: Advanced Math only).', code: 'Short code of the question (the app finds the qid).', qid: 'Library qid (used when it exists).' },
   Placements: { alg: 'Algebra result: H Strong · M Medium · E Weak · <E below Easy.', skill_levels: 'Level per tested skill (written to Levels).', teach_first: 'The 3 tested skills to teach first.', path: 'Every item in order: domain, slot, F right in time / S slow right / W wrong.', prev_set_id: 'The placement before this one (retake comparison).' },
+  Gridin_Keys: { problem: 'key_untypeable = the key does not fit the box; accepted_untypeable = forms too long; accepted_display_only = a listed form the rule marks wrong (a short rounded decimal); no_typeable_answer = nothing typeable is right.', show_answer: 'What Show answer prints (typeable forms only).' },
+  Gridin_Regrade: { student: 'Student name.', what: 'first try / best after Fix / Fix try N.', was: 'Grade stored before.', now: 'Grade by the SAT rule.', applied: 'yes = the stored grade was corrected; no = logged only (dry run, placement or real-test module).' },
   Modules: { test_id: 'Set id of the first module of the test (Module 1 + Module 2 share it).', mode: 'What the teacher assigned: M1, M2E, M2H or FULL (Module 1 + adaptive Module 2).',
              module: 'M1 / M2E (easier Module 2) / M2H (harder Module 2).', levels: 'Level of each question in order.', subs: 'Where the builder had to substitute (one line per slot).',
              stats: 'Skills, question forms, figures, grid-ins, domains of the module.', raw: 'Right answers in this module.', route: 'Module 2 the student got (M2E / M2H).',

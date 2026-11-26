@@ -452,6 +452,8 @@ canvas.pen-cv { position: absolute; left: 0; top: 0; z-index: 30; pointer-events
 /* #107 iPad, GoodNotes style: once an Apple Pencil is used (or "Finger draws" is off) a finger scrolls / zooms, the Pencil draws;
    while the pen is on, a Pencil touch never starts a text selection or the iOS callout */
 #scr-test.pen-on.finger-scrolls canvas.pen-cv { touch-action: pan-x pan-y pinch-zoom; }
+#scr-test.pen-on.pen-select canvas.pen-cv { cursor: default; }
+#pen-bar #pen-del[hidden] { display: none; }
 #scr-test.pen-on #tmain, #scr-test.pen-on #tmain * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #pen-bar .pb-finger.on { background: #fff; border-color: var(--blue, #324dc7); color: var(--blue, #324dc7); }
 #notes-panel { z-index: 70; }

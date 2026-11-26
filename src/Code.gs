@@ -14,7 +14,7 @@
 
 var SHEET_ID = '1kvaTZbsSU6ZpI7B6pbYiuQklau2qot8l1bmT_Rc8l2g';          // "SAT Math Lib – Data" (minhtranipad@gmail.com)
 var LIBRARY_FOLDER_ID = '1kv4i4SLgFFJDOBztZdYt6OFN3EPsQI81';             // Drive: SAT › SAT Math Lib › SAT Math Lib - Library (private)
-var APP_VERSION = 'v0.17.3 (2026-11-26, iPad: Apple Pencil draws at once, a finger scrolls; ✋ Finger draws; easier split divider)';
+var APP_VERSION = 'v0.18.0 (2026-11-26, go-over pen over both panes + Select; grid-in answers by the official SAT entry rules)';
 var APP_BUILD = 'dev';  // replaced by the GitHub Action with the commit id → the Sheet update (Update.gs) runs once per deploy
 
 /* ============================== web app ============================== */
@@ -742,38 +742,55 @@ function keyList_(q) {
 }
 
 /**
- * Student-produced response (SAT rules, Test Zone): 5 characters (6 with "-"); any form with exactly the key's value
- * counts (3/4 = .75 = 0.75 = 6/8); a decimal that does not fit may be truncated or rounded but must then fill the box.
- * A decimal key that is not exact (0.651 next to 441/677) is a rounded form: it only matches as typed text.
+ * Student-produced response — the official SAT / Bluebook entry rules (#108, from Test Zone #52 v1.17.2):
+ *  - at most 5 characters for a positive answer, 6 for a negative one (the "-" counts); only digits, ".", "/" and a leading "-";
+ *  - a fraction counts when it fits and equals the answer (equivalent fractions too: 2/4 for 1/2); no decimal inside a fraction;
+ *  - a decimal counts when it is exactly the answer; a decimal that is NOT exact must fill every character of the box and be
+ *    the truncation or the rounding of the exact value: 2/3 → .6666 .6667 0.666 0.667 right; .66 .67 0.66 0.67 wrong;
+ *  - several correct answers → any one of them.
+ *  The key list holds EXACT values (fractions, integers, exact decimals). A rounded decimal in the list (0.651 next to 441/677)
+ *  is only a display form: it never makes a shorter entry count (".651" is wrong, "0.651" and ".6514" are right).
  */
 function sprCorrect_(answer, keys) {
   var a = String(answer).trim().replace(/−/g, '-');
-  if (!a) return false;
+  if (!a || !/^-?[0-9.\/]+$/.test(a)) return false;
   var neg = a.charAt(0) === '-', room = neg ? 6 : 5;
   if (a.length > room) return false;
-  var ks = keys.map(function (k) { return String(k).trim().replace(/−/g, '-'); }).filter(String);
-  if (ks.indexOf(a) >= 0) return true;
-  var exact = sprExactValues_(ks);
   var av = sprParse_(a);
   if (!av) return false;
-  return exact.some(function (kv) {
-    if (av.n * kv.d === kv.n * av.d) return true;
-    if (av.dec === null || av.dec < 1 || a.length !== room) return false;
-    var p10 = Math.pow(10, av.dec), num = Math.abs(kv.n) * p10, sign = kv.n < 0 ? -1 : 1;
-    var trunc = sign * Math.floor(num / kv.d), rnd = sign * Math.floor((2 * num + kv.d) / (2 * kv.d));
-    return av.n === trunc || av.n === rnd;
-  });
+  var ks = keys.map(function (k) { return String(k).trim().replace(/−/g, '-'); }).filter(String);
+  if (sprRounded_(ks).indexOf(a) >= 0) return true;                  // a listed box-filling rounded form, typed as listed
+  return sprExactValues_(ks).some(function (kv) { return sprMatch_(a, av, room, kv); });
 }
+/** A list of decimals only, with different values, that fill the box (0.651 | .6514): rounded forms of a value the list
+ *  does not give — accepted only as typed. */
+function sprRounded_(ks) {
+  var parsed = ks.map(sprParse_);
+  if (!parsed.length || parsed.some(function (p) { return !p || p.dec === null || p.dec === 0; })) return [];
+  var same = parsed.every(function (p) { return p.n * parsed[0].d === parsed[0].n * p.d; });
+  return same ? [] : ks.filter(function (k) { return k.length === (k.charAt(0) === '-' ? 6 : 5); });
+}
+/** One entry (already parsed, fits the box) against one exact value {n, d}. */
+function sprMatch_(a, av, room, kv) {
+  if (av.n * kv.d === kv.n * av.d) return true;                       // the same exact value (any form that fits)
+  if (av.dec === null || av.dec < 1 || a.length !== room) return false; // only a box-filling decimal may be cut off / rounded
+  if ((av.n < 0) !== (kv.n < 0)) return false;
+  var p10 = Math.pow(10, av.dec), num = Math.abs(kv.n) * p10, sign = kv.n < 0 ? -1 : 1;
+  var trunc = sign * Math.floor(num / kv.d), rnd = sign * Math.floor((2 * num + kv.d) / (2 * kv.d));
+  return av.n === trunc || av.n === rnd;
+}
+/** Exact values (as {n, d}) of an SPR key list: fractions / integers, and decimals equal to one of them; a list of decimals
+ *  only = each value is exact. A decimal next to a fraction it is not equal to = a rounded display form (not a value). */
 function sprExactValues_(ks) {
   var parsed = ks.map(sprParse_).filter(Boolean);
   var exact = parsed.filter(function (k) { return k.dec === null || k.dec === 0; });
   var decs = parsed.filter(function (k) { return k.dec !== null && k.dec > 0; });
-  if (!exact.length && decs.length) {
-    var same = decs.every(function (k) { return k.n * decs[0].d === decs[0].n * k.d; });
-    return same ? [decs[0]] : [];
-  }
-  return exact;
+  if (!exact.length) { var rd = sprRounded_(ks); exact = decs.filter(function (k) { return !rd.some(function (x) { var p = sprParse_(x); return p.n === k.n && p.d === k.d; }); }); }
+  var out = [];
+  exact.forEach(function (k) { if (!out.some(function (o) { return o.n * k.d === k.n * o.d; })) out.push(k); });
+  return out;
 }
+/** Exact value of an SPR entry as n/d (integers); dec = digits after the point for decimals, null for fractions. */
 function sprParse_(s) {
   var m = String(s).match(/^(-?)(\d+)\/(\d+)$/);
   if (m) { var d = Number(m[3]); return d ? { n: (m[1] ? -1 : 1) * Number(m[2]), d: d, dec: null } : null; }
@@ -782,6 +799,41 @@ function sprParse_(s) {
   var frac = m[3] || '';
   return { n: (m[1] ? -1 : 1) * Number((m[2] || '0') + frac), d: Math.pow(10, frac.length), dec: frac.length };
 }
+/** #108: what "Show answer" prints for an SPR key list — only entries a student can type in the box. Per exact value: its
+ *  first form from the list that fits (+ at most one decimal form from the list); when no form fits (441/677), the
+ *  box-filling decimals (".6514", "0.651"). */
+function sprShow_(keys) {
+  var ks = keys.map(function (k) { return String(k).trim().replace(/−/g, '-'); }).filter(String), out = [];
+  var fits = function (k) { return /^-?[0-9.\/]+$/.test(k) && k.length <= (k.charAt(0) === '-' ? 6 : 5); };
+  sprExactValues_(ks).forEach(function (kv) {
+    var ok = ks.filter(function (k) { var p = sprParse_(k); return fits(k) && p && sprMatch_(k, p, k.charAt(0) === '-' ? 6 : 5, kv); });
+    var main = ok.filter(function (k) { var p = sprParse_(k); return p.n * kv.d === kv.n * p.d; })[0];
+    if (main) {
+      out.push(main);
+      var dec = ok.filter(function (k) { return k !== main && k.indexOf('/') < 0 && main.indexOf('/') >= 0; })[0];
+      if (dec) out.push(dec);
+    } else sprFill_(kv).forEach(function (k) { if (out.indexOf(k) < 0) out.push(k); });
+  });
+  sprRounded_(ks).forEach(function (k) { if (out.indexOf(k) < 0) out.push(k); });
+  return out.length ? out : ks;
+}
+/** The decimals that fill the box for an exact value that does not fit (truncated and rounded; ".dddd" and "0.ddd"). */
+function sprFill_(kv) {
+  var neg = kv.n < 0, room = neg ? 6 : 5, n = Math.abs(kv.n), d = kv.d, ip = Math.floor(n / d), out = [];
+  var forms = ip === 0 ? [['.', room - (neg ? 1 : 0) - 1], ['0.', room - (neg ? 1 : 0) - 2]] : [[ip + '.', room - (neg ? 1 : 0) - String(ip).length - 1]];
+  forms.forEach(function (f) {
+    if (f[1] < 1) return;
+    var p10 = Math.pow(10, f[1]), rest = (n % d) * p10;
+    [Math.floor(rest / d), Math.floor((2 * rest + d) / (2 * d))].forEach(function (x) {
+      if (x >= p10) return; // rounding carried into the whole number: that form is the next whole number's
+      var k = (neg ? '-' : '') + f[0] + String(x + p10).slice(1);
+      if (out.indexOf(k) < 0) out.push(k);
+    });
+  });
+  return out;
+}
+/** Key list → what "Show answer" prints (MCQ: the letter; SPR: sprShow_). */
+function keyShow_(q) { var keys = keyList_(q); return (q.type || 'mcq') === 'spr' ? sprShow_(keys) : keys; }
 /** Tags (Questions tab) of these questions: skill, subskill, difficulty, level. */
 function tagsOf_(qids) {
   var want = {}; qids.forEach(function (q) { want[q] = 1; });
@@ -1189,7 +1241,7 @@ function teacherReview(code, setId) {
 /** #62 the keys (+ accepted forms, CB explanation) of a go-over set — ONLY in the teacher's go-over payloads (requireTeacher_ first). */
 function goKeys_(qids) {
   var out = {};
-  libQuestions_(qids).forEach(function (q) { out[q.qid] = { key: keyList_(q), type: q.type || 'mcq', rationale_html: q.rationale_html || '', cb_id: (q.source || {}).cb_question_id || '' }; });
+  libQuestions_(qids).forEach(function (q) { out[q.qid] = { key: keyShow_(q), type: q.type || 'mcq', rationale_html: q.rationale_html || '', cb_id: (q.source || {}).cb_question_id || '' }; });
   return out;
 }
 /** #50 go-over: what the teacher needs next to a question — never its key. Level (with the override), the CB label,
@@ -1229,7 +1281,7 @@ function teacherKey(code, qid) {
   requireTeacher_(code);
   var q = libQuestions_([String(qid)])[0];
   if (!q) throw new Error('FORM: Question not found in the library.');
-  return { ok: true, qid: q.qid, type: q.type || 'mcq', key: keyList_(q), rationale_html: q.rationale_html || '', cb_id: (q.source || {}).cb_question_id || '' };
+  return { ok: true, qid: q.qid, type: q.type || 'mcq', key: keyShow_(q), rationale_html: q.rationale_html || '', cb_id: (q.source || {}).cb_question_id || '' };
 }
 /** #50 the teacher's level for a question (go-over screen): Item_Overrides, one row per qid, last write wins, history in log.
  *  The Drive files are never edited. Undo = the same call with the old level. */
@@ -1262,5 +1314,5 @@ function teacherAnswer(code, setId, qid) {
   var s = teacherSet_(code, setId);
   var q = setQuestions_(s).filter(function (x) { return x.qid === String(qid); })[0];
   if (!q) throw new Error('SESSION: Question not found.');
-  return { ok: true, qid: q.qid, type: q.type || 'mcq', key: keyList_(q) };
+  return { ok: true, qid: q.qid, type: q.type || 'mcq', key: keyShow_(q) };
 }

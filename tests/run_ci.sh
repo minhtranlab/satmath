@@ -37,4 +37,6 @@ run node module101_test.js   # #101 real-test module: builder = #102 blueprint (
 run node module104_test.js   # #104 a module = the same report as any assignment (+ score on top): blocks, slow / rush per cell, teacher times, Fix / Ask / go-over / tags across both modules, My mistakes
 run node e2e_module_test.js  # #101 browser: assign Full → Module 1 timed → Module 2 starts by itself (harder) → range + domains + Go over → teacher; phone: time runs out → submitted
 run node ipad107_test.js     # #107 iPad: Apple Pencil draws at once (no selection / toolbar), a finger scrolls; "✋ Finger draws" switch (kept per device); divider: 32 px finger target, 25–75 %
+run node pen108_test.js      # #108 pen over both panes (stroke = its pane, scrolls with it, stays on divider drag, eraser / Undo) + Select: loop, drag inside the pane, Delete, Undo (mouse, Pencil, finger with the switch)
+run node spr108_test.js      # #108 grid-in by the official SAT entry rules (TZ spr52 cases), Show answer = typeable forms, browser = server grader, box + directions, Gridin_Keys + Gridin_Regrade (dry run / apply)
 echo "ALL SUITES PASSED"

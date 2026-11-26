@@ -31,6 +31,8 @@ var TABS_ = [
   ['Modules', ['set_id', 'student_code', 'assignment_id', 'test_id', 'mode', 'module', 'n', 'levels', 'subs', 'stats', 'raw', 'by_domain', 'route', 'cb_raw',
                'score_lo', 'score_hi', 'score_mid', 'built_at', 'finished_at']],
   ['Item_Forms', ['qid', 'form', 'fig', 'words']],
+  ['Gridin_Keys', ['qid', 'code', 'batch', 'key', 'accepted', 'problem', 'show_answer', 'checked_at']],
+  ['Gridin_Regrade', ['student', 'kind', 'qid', 'code', 'submitted_at', 'what', 'answer', 'was', 'now', 'applied']],
   ['Skill_Summary', ['student_code', 'skill', 'subskill', 'n_seen', 'n_try1', 'n_try1_right', 'try1_pct', 'best_pct', 'last5_pct',
                      'avg_pace_ratio', 'n_fast_wrong', 'n_slow_wrong', 'n_slow_right', 'n_blank', 'top_mistake_type', 'n_untagged',
                      'n_asked_open', 'last_practised', 'verdict']],
