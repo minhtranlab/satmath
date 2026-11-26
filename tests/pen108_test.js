@@ -26,6 +26,8 @@ async function finger(cdp, pts) {
   for (const q of pts.slice(1)) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: q[0], y: q[1] }] }); await sleep(12); }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(200);
 }
+// a tap's click can come late on a touch screen: tap, then wait until the app shows it
+const tapUntil = (p, sel, cond) => p.tap(sel).then(() => p.waitForFunction(cond, null, { timeout: 3000 }).catch(() => {}));
 async function goOver(E, dev, key, qids) {
   const { page, ctx } = await E.newPage(dev);
   await H.login(page, E.url, T); await page.waitForSelector('[data-prof="FX-T01"]');
@@ -120,12 +122,12 @@ async function goOver(E, dev, key, qids) {
     {
       const { page, ctx } = await goOver(E, 'ipad', 'p108b', ['FX1-004']);
       const cdp = await ctx.newCDPSession(page);
-      await page.tap('#tool-pen'); await sleep(150);
+      await tapUntil(page, '#tool-pen', () => document.querySelector('#scr-test').classList.contains('pen-on')); await sleep(150);
       const r = await rect(page, R), x0 = r.x + 80, y0 = r.y + 240;
       await pencilPath(page, R, Array.from({ length: 9 }, (_, i) => [x0 + i * 22, y0 + (i % 2) * 4]));
       const s0 = await ink(page, R); check(s0.n > 100, 'Pencil stroke on the question pane');
       check(await page.$eval('#scr-test', e => e.classList.contains('finger-scrolls')), 'Pencil seen → a finger scrolls (#107)');
-      await page.tap('#pen-bar [data-pt="select"]');
+      await tapUntil(page, '#pen-bar [data-pt="select"]', () => document.querySelector('#pen-bar [data-pt="select"]').classList.contains('on'));
       const cx = r.x + (s0.l + s0.r) / 2, cy = r.y + (s0.t + s0.b) / 2, rx = (s0.r - s0.l) / 2 + 40, ry = (s0.b - s0.t) / 2 + 40;
       // a finger loop with "Finger draws" off = a scroll, not a lasso
       await finger(cdp, loopPts(cx, cy, rx, ry));
@@ -133,15 +135,16 @@ async function goOver(E, dev, key, qids) {
       await pencilPath(page, R, loopPts(cx, cy, rx, ry));
       check(!(await page.$eval('#pen-del', e => e.hidden)), 'Pencil loop → selected (Delete shown)');
       await pencilPath(page, R, Array.from({ length: 7 }, (_, i) => [cx + i * 8, cy + i * 6]));
-      await page.tap('#pen-bar [data-pc="red"]'); await sleep(50);
+      await tapUntil(page, '#pen-bar [data-pc="red"]', () => document.querySelector('#pen-bar [data-pc="red"]').classList.contains('on'));
       const s1 = await ink(page, R); check(Math.abs(s1.l - s0.l - 48) <= 2 && Math.abs(s1.t - s0.t - 36) <= 2, 'Pencil drag on the box → moved (' + (s1.l - s0.l) + ', ' + (s1.t - s0.t) + ')');
-      await page.tap('#pen-finger'); await page.tap('#pen-bar [data-pt="select"]');
+      await tapUntil(page, '#pen-finger', () => document.querySelector('#pen-finger').getAttribute('aria-pressed') === 'true');
+      await tapUntil(page, '#pen-bar [data-pt="select"]', () => document.querySelector('#pen-bar [data-pt="select"]').classList.contains('on'));
       const cx2 = r.x + (s1.l + s1.r) / 2, cy2 = r.y + (s1.t + s1.b) / 2;
       await finger(cdp, loopPts(cx2, cy2, rx, ry));
       check(!(await page.$eval('#pen-del', e => e.hidden)), 'Finger draws on → a finger loop selects');
-      await page.tap('#pen-del'); await page.waitForFunction(() => document.querySelector('#pen-del').hidden, null, { timeout: 3000 }).catch(() => {});   // a tap's click can come late on a touch screen
+      await tapUntil(page, '#pen-del', () => document.querySelector('#pen-del').hidden);
       check((await ink(page, R)).n === 0, 'Delete (tap) → gone');
-      await page.tap('#pen-bar [data-pt="undo"]'); check((await ink(page, R)).n > 100, 'Undo → back');
+      await page.tap('#pen-bar [data-pt="undo"]'); await sleep(400); check((await ink(page, R)).n > 100, 'Undo → back');
       const fit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
       check(fit, 'pen bar with Select fits the iPad screen');
       await shot(page, 'pen108_ipad');
